@@ -67,9 +67,9 @@ export class PassFactory {
 
                 // --- DYNAMIC FIELD LOGIC ---
 
-                // Card Number: Calculated from Serial
-                if (f.key === 'card') {
-                    processed.value = serialNumber.slice(-4).toUpperCase()
+                // Card/Customer Number: Use unique customer_number from state, or fallback to serial
+                if (f.key === 'card' || f.key === 'id') {
+                    processed.value = state.customer_number || serialNumber.slice(-4).toUpperCase()
                 }
 
                 // Points / Tier
@@ -81,6 +81,16 @@ export class PassFactory {
                     const current = state.stamps || 0
                     const max = state.max_stamps || 10
                     processed.value = `${current} von ${max}`
+                }
+
+                // Reward Field - Dynamic based on stamp status
+                if (f.key === 'reward' && state.stamps !== undefined) {
+                    const current = state.stamps || 0
+                    const max = state.max_stamps || 10
+                    if (current >= max) {
+                        processed.value = '🎉 PRÄMIE EINLÖSBAR!'
+                    }
+                    // Otherwise keep original value (e.g., "Gratis Kaffee")
                 }
 
                 // Stamps (Visual/Emoji)

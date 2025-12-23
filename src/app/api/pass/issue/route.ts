@@ -63,16 +63,24 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
         const authToken = uuidv4()
         const userAliasId = uuidv4() // Anonymous user ID
 
+        // Generate unique customer number (format: XXXX based on timestamp + random)
+        const customerNumber = `${(Date.now() % 10000).toString().padStart(4, '0')}`
+
         // Determine initial state based on concept
         let initialState: Record<string, any> = {}
         if (campaign.concept === 'STAMP_CARD' || campaign.concept === 'STAMP_CARD_V2') {
-            initialState = { stamps: 1, max_stamps: 10 }  // Start with 1 stamp
+            initialState = {
+                stamps: 1,
+                max_stamps: 10,
+                customer_number: customerNumber,  // Unique customer number for display
+                redemptions: 0
+            }
         } else if (campaign.concept === 'POINTS_CARD') {
-            initialState = { points: 0, tier: 'bronze' }
+            initialState = { points: 0, tier: 'bronze', customer_number: customerNumber }
         } else if (campaign.concept === 'MEMBER_CARD' || campaign.concept === 'VIP_CLUB') {
-            initialState = { status: 'active', tier: 'member' }
+            initialState = { status: 'active', tier: 'member', customer_number: customerNumber }
         } else {
-            initialState = { created: new Date().toISOString() }
+            initialState = { created: new Date().toISOString(), customer_number: customerNumber }
         }
 
         // PERSISTENCE: Save stamp icon to state to prevent changes on updates

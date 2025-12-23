@@ -43,26 +43,45 @@ export async function POST(req: NextRequest) {
 
         if (concept === 'STAMP_CARD' || concept === 'STAMP_CARD_V2') {
             const maxStamps = currentState.max_stamps || 10
+            const currentStamps = currentState.stamps || 0
 
-            if (action === 'REDEEM') {
-                // Redeem reward (reset stamps to 0)
-                if (currentState.stamps >= maxStamps) {
+            // SMART REDEMPTION LOGIC:
+            // If customer is at max stamps (10/10), auto-redeem and add 1 new stamp
+            if (currentStamps >= maxStamps) {
+                // Customer has full card - REDEEM + ADD 1
+                newState.stamps = 1  // Reset to 1 (includes new stamp for this visit)
+                newState.redemptions = (currentState.redemptions || 0) + 1
+                newState.last_redemption = new Date().toISOString()
+                actionType = 'AUTO_REDEEM'
+                deltaValue = -(maxStamps - 1) // Net change: was 10, now 1
+
+                console.log(`[SCAN] Auto-redeemed! New redemptions: ${newState.redemptions}`)
+            } else if (action === 'REDEEM') {
+                // Manual redeem (forced by POS)
+                if (currentStamps >= maxStamps) {
                     newState.stamps = 0
                     newState.redemptions = (currentState.redemptions || 0) + 1
+                    newState.last_redemption = new Date().toISOString()
                     actionType = 'REDEEM_REWARD'
                     deltaValue = -maxStamps
                 } else {
                     return NextResponse.json({
                         error: "Not enough stamps",
-                        current: currentState.stamps,
+                        current: currentStamps,
                         required: maxStamps
                     }, { status: 400 })
                 }
             } else {
-                // Add stamp
-                newState.stamps = Math.min((currentState.stamps || 0) + 1, maxStamps)
+                // Normal: Add stamp
+                const newStampCount = Math.min(currentStamps + 1, maxStamps)
+                newState.stamps = newStampCount
                 actionType = 'ADD_STAMP'
                 deltaValue = 1
+
+                // Check if this stamp completes the card
+                if (newStampCount >= maxStamps) {
+                    actionType = 'STAMP_COMPLETE' // Special action for celebration
+                }
             }
         } else if (concept === 'POINTS_CARD') {
             const pointsToAdd = body.points || 1
@@ -128,12 +147,22 @@ export async function POST(req: NextRequest) {
 
         console.log(`[SCAN] Pass ${passId}: ${actionType} (${deltaValue})`)
 
+        // Determine special flags for POS UI
+        const maxStamps = newState.max_stamps || 10
+        const celebration = actionType === 'STAMP_COMPLETE' || actionType === 'AUTO_REDEEM'
+        const redeemed = actionType === 'AUTO_REDEEM' || actionType === 'REDEEM_REWARD'
+        const rewardReady = newState.stamps >= maxStamps
+
         return NextResponse.json({
             success: true,
             action: actionType,
             delta: deltaValue,
             newState: newState,
-            message: getSuccessMessage(actionType, newState, concept)
+            message: getSuccessMessage(actionType, newState, concept),
+            // Special flags for POS UI
+            celebration,      // Show confetti/celebration animation
+            redeemed,         // Reward was just redeemed
+            rewardReady       // Customer can redeem now
         })
 
     } catch (e) {
@@ -145,6 +174,12 @@ export async function POST(req: NextRequest) {
 function getSuccessMessage(action: string, state: any, concept: string): string {
     if (action === 'ADD_STAMP') {
         return `✅ Stempel hinzugefügt! (${state.stamps}/${state.max_stamps || 10})`
+    }
+    if (action === 'STAMP_COMPLETE') {
+        return `🎉 KARTE VOLL! (${state.stamps}/${state.max_stamps || 10}) - Prämie bereit!`
+    }
+    if (action === 'AUTO_REDEEM') {
+        return `🎊 PRÄMIE EINGELÖST! Neuer Start: 1/${state.max_stamps || 10}`
     }
     if (action === 'REDEEM_REWARD') {
         return `🎉 Prämie eingelöst! Stempel zurückgesetzt.`
