@@ -136,12 +136,22 @@ export async function POST(req: NextRequest) {
         }
 
         // 5. Send APNs push to update the customer's wallet pass
+        let pushStatus = { sent: 0, errors: [] as string[] }
         try {
             const { sendPassUpdatePush } = await import('@/lib/wallet/apns')
             const pushResult = await sendPassUpdatePush(passId)
-            console.log(`[PUSH RESULT] Sent: ${pushResult.sent}, Errors: ${pushResult.errors.join(', ') || 'none'}`)
-        } catch (pushError) {
-            console.error('[PUSH ERROR]', pushError)
+            pushStatus = { sent: pushResult.sent, errors: pushResult.errors }
+
+            if (pushResult.sent > 0) {
+                console.log(`[PUSH ✅] Sent ${pushResult.sent} notification(s) for pass ${passId}`)
+            } else if (pushResult.errors.length > 0) {
+                console.log(`[PUSH ❌] Failed for pass ${passId}: ${pushResult.errors.join(', ')}`)
+            } else {
+                console.log(`[PUSH ⚠️] No devices registered for pass ${passId}`)
+            }
+        } catch (pushError: any) {
+            console.error('[PUSH ERROR]', pushError?.message || pushError)
+            pushStatus.errors.push(pushError?.message || 'Unknown error')
             // Don't fail the scan if push fails
         }
 
@@ -162,7 +172,12 @@ export async function POST(req: NextRequest) {
             // Special flags for POS UI
             celebration,      // Show confetti/celebration animation
             redeemed,         // Reward was just redeemed
-            rewardReady       // Customer can redeem now
+            rewardReady,      // Customer can redeem now
+            // Push notification status (for debugging)
+            push: {
+                sent: pushStatus.sent,
+                errors: pushStatus.errors
+            }
         })
 
     } catch (e) {

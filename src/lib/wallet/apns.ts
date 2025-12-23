@@ -55,20 +55,27 @@ export async function sendPassUpdatePush(passId: string): Promise<{ success: boo
     const keyPassphrase = process.env.APPLE_SIGNER_KEY_PASSPHRASE
     const passTypeId = process.env.APPLE_PASS_TYPE_ID
 
-    if (!certBase64 || !keyBase64 || !keyPassphrase || !passTypeId) {
-        console.log('[PUSH] APNs not configured, skipping push')
-        return { success: true, sent: 0, errors: ['APNs not configured'] }
+    // Detailed config check
+    const missingConfig: string[] = []
+    if (!certBase64) missingConfig.push('APPLE_SIGNER_CERT_BASE64')
+    if (!keyBase64) missingConfig.push('APPLE_SIGNER_KEY_BASE64')
+    if (!keyPassphrase) missingConfig.push('APPLE_SIGNER_KEY_PASSPHRASE')
+    if (!passTypeId) missingConfig.push('APPLE_PASS_TYPE_ID')
+
+    if (missingConfig.length > 0) {
+        console.log(`[PUSH] APNs not configured - missing: ${missingConfig.join(', ')}`)
+        return { success: true, sent: 0, errors: [`APNs not configured (missing: ${missingConfig.join(', ')})`] }
     }
 
     try {
         // Dynamic import to avoid issues in edge runtime
         const apn = await import('apn')
 
-        // Create APN provider with certificate
+        // Create APN provider with certificate (values validated above)
         const provider = new apn.Provider({
-            cert: Buffer.from(certBase64, 'base64'),
-            key: Buffer.from(keyBase64, 'base64'),
-            passphrase: keyPassphrase,
+            cert: Buffer.from(certBase64!, 'base64'),
+            key: Buffer.from(keyBase64!, 'base64'),
+            passphrase: keyPassphrase!,
             production: true, // Wallet passes always use production
         })
 
@@ -78,7 +85,7 @@ export async function sendPassUpdatePush(passId: string): Promise<{ success: boo
                 // Wallet pass push notification is a simple empty payload
                 const notification = new apn.Notification()
                 notification.payload = {} // Empty payload for Wallet updates
-                notification.topic = passTypeId // Pass Type ID is the topic
+                notification.topic = passTypeId! // Pass Type ID is the topic
 
                 const result = await provider.send(notification, token)
 
