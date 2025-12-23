@@ -155,6 +155,14 @@ export async function GET(
 
         pkPass.type = draft.meta.style || 'storeCard'
 
+        // Debug: log what we're working with
+        console.log('[PASS UPDATE] Draft fields:', {
+            headerFields: draft.fields.headerFields?.length || 0,
+            primaryFields: draft.fields.primaryFields?.length || 0,
+            secondaryFields: draft.fields.secondaryFields?.length || 0,
+            auxiliaryFields: draft.fields.auxiliaryFields?.length || 0,
+        })
+
         // Add fields
         formatFields(updateFieldsWithState(draft.fields.headerFields, currentState)).forEach(f => pkPass.headerFields.push(f))
         formatFields(updateFieldsWithState(draft.fields.primaryFields, currentState, true)).forEach(f => pkPass.primaryFields.push(f))
@@ -170,28 +178,56 @@ export async function GET(
         })
 
         // RESTORE IMAGES
-        // The images are stored as Data URLs in the JSON (base64)
+        // The images can be stored as Data URLs (base64) or HTTP URLs (Supabase Storage)
         if (draft.images) {
-            Object.entries(draft.images).forEach(([key, value]: [string, any]) => {
-                // If it's a string (old format or direct data URL)
-                if (typeof value === 'string' && value.startsWith('data:image')) {
-                    const base64Data = value.split(',')[1]
-                    if (base64Data) {
-                        const buffer = Buffer.from(base64Data, 'base64')
+            console.log('[PASS UPDATE] Images to restore:', Object.keys(draft.images))
+
+            for (const [key, value] of Object.entries(draft.images) as [string, any][]) {
+                try {
+                    let buffer: Buffer | null = null
+
+                    // If it's a string (old format or direct data URL)
+                    if (typeof value === 'string' && value.startsWith('data:image')) {
+                        const base64Data = value.split(',')[1]
+                        if (base64Data) {
+                            buffer = Buffer.from(base64Data, 'base64')
+                        }
+                    }
+                    // If it's a string HTTP URL
+                    else if (typeof value === 'string' && value.startsWith('http')) {
+                        const response = await fetch(value)
+                        if (response.ok) {
+                            buffer = Buffer.from(await response.arrayBuffer())
+                        }
+                    }
+                    // If it's an object with url property
+                    else if (typeof value === 'object' && value?.url) {
+                        if (value.url.startsWith('data:image')) {
+                            const base64Data = value.url.split(',')[1]
+                            if (base64Data) {
+                                buffer = Buffer.from(base64Data, 'base64')
+                            }
+                        } else if (value.url.startsWith('http')) {
+                            console.log(`[PASS UPDATE] Fetching ${key} from: ${value.url}`)
+                            const response = await fetch(value.url)
+                            if (response.ok) {
+                                buffer = Buffer.from(await response.arrayBuffer())
+                                console.log(`[PASS UPDATE] ${key} loaded, size: ${buffer.length}`)
+                            } else {
+                                console.error(`[PASS UPDATE] Failed to fetch ${key}: ${response.status}`)
+                            }
+                        }
+                    }
+
+                    if (buffer) {
                         pkPass.addBuffer(`${key}.png`, buffer)
                         pkPass.addBuffer(`${key}@2x.png`, buffer)
+                        console.log(`[PASS UPDATE] Added ${key} to pass`)
                     }
+                } catch (err) {
+                    console.error(`[PASS UPDATE] Error loading image ${key}:`, err)
                 }
-                // If it's an object with url property (new format)
-                else if (typeof value === 'object' && value?.url && value.url.startsWith('data:image')) {
-                    const base64Data = value.url.split(',')[1]
-                    if (base64Data) {
-                        const buffer = Buffer.from(base64Data, 'base64')
-                        pkPass.addBuffer(`${key}.png`, buffer)
-                        pkPass.addBuffer(`${key}@2x.png`, buffer)
-                    }
-                }
-            })
+            }
         }
 
         // Fallback for Icon if missing
