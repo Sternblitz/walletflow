@@ -89,29 +89,22 @@ export async function GET(
                     // If the original value had emojis, preserve that style
                     const originalVal = String(f.value || '')
 
-                    // Get config for stamp icon from campaign - check multiple locations
-                    const campaignConfig = pass.campaign?.config || {}
-                    const designAssets = pass.campaign?.design_assets || {}
-                    // @ts-ignore - stampIcon may exist in various locations depending on how the campaign was created
-                    const stampIcon =
-                        designAssets.stampIcon ||
-                        designAssets.designConfig?.stampIcon ||
-                        designAssets.content?.stampIcon ||
-                        campaignConfig.stampIcon ||
-                        (originalVal.match(/[\u{1F300}-\u{1F9FF}]/u)?.[0])
+                    // Extract the stamp emoji from the original value
+                    // Passes start with 1 stamp, so the emoji is already there from the editor
+                    // Match any emoji that's NOT the empty circle (⚪)
+                    const emojiMatch = originalVal.match(/(?!⚪)[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu)
+                    const stampIcon = emojiMatch ? emojiMatch[0] : null
 
-                    console.log(`[STAMP DEBUG] designAssets keys: ${Object.keys(designAssets).join(', ')}`)
-                    console.log(`[STAMP DEBUG] designAssets.stampIcon: ${designAssets.stampIcon}`)
-                    console.log(`[STAMP DEBUG] designAssets.content: ${JSON.stringify(designAssets.content || {}).substring(0, 200)}`)
-                    console.log(`[STAMP DEBUG] Final stampIcon: ${stampIcon || 'none (using default)'}`)
+                    console.log(`[STAMP DEBUG] originalVal: ${originalVal}`)
+                    console.log(`[STAMP DEBUG] Extracted stampIcon: ${stampIcon || 'none (using default ☕️)'}`)
 
                     // For progress_visual, always use emojis
                     // For stamps field, check if original had emojis
-                    const useEmojis = isProgressVisual || originalVal.includes('⚪') || !!stampIcon || originalVal.includes('✅') || originalVal.includes('❌') || originalVal.includes('⭐')
+                    const useEmojis = isProgressVisual || originalVal.includes('⚪') || !!stampIcon
 
                     let val: string;
                     if (useEmojis) {
-                        const icon = stampIcon || '☕️'  // Default to coffee for stamp cards
+                        const icon = stampIcon || '☕️'  // Fallback only if no emoji found
                         const emptyIcon = '⚪'
                         // Use repeat to generate string with spaces
                         val = (icon + ' ').repeat(current) + (emptyIcon + ' ').repeat(Math.max(0, max - current))
