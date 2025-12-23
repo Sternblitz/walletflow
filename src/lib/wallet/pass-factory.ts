@@ -157,6 +157,16 @@ export class PassFactory {
         processFields(draft.fields.auxiliaryFields).forEach(f => pkPass.auxiliaryFields.push(f))
         processFields(draft.fields.backFields).forEach(f => pkPass.backFields.push(f))
 
+        // Add notification message field to back (for push messaging)
+        if (state.notification_message) {
+            pkPass.backFields.push({
+                key: 'news',
+                label: 'AKTUELLE NEWS',
+                value: state.notification_message,
+                changeMessage: '%@'  // Shows the message in notification
+            })
+        }
+
         // 3. Images
         await this.loadImages(pkPass, draft.images)
 
@@ -174,9 +184,17 @@ export class PassFactory {
     private static async loadImages(pkPass: PKPass, images: any) {
         if (!images) return
 
-        // Always add fallback icon if missing
+        // If no icon is provided but logo exists, use logo as icon (for notifications)
+        if (!images.icon && images.logo) {
+            console.log('[PassFactory] Using logo as icon for notifications')
+            images.icon = images.logo
+        }
+
+        // Fallback icon only if neither icon nor logo exists
         if (!images.icon) {
-            const fallback = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=', 'base64')
+            // Create a simple colored icon instead of transparent pixel
+            // This is a minimal 29x29 gray square as base64 PNG
+            const fallback = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAB0AAAAdCAYAAABWk2cPAAAAOklEQVRIiWNgGAWjYBSMglEwCkYBNQDj//8M/6kBGP//Z2CkFhgFo2AUjIJRMApGwSgYBaNgKAEALwcEHQrqpIIAAAAASUVORK5CYII=', 'base64')
             pkPass.addBuffer('icon.png', fallback)
             pkPass.addBuffer('icon@2x.png', fallback)
         }

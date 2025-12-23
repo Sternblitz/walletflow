@@ -196,6 +196,7 @@ export function Step3DesignV2({ data, update }: Step3DesignProps) {
     const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
     const [showSafeZones, setShowSafeZones] = useState(false)
     const [uploading, setUploading] = useState(false)
+    const [generatingIcon, setGeneratingIcon] = useState(false)
     const [iconCategory, setIconCategory] = useState<keyof typeof STAMP_ICONS>("food")
 
     // AI State
@@ -358,6 +359,39 @@ export function Step3DesignV2({ data, update }: Step3DesignProps) {
             console.error("Upload error:", err)
         } finally {
             setUploading(false)
+        }
+    }
+
+    // AI Icon Generation
+    const generateAiIcon = async () => {
+        setGeneratingIcon(true)
+        try {
+            const response = await fetch('/api/design/generate-notification-icon', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    businessName: config.logoText || data.clientName || 'Business',
+                    businessType: data.concept?.toLowerCase() || 'store',
+                    colors: {
+                        background: config.backgroundColor,
+                        accent: config.labelColor
+                    }
+                })
+            })
+
+            const result = await response.json()
+
+            if (result.iconUrl) {
+                // Use the 2x version for best quality display
+                handleChange('iconUrl', result.icon2xUrl || result.iconUrl)
+                console.log('✅ AI Icon generated:', result.iconUrl)
+            } else {
+                console.warn('Icon generation returned no URL:', result)
+            }
+        } catch (error) {
+            console.error('AI Icon generation error:', error)
+        } finally {
+            setGeneratingIcon(false)
         }
     }
 
@@ -1000,7 +1034,25 @@ export function Step3DesignV2({ data, update }: Step3DesignProps) {
                                     onChange={(e) => handleFileUpload(e, 'iconUrl')}
                                     className="absolute inset-0 opacity-0 cursor-pointer"
                                 />
+                                {generatingIcon && (
+                                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                                        <Loader2 className="w-5 h-5 animate-spin text-fuchsia-400" />
+                                    </div>
+                                )}
                             </div>
+                            {/* AI Generate Button */}
+                            <button
+                                onClick={generateAiIcon}
+                                disabled={generatingIcon}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-[10px] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {generatingIcon ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-3 h-3" />
+                                )}
+                                AI Icon
+                            </button>
                         </div>
 
                         {/* Strip Upload */}
