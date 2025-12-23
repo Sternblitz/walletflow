@@ -9,7 +9,8 @@ export class PassFactory {
         serialNumber,
         authToken,
         state,
-        baseUrl
+        baseUrl,
+        locations
     }: {
         draft: WalletPassDraft
         certs: any
@@ -17,6 +18,7 @@ export class PassFactory {
         authToken: string
         state: any
         baseUrl?: string
+        locations?: Array<{ latitude: number; longitude: number; relevantText?: string }>
     }): Promise<PKPass> {
 
         // 1. Initialize PKPass
@@ -177,6 +179,24 @@ export class PassFactory {
             message: barcodeMessage,
             messageEncoding: 'iso-8859-1',
         })
+
+        // 5. Locations for GPS-based lockscreen notifications
+        if (locations && locations.length > 0) {
+            console.log(`[PassFactory] Adding ${locations.length} locations for GPS notifications`)
+            pkPass.setLocations(...locations.map(loc => ({
+                latitude: loc.latitude,
+                longitude: loc.longitude,
+                ...(loc.relevantText && { relevantText: loc.relevantText })
+            })))
+        } else if (draft.relevance?.locations && draft.relevance.locations.length > 0) {
+            // Fallback to draft.relevance.locations if available
+            console.log(`[PassFactory] Adding ${draft.relevance.locations.length} locations from draft.relevance`)
+            pkPass.setLocations(...draft.relevance.locations.map(loc => ({
+                latitude: loc.latitude,
+                longitude: loc.longitude,
+                ...(loc.relevantText && { relevantText: loc.relevantText })
+            })))
+        }
 
         return pkPass
     }

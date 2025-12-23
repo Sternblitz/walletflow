@@ -68,13 +68,22 @@ export async function GET(
         }
 
         // Generate the pass using the shared factory
+        // Extract locations from campaign config for GPS notifications
+        const campaignConfig = pass.campaign?.config || {}
+        const locations = campaignConfig.locations?.map((loc: any) => ({
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+            relevantText: campaignConfig.locationMessage || "Du bist in der Nähe! 🎉"
+        })) || []
+
         const pkPass = await PassFactory.createPass({
             draft,
             certs,
             serialNumber,
             authToken: pass.auth_token,
             state: currentState,
-            baseUrl: process.env.NEXT_PUBLIC_BASE_URL
+            baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+            locations
         })
 
         const passBuffer = pkPass.getAsBuffer()

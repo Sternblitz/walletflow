@@ -155,6 +155,18 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
             initialState.id = passRecord.id
         }
 
+        // Extract locations from campaign config for GPS notifications
+        const campaignConfig = campaign.config || {}
+        const locations = campaignConfig.locations?.map((loc: any) => ({
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+            relevantText: campaignConfig.locationMessage || "Du bist in der Nähe! 🎉"
+        })) || []
+
+        if (locations.length > 0) {
+            console.log(`[PASS] Adding ${locations.length} GPS locations to pass`)
+        }
+
         // Generate the pass using the shared factory
         const pkPass = await PassFactory.createPass({
             draft,
@@ -162,7 +174,8 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
             serialNumber,
             authToken,
             state: initialState,
-            baseUrl: process.env.NEXT_PUBLIC_BASE_URL
+            baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+            locations
         })
 
         const passBuffer = pkPass.getAsBuffer()
