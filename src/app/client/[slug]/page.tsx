@@ -1,20 +1,10 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
 import Link from "next/link"
 import { Users, QrCode, Activity, ArrowUpRight, TrendingUp } from "lucide-react"
 
 export default async function ClientDashboardPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params
-
-    // Check Auth
-    const cookieStore = await cookies()
-    const authRole = cookieStore.get(`auth_${slug}`)?.value
-
-    if (authRole !== 'admin') {
-        redirect(`/login/${slug}`)
-    }
-
     const supabase = await createClient()
 
     // 1. Fetch Client & Campaign Info
