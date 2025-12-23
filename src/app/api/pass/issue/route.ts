@@ -169,10 +169,11 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
                 organizationName: draft.content.organizationName || 'Passify',
                 description: draft.content.description || 'Loyalty Card',
                 serialNumber: serialNumber,
-                // Note: authenticationToken and webServiceURL are required for push updates
-                // but break pass validation on localhost. Add in production.
-                // authenticationToken: authToken,
-                // webServiceURL: process.env.NEXT_PUBLIC_BASE_URL,
+                // Enable push updates on production (HTTPS required)
+                ...(process.env.NEXT_PUBLIC_BASE_URL?.startsWith('https') ? {
+                    authenticationToken: authToken,
+                    webServiceURL: process.env.NEXT_PUBLIC_BASE_URL + '/api',
+                } : {}),
                 formatVersion: 1,
 
                 // Colors
