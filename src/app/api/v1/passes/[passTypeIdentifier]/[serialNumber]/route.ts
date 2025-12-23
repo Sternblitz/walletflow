@@ -92,11 +92,18 @@ export async function GET(
                     // Get config for stamp icon from campaign - check multiple locations
                     const campaignConfig = pass.campaign?.config || {}
                     const designAssets = pass.campaign?.design_assets || {}
-                    // @ts-ignore - stampIcon may exist directly or in designConfig
-                    const stampIcon = designAssets.stampIcon || designAssets.designConfig?.stampIcon || campaignConfig.stampIcon || (originalVal.match(/[\u{1F300}-\u{1F9FF}]/u)?.[0])
+                    // @ts-ignore - stampIcon may exist in various locations depending on how the campaign was created
+                    const stampIcon =
+                        designAssets.stampIcon ||
+                        designAssets.designConfig?.stampIcon ||
+                        designAssets.content?.stampIcon ||
+                        campaignConfig.stampIcon ||
+                        (originalVal.match(/[\u{1F300}-\u{1F9FF}]/u)?.[0])
 
-                    console.log(`[STAMP DEBUG] Looking for stampIcon. designAssets keys: ${Object.keys(designAssets).join(', ')}`)
-                    console.log(`[STAMP DEBUG] stampIcon found: ${stampIcon || 'none'}`)
+                    console.log(`[STAMP DEBUG] designAssets keys: ${Object.keys(designAssets).join(', ')}`)
+                    console.log(`[STAMP DEBUG] designAssets.stampIcon: ${designAssets.stampIcon}`)
+                    console.log(`[STAMP DEBUG] designAssets.content: ${JSON.stringify(designAssets.content || {}).substring(0, 200)}`)
+                    console.log(`[STAMP DEBUG] Final stampIcon: ${stampIcon || 'none (using default)'}`)
 
                     // For progress_visual, always use emojis
                     // For stamps field, check if original had emojis
