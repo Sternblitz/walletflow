@@ -30,7 +30,10 @@ export async function GET(
     // If passesUpdatedSince provided, filter by update time
     if (passesUpdatedSince) {
         const sinceDate = new Date(parseInt(passesUpdatedSince) * 1000).toISOString()
+        console.log(`[CHECK UPDATES] Device ${deviceLibraryIdentifier} checking since ${sinceDate} (${passesUpdatedSince})`)
         query = query.gt('passes.last_updated_at', sinceDate)
+    } else {
+        console.log(`[CHECK UPDATES] Device ${deviceLibraryIdentifier} checking all updates (no since param)`)
     }
 
     const { data: registrations, error } = await query

@@ -13,6 +13,9 @@ export async function POST(req: NextRequest) {
         const body = await req.json()
         const { passId, action } = body
 
+        console.log(`[SCAN REQ] Pass: ${passId}, Action: ${action}`)
+
+
         if (!passId) {
             return NextResponse.json({ error: "Missing passId" }, { status: 400 })
         }

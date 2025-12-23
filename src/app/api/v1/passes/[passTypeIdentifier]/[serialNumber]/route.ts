@@ -67,22 +67,57 @@ export async function GET(
             }))
         }
 
-        // Update fields with current state
-        const updateFieldsWithState = (fields: PassField[], state: Record<string, any>) => {
-            return fields.map(f => {
-                if (f.key === 'stamps' && state.stamps !== undefined) {
+        // Update fields with current state (recursive for all sections)
+        const updateFieldsWithState = (fields: PassField[] | undefined, state: Record<string, any>, isPrimary = false) => {
+            if (!fields) return []
+
+            // Log fields for debugging
+            fields.forEach(f => console.log(`[PASS FIELD] Key: ${f.key}, Value: ${f.value}`))
+
+            return fields.map((f, index) => {
+                // STAMPS Logic - also update first primary field as fallback
+                const isStampField = (f.key === 'stamps' || f.key === 'balance' || f.key === 'primary') || (isPrimary && index === 0 && state.stamps !== undefined)
+                if (isStampField && state.stamps !== undefined) {
                     const current = state.stamps || 0
                     const max = state.max_stamps || 10
-                    return { ...f, value: `${current} von ${max}` }
+
+                    // improved logic: Check if we should use emojis
+                    // If the original value had emojis, preserve that style
+                    const originalVal = String(f.value || '')
+
+                    // Get config for stamp icon from campaign
+                    const campaignConfig = pass.campaign?.config || {}
+                    // @ts-ignore - designConfig may exist in design_assets
+                    const designConfig = pass.campaign?.design_assets?.designConfig || {}
+
+                    const stampIcon = designConfig.stampIcon || campaignConfig.stampIcon || (originalVal.match(/[\u{1F300}-\u{1F9FF}]/u)?.[0])
+                    const hasEmojis = originalVal.includes('⚪') || !!stampIcon || originalVal.includes('✅') || originalVal.includes('❌') || originalVal.includes('⭐')
+
+                    let val: string;
+                    if (hasEmojis) {
+                        const icon = stampIcon || '✅'
+                        const emptyIcon = '⚪️'
+                        // Use repeat to generate string with spaces
+                        val = (icon + ' ').repeat(current) + (emptyIcon + ' ').repeat(Math.max(0, max - current))
+                        val = val.trim()
+                    } else {
+                        val = `${current} von ${max}`
+                    }
+
+                    console.log(`[PASS UPDATE] Updating ${f.key} (Primary: ${isPrimary}): ${originalVal} -> ${val}`)
+                    return { ...f, value: val }
                 }
+                // POINTS Logic
                 if (f.key === 'points' && state.points !== undefined) {
                     return { ...f, value: String(state.points) }
+                }
+                // TIER Logic
+                if (f.key === 'tier' && state.tier !== undefined) {
+                    return { ...f, value: state.tier.toUpperCase() }
                 }
                 return f
             })
         }
-
-        const updatedPrimaryFields = updateFieldsWithState(draft.fields.primaryFields || [], currentState)
 
         // Create pass
         const pkPass = new PKPass(
@@ -105,34 +140,75 @@ export async function GET(
                 backgroundColor: draft.colors.backgroundColor,
                 foregroundColor: draft.colors.foregroundColor,
                 labelColor: draft.colors.labelColor,
+                logoText: draft.content.logoText || draft.content.organizationName
             } as any
         )
 
         pkPass.type = draft.meta.style || 'storeCard'
 
         // Add fields
-        formatFields(draft.fields.headerFields).forEach(field => pkPass.headerFields.push(field))
-        formatFields(updatedPrimaryFields).forEach(field => pkPass.primaryFields.push(field))
-        formatFields(draft.fields.secondaryFields).forEach(field => pkPass.secondaryFields.push(field))
-        formatFields(draft.fields.auxiliaryFields).forEach(field => pkPass.auxiliaryFields.push(field))
-        formatFields(draft.fields.backFields).forEach(field => pkPass.backFields.push(field))
+        formatFields(updateFieldsWithState(draft.fields.headerFields, currentState)).forEach(f => pkPass.headerFields.push(f))
+        formatFields(updateFieldsWithState(draft.fields.primaryFields, currentState, true)).forEach(f => pkPass.primaryFields.push(f))
+        formatFields(updateFieldsWithState(draft.fields.secondaryFields, currentState)).forEach(f => pkPass.secondaryFields.push(f))
+        formatFields(updateFieldsWithState(draft.fields.auxiliaryFields, currentState)).forEach(f => pkPass.auxiliaryFields.push(f))
+        formatFields(updateFieldsWithState(draft.fields.backFields, currentState)).forEach(f => pkPass.backFields.push(f))
 
-        // Barcode with pass ID
+        // Barcode
         pkPass.setBarcodes({
             format: draft.barcode.format || 'PKBarcodeFormatQR',
             message: pass.id,
             messageEncoding: 'iso-8859-1',
         })
 
-        // Add fallback icon
-        const fallbackIcon = Buffer.from(
-            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=',
-            'base64'
-        )
-        pkPass.addBuffer('icon.png', fallbackIcon)
-        pkPass.addBuffer('icon@2x.png', fallbackIcon)
-        pkPass.addBuffer('logo.png', fallbackIcon)
-        pkPass.addBuffer('logo@2x.png', fallbackIcon)
+        // RESTORE IMAGES
+        // The images are stored as Data URLs in the JSON (base64)
+        if (draft.images) {
+            Object.entries(draft.images).forEach(([key, value]: [string, any]) => {
+                // If it's a string (old format or direct data URL)
+                if (typeof value === 'string' && value.startsWith('data:image')) {
+                    const base64Data = value.split(',')[1]
+                    if (base64Data) {
+                        const buffer = Buffer.from(base64Data, 'base64')
+                        pkPass.addBuffer(`${key}.png`, buffer)
+                        pkPass.addBuffer(`${key}@2x.png`, buffer)
+                    }
+                }
+                // If it's an object with url property (new format)
+                else if (typeof value === 'object' && value?.url && value.url.startsWith('data:image')) {
+                    const base64Data = value.url.split(',')[1]
+                    if (base64Data) {
+                        const buffer = Buffer.from(base64Data, 'base64')
+                        pkPass.addBuffer(`${key}.png`, buffer)
+                        pkPass.addBuffer(`${key}@2x.png`, buffer)
+                    }
+                }
+            })
+        }
+
+        // Fallback for Icon if missing
+        if (!draft.images?.icon) {
+            const fallbackIcon = Buffer.from(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=',
+                'base64'
+            )
+            pkPass.addBuffer('icon.png', fallbackIcon)
+            pkPass.addBuffer('icon@2x.png', fallbackIcon)
+        }
+
+        // RESTORE GEOLOCATION
+        const config = pass.campaign.config || {}
+        if (config.locations && Array.isArray(config.locations) && config.locations.length > 0) {
+            // @ts-ignore
+            pkPass.setLocations(...config.locations.map((l: any) => ({
+                latitude: l.lat,
+                longitude: l.lng,
+                relevantText: l.message || 'Du bist in der Nähe! 🎉'
+            })))
+        } else if (config.address) {
+            // We can't geocode here again easily (async), 
+            // ideally lat/lng should be stored in config.
+            // For now we skip re-geocoding to keep it fast.
+        }
 
         const passBuffer = pkPass.getAsBuffer()
 
