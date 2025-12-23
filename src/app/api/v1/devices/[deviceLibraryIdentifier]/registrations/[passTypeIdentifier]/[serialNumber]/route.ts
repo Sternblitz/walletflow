@@ -16,9 +16,12 @@ export async function POST(
 ) {
     const { deviceLibraryIdentifier, passTypeIdentifier, serialNumber } = await params
 
+    console.log(`[REGISTER] Incoming registration request for device ${deviceLibraryIdentifier}, pass ${serialNumber}`)
+
     // Get auth token from header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader || !authHeader.startsWith('ApplePass ')) {
+        console.log(`[REGISTER] Missing or invalid auth header`)
         return new NextResponse(null, { status: 401 })
     }
     const authToken = authHeader.replace('ApplePass ', '')
@@ -28,8 +31,10 @@ export async function POST(
     try {
         const body = await req.json()
         pushToken = body.pushToken || ''
+        console.log(`[REGISTER] Push token received: ${pushToken ? 'Yes' : 'No'}`)
     } catch {
         // Body might be empty
+        console.log(`[REGISTER] No body/push token`)
     }
 
     const supabase = await createClient()
@@ -69,7 +74,7 @@ export async function POST(
         // Return 200 anyway - device is already registered
     }
 
-    console.log(`[REGISTER] Device ${deviceLibraryIdentifier} registered for pass ${serialNumber}`)
+    console.log(`[REGISTER] ✅ Device ${deviceLibraryIdentifier} registered for pass ${serialNumber} with push token: ${pushToken ? 'Yes' : 'No'}`)
 
     // 201 = newly registered, 200 = already registered
     return new NextResponse(null, { status: 201 })
