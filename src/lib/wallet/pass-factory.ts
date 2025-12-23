@@ -124,12 +124,29 @@ export class PassFactory {
                     processed.value = (activeIcon + ' ').repeat(current) + (emptyIcon + ' ').repeat(Math.max(0, max - current)).trim()
                 }
 
-                return {
+                // Build field object with optional changeMessage for visible notifications
+                const fieldResult: any = {
                     key: processed.key,
                     label: processed.label,
                     value: processed.value,
                     ...(processed.textAlignment && { textAlignment: processed.textAlignment })
                 }
+
+                // Add changeMessage for stamp-related fields to trigger visible iOS notifications
+                if (processed.key === 'stamps' || processed.key === 'balance') {
+                    fieldResult.changeMessage = '🎉 Neuer Stempel! Jetzt %@'
+                }
+                if (processed.key === 'progress_visual' || processed.key === 'progress') {
+                    fieldResult.changeMessage = 'Dein Fortschritt wurde aktualisiert!'
+                }
+                if (processed.key === 'reward') {
+                    fieldResult.changeMessage = '%@'
+                }
+                if (processed.key === 'points') {
+                    fieldResult.changeMessage = 'Du hast jetzt %@ Punkte!'
+                }
+
+                return fieldResult
             })
         }
 
