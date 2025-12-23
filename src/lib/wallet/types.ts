@@ -123,6 +123,13 @@ export interface WalletPassDraft {
         authenticationToken?: string
         webServiceURL?: string
     }
+    // NEW: Stamp configuration for stamp cards
+    stampConfig?: {
+        icon: string        // Active stamp emoji (e.g., "🍕")
+        inactiveIcon: string // Inactive stamp emoji (e.g., "⚪")
+        total: number       // Total stamps needed
+        current: number     // Current stamps collected
+    }
 }
 
 // ============================================

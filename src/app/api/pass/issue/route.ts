@@ -75,20 +75,21 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
             initialState = { created: new Date().toISOString() }
         }
 
-        // PERSISTENCE: Save specific design elements to state to prevent them changing on updates
-        // PERSISTENCE: Save specific design elements to state to prevent them changing on updates
-        // 1. Stamp Icon - ROBUST EXTRACTION
+        // PERSISTENCE: Save stamp icon to state to prevent changes on updates
+        // 1. Stamp Icon - ROBUST EXTRACTION from WalletPassDraft
         const designAssets = campaign.design_assets || {}
 
         // Check multiple possible locations for the icon
         // Priority: 
-        // 1. Direct property on designAssets (from create action fix)
-        // 2. Inside designConfig object (nested)
-        // 3. Campaign config (root level)
+        // 1. stampConfig.icon (NEW - from updated FieldsEditor)
+        // 2. Direct property on designAssets 
+        // 3. Legacy nested paths
         // 4. Default "☕️"
 
+        // @ts-ignore - design_assets can have various shapes
+        let savedStampIcon = designAssets.stampConfig?.icon
         // @ts-ignore
-        let savedStampIcon = designAssets.stampIcon
+        if (!savedStampIcon) savedStampIcon = designAssets.stampIcon
         // @ts-ignore
         if (!savedStampIcon) savedStampIcon = designAssets.designConfig?.stampIcon
         // @ts-ignore

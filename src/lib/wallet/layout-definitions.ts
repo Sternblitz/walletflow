@@ -353,7 +353,7 @@ export function createDraftFromTemplate(templateId: string): WalletPassDraft | n
     const template = getTemplateById(templateId)
     if (!template) return null
 
-    return {
+    const draft: WalletPassDraft = {
         meta: { style: template.style, templateId },
         colors: template.defaultDraft.colors || {
             backgroundColor: '#1A1A1A',
@@ -377,5 +377,17 @@ export function createDraftFromTemplate(templateId: string): WalletPassDraft | n
             description: '',
             organizationName: ''
         }
-    } as WalletPassDraft
+    }
+
+    // Add default stampConfig for stamp-capable styles
+    if (template.style === 'storeCard' || template.style === 'eventTicket') {
+        draft.stampConfig = {
+            icon: '🟢',
+            inactiveIcon: '⚪',
+            total: 10,
+            current: 1
+        }
+    }
+
+    return draft
 }

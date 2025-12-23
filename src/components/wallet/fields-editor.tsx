@@ -116,7 +116,7 @@ export function FieldsEditor({ draft, onChange }: FieldsEditorProps) {
         <div className="field-group bg-emerald-900/10 border-emerald-900/30">
           <div className="field-group-header">
             <h3>Stempel-Logik (Automatik)</h3>
-            <p className="text-emerald-500 text-xs">Aktualisiert Text & Emojis gleichzeitig</p>
+            <p className="text-emerald-500 text-xs">Wähle dein Emoji - wird automatisch gespeichert</p>
           </div>
 
           <div className="grid grid-cols-2 gap-2 mb-4">
@@ -124,12 +124,20 @@ export function FieldsEditor({ draft, onChange }: FieldsEditorProps) {
               <label className="text-xs text-gray-500 mb-1 block">Aktuell</label>
               <input
                 type="number"
-                placeholder="3"
+                placeholder="1"
                 className="full-width-input"
-                defaultValue={3}
-                id="stamp-current"
+                value={draft.stampConfig?.current ?? 1}
                 onChange={(e) => {
-                  // Auto-update button text or preview could happen here, keeping it simple for now
+                  const current = Math.max(0, parseInt(e.target.value) || 0)
+                  onChange({
+                    ...draft,
+                    stampConfig: {
+                      icon: draft.stampConfig?.icon || '🟢',
+                      inactiveIcon: draft.stampConfig?.inactiveIcon || '⚪',
+                      total: draft.stampConfig?.total || 10,
+                      current: Math.min(current, draft.stampConfig?.total || 10)
+                    }
+                  })
                 }}
               />
             </div>
@@ -139,8 +147,19 @@ export function FieldsEditor({ draft, onChange }: FieldsEditorProps) {
                 type="number"
                 placeholder="10"
                 className="full-width-input"
-                defaultValue={10}
-                id="stamp-count"
+                value={draft.stampConfig?.total ?? 10}
+                onChange={(e) => {
+                  const total = Math.max(1, parseInt(e.target.value) || 10)
+                  onChange({
+                    ...draft,
+                    stampConfig: {
+                      icon: draft.stampConfig?.icon || '🟢',
+                      inactiveIcon: draft.stampConfig?.inactiveIcon || '⚪',
+                      total: total,
+                      current: Math.min(draft.stampConfig?.current || 1, total)
+                    }
+                  })
+                }}
               />
             </div>
           </div>
@@ -151,9 +170,19 @@ export function FieldsEditor({ draft, onChange }: FieldsEditorProps) {
               <input
                 type="text"
                 placeholder="🟢"
-                className="full-width-input"
-                defaultValue="🟢"
-                id="stamp-active"
+                className="full-width-input text-2xl text-center"
+                value={draft.stampConfig?.icon || '🟢'}
+                onChange={(e) => {
+                  onChange({
+                    ...draft,
+                    stampConfig: {
+                      icon: e.target.value || '🟢',
+                      inactiveIcon: draft.stampConfig?.inactiveIcon || '⚪',
+                      total: draft.stampConfig?.total || 10,
+                      current: draft.stampConfig?.current || 1
+                    }
+                  })
+                }}
               />
             </div>
             <div>
@@ -161,9 +190,19 @@ export function FieldsEditor({ draft, onChange }: FieldsEditorProps) {
               <input
                 type="text"
                 placeholder="⚪"
-                className="full-width-input"
-                defaultValue="⚪"
-                id="stamp-inactive"
+                className="full-width-input text-2xl text-center"
+                value={draft.stampConfig?.inactiveIcon || '⚪'}
+                onChange={(e) => {
+                  onChange({
+                    ...draft,
+                    stampConfig: {
+                      icon: draft.stampConfig?.icon || '🟢',
+                      inactiveIcon: e.target.value || '⚪',
+                      total: draft.stampConfig?.total || 10,
+                      current: draft.stampConfig?.current || 1
+                    }
+                  })
+                }}
               />
             </div>
           </div>
@@ -171,73 +210,56 @@ export function FieldsEditor({ draft, onChange }: FieldsEditorProps) {
           <button
             className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors mb-2"
             onClick={() => {
-              const current = Number((document.getElementById('stamp-current') as HTMLInputElement).value) || 0
-              const count = Number((document.getElementById('stamp-count') as HTMLInputElement).value) || 10
-              const active = (document.getElementById('stamp-active') as HTMLInputElement).value || '🟢'
-              const inactive = (document.getElementById('stamp-inactive') as HTMLInputElement).value || '⚪'
+              const icon = draft.stampConfig?.icon || '🟢'
+              const inactive = draft.stampConfig?.inactiveIcon || '⚪'
+              const current = draft.stampConfig?.current ?? 1
+              const total = draft.stampConfig?.total ?? 10
 
-              // 1. Generate Visual Emoji String
-              // Add spaces between emojis for better legibility (Safe for Unicode)
-              const safeCurrent = Math.min(Math.max(0, current), count)
-              const activeStr = active.repeat(safeCurrent)
-              const inactiveStr = inactive.repeat(count - safeCurrent)
-
-              // Use Array.from to correctly split emojis (surrogate pairs)
+              // Generate Visual Emoji String
+              const safeCurrent = Math.min(Math.max(0, current), total)
+              const activeStr = icon.repeat(safeCurrent)
+              const inactiveStr = inactive.repeat(total - safeCurrent)
               const visual = Array.from(activeStr).join(' ') + ' ' + Array.from(inactiveStr).join(' ')
 
-              // 2. Generate Text String based on style
-              let textValue = `${safeCurrent} von ${count}`
+              // Generate Text String
+              let textValue = `${safeCurrent} von ${total}`
               if (draft.meta.style === 'eventTicket') {
-                textValue = `${safeCurrent} / ${count}`
+                textValue = `${safeCurrent} / ${total}`
               }
 
-              // 3. Update Fields (Smart Layout Adjustment)
+              // Update Fields
               const newFields = { ...draft.fields }
 
-              // A) Validate Limit for Secondary Fields (we move 'powered' there)
-              // storeCard limit is 4. 'reward' + 'powered' = 2. Safe.
-
-              // B) Update Primary (Text)
+              // Update Primary (Text)
               const primaryIdx = newFields.primaryFields.findIndex(f => f.key === 'stamps')
               if (primaryIdx >= 0) {
                 newFields.primaryFields[primaryIdx] = { ...newFields.primaryFields[primaryIdx], value: textValue }
-              } else {
-                if (newFields.primaryFields.length < 1) {
-                  newFields.primaryFields.push({ key: 'stamps', label: 'DEINE STEMPEL', value: textValue })
-                }
+              } else if (newFields.primaryFields.length < 1) {
+                newFields.primaryFields.push({ key: 'stamps', label: 'DEINE STEMPEL', value: textValue })
               }
 
-              // C) Move 'Powered By' to Secondary Fields (Row 2, next to Reward)
-              // This frees up Auxiliary Fields (Row 3) for the Progress Bar
+              // Move 'Powered By' to Secondary if in Auxiliary
               const poweredInAuxIdx = newFields.auxiliaryFields.findIndex(f => f.key === 'powered')
               if (poweredInAuxIdx >= 0) {
-                // Found in Aux, move to Secondary
                 const field = newFields.auxiliaryFields[poweredInAuxIdx]
                 newFields.auxiliaryFields.splice(poweredInAuxIdx, 1)
-
-                // Check if already in secondary
-                const existingSec = newFields.secondaryFields.find(f => f.key === 'powered')
-                if (!existingSec) {
+                if (!newFields.secondaryFields.find(f => f.key === 'powered')) {
                   newFields.secondaryFields.push(field)
                 }
               }
 
-              // D) Update Visual Field (Auxiliary -> Row 3)
-              // Ensure it's in auxiliaryFields
+              // Update Visual Field in Auxiliary
               let auxFields = [...newFields.auxiliaryFields]
               const visualIdx = auxFields.findIndex(f => f.key === 'progress_visual')
-
               if (visualIdx >= 0) {
                 auxFields[visualIdx] = { ...auxFields[visualIdx], value: visual.trim(), label: 'DEIN FORTSCHRITT' }
-              } else {
-                if (auxFields.length < 4) {
-                  auxFields.push({
-                    key: 'progress_visual',
-                    label: 'DEIN FORTSCHRITT',
-                    value: visual.trim(),
-                    textAlignment: 'PKTextAlignmentCenter'
-                  })
-                }
+              } else if (auxFields.length < 4) {
+                auxFields.push({
+                  key: 'progress_visual',
+                  label: 'DEIN FORTSCHRITT',
+                  value: visual.trim(),
+                  textAlignment: 'PKTextAlignmentCenter'
+                })
               }
               newFields.auxiliaryFields = auxFields
 
@@ -247,9 +269,12 @@ export function FieldsEditor({ draft, onChange }: FieldsEditorProps) {
               })
             }}
           >
-            Aktualisieren (Text & Emojis)
+            Vorschau aktualisieren
           </button>
 
+          <p className="text-xs text-gray-500 text-center">
+            Emoji wird automatisch gespeichert: <span className="text-emerald-400 text-lg">{draft.stampConfig?.icon || '🟢'}</span>
+          </p>
         </div>
       )}
 

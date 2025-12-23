@@ -88,27 +88,28 @@ export class PassFactory {
                     const current = state.stamps || 0
                     const max = state.max_stamps || 10
 
-                    // ICON STRATEGY:
-                    // 1. Persisted Icon in State (Highest Priority - set at creation)
-                    // 2. Extract from existing value (Legacy Editor / Fields Editor)
-                    // 3. Default Fallback
+                    // ICON STRATEGY (Priority Order):
+                    // 1. draft.stampConfig.icon (NEW - from updated FieldsEditor)
+                    // 2. Persisted Icon in State (set at creation)
+                    // 3. Extract from existing value (Legacy)
+                    // 4. Default Fallback
 
-                    let icon = state.stamp_icon;
+                    let icon = draft.stampConfig?.icon
+
+                    if (!icon) icon = state.stamp_icon
 
                     if (!icon) {
                         // Attempt extraction from current field string (e.g. "🟢 🟢 ⚪")
                         const val = String(f.value || '')
                         const match = val.match(/(?!⚪)[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu)
-                        // Ignore the empty circle ⚪ if it's the only one found (unless we want to use it as active?)
-                        // Usually we want the 'active' stamp.
                         if (match && match.length > 0) {
                             icon = match[0]
                         }
                     }
 
-                    // Fallback
+                    // Fallback - use inactiveIcon from config or default
                     const activeIcon = icon || '☕️'
-                    const emptyIcon = '⚪'
+                    const emptyIcon = draft.stampConfig?.inactiveIcon || '⚪'
 
                     processed.value = (activeIcon + ' ').repeat(current) + (emptyIcon + ' ').repeat(Math.max(0, max - current)).trim()
                 }
