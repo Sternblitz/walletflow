@@ -127,11 +127,25 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
         // Update fields with actual user data if this is a new pass
         const updateFieldsWithUserData = (fields: PassField[], state: Record<string, any>) => {
             return fields.map(f => {
-                // Update stamp card display
+                // Update stamp card display (number format)
                 if (f.key === 'stamps' && state.stamps !== undefined) {
                     const current = state.stamps || 0
                     const max = state.max_stamps || 10
                     return { ...f, value: `${current} von ${max}` }
+                }
+                // Update progress_visual with emojis
+                if ((f.key === 'progress_visual' || f.key === 'progress' || f.key === 'visual') && state.stamps !== undefined) {
+                    const current = state.stamps || 0
+                    const max = state.max_stamps || 10
+                    const originalVal = String(f.value || '')
+
+                    // Extract emoji from original value if any (not the empty circle)
+                    const emojiMatch = originalVal.match(/(?!⚪)[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu)
+                    const icon = emojiMatch ? emojiMatch[0] : '☕️'
+                    const emptyIcon = '⚪'
+
+                    const val = (icon + ' ').repeat(current) + (emptyIcon + ' ').repeat(Math.max(0, max - current))
+                    return { ...f, value: val.trim() }
                 }
                 // Update points display
                 if (f.key === 'points' && state.points !== undefined) {
@@ -150,6 +164,9 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
         // Apply user data to fields
         const updatedPrimaryFields = updateFieldsWithUserData(draft.fields.primaryFields, initialState)
         const updatedHeaderFields = updateFieldsWithUserData(draft.fields.headerFields, initialState)
+        const updatedSecondaryFields = updateFieldsWithUserData(draft.fields.secondaryFields, initialState)
+        const updatedAuxiliaryFields = updateFieldsWithUserData(draft.fields.auxiliaryFields, initialState)
+        const updatedBackFields = updateFieldsWithUserData(draft.fields.backFields, initialState)
 
         // The pass style key (storeCard, coupon, generic, eventTicket)
         const passStyle = draft.meta.style || 'storeCard'
@@ -199,13 +216,13 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
         formatFields(updatedPrimaryFields).forEach(field => {
             pkPass.primaryFields.push(field)
         })
-        formatFields(draft.fields.secondaryFields).forEach(field => {
+        formatFields(updatedSecondaryFields).forEach(field => {
             pkPass.secondaryFields.push(field)
         })
-        formatFields(draft.fields.auxiliaryFields).forEach(field => {
+        formatFields(updatedAuxiliaryFields).forEach(field => {
             pkPass.auxiliaryFields.push(field)
         })
-        formatFields(draft.fields.backFields).forEach(field => {
+        formatFields(updatedBackFields).forEach(field => {
             pkPass.backFields.push(field)
         })
 

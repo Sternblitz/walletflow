@@ -135,6 +135,15 @@ export async function GET(
                 if (f.key === 'tier' && state.tier !== undefined) {
                     return { ...f, value: state.tier.toUpperCase() }
                 }
+
+                // Dynamic CARD NUMBER Logic (preserve from issue)
+                if (f.key === 'card') {
+                    // Extract last 4 chars of serial for card number
+                    // serialNumber is available in scope
+                    const cardNum = serialNumber.slice(-4).toUpperCase()
+                    return { ...f, value: cardNum }
+                }
+
                 return f
             })
         }
