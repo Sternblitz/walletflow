@@ -44,14 +44,18 @@ export class PassFactory {
                     ? { logoText: draft.content.logoText || draft.content.organizationName }
                     : {}
                 ),
+                // Web Service URL for Updates
+                ...(baseUrl && baseUrl.startsWith('https') ? {
+                    webServiceURL: baseUrl + '/api',
+                    authenticationToken: authToken
+                } : {})
             } as any
         )
 
-        // Add Web Service URL if provided (for updates)
-        if (baseUrl && baseUrl.startsWith('https')) {
-            pkPass.setAuthToken(authToken)
-            pkPass.setWebServiceURL(baseUrl + '/api')
-        }
+        /* 
+        // Removed: setAuthToken/setWebServiceURL methods do not exist on PKPass
+        // Handled in constructor above
+        */
 
         pkPass.type = draft.meta.style || 'storeCard'
 
