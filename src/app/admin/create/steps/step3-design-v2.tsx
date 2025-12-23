@@ -165,7 +165,7 @@ export function Step3DesignV2({ data, update }: Step3DesignProps) {
         headerLabel: data.designConfig?.headerLabel || "BONUSKARTE",
         headerValue: data.designConfig?.headerValue || "#" + Math.floor(Math.random() * 9000 + 1000),
         primaryLabel: data.designConfig?.primaryLabel || "DEINE STEMPEL",
-        primaryValue: data.designConfig?.primaryValue || "1 / 10",
+        primaryValue: data.designConfig?.primaryValue || "1 / 10", // Force 1/10 textual representation
         secLabel1: data.designConfig?.secLabel1 || "NÄCHSTE PRÄMIE",
         secValue1: data.designConfig?.secValue1 || "Gratis Produkt",
         secLabel2: data.designConfig?.secLabel2 || "",
@@ -177,8 +177,8 @@ export function Step3DesignV2({ data, update }: Step3DesignProps) {
 
     // Stamp Config - Extended with layout options
     const [stampConfig, setStampConfig] = useState({
-        total: 10,
-        current: 1, // Start with 1 stamp by default per user request
+        total: data.designConfig?.stampTotal || 10,
+        current: data.designConfig?.stampCurrent || 1, // Force start with 1 stamp
         icon: config.stampIcon,
         // Layout - auto sizing for perfect fit
         layout: 'bottom-spread' as 'bottom-spread' | 'bottom-centered' | 'right',
