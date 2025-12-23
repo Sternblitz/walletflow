@@ -77,7 +77,11 @@ export async function GET(
             return fields.map((f, index) => {
                 // STAMPS Logic - also update first primary field as fallback
                 const isStampField = (f.key === 'stamps' || f.key === 'balance' || f.key === 'primary') || (isPrimary && index === 0 && state.stamps !== undefined)
-                if (isStampField && state.stamps !== undefined) {
+
+                // PROGRESS VISUAL Logic - this field contains the emoji representation
+                const isProgressVisual = f.key === 'progress_visual' || f.key === 'progress' || f.key === 'visual'
+
+                if ((isStampField || isProgressVisual) && state.stamps !== undefined) {
                     const current = state.stamps || 0
                     const max = state.max_stamps || 10
 
@@ -94,12 +98,14 @@ export async function GET(
                     console.log(`[STAMP DEBUG] Looking for stampIcon. designAssets keys: ${Object.keys(designAssets).join(', ')}`)
                     console.log(`[STAMP DEBUG] stampIcon found: ${stampIcon || 'none'}`)
 
-                    const hasEmojis = originalVal.includes('⚪') || !!stampIcon || originalVal.includes('✅') || originalVal.includes('❌') || originalVal.includes('⭐')
+                    // For progress_visual, always use emojis
+                    // For stamps field, check if original had emojis
+                    const useEmojis = isProgressVisual || originalVal.includes('⚪') || !!stampIcon || originalVal.includes('✅') || originalVal.includes('❌') || originalVal.includes('⭐')
 
                     let val: string;
-                    if (hasEmojis) {
-                        const icon = stampIcon || '✅'
-                        const emptyIcon = '⚪️'
+                    if (useEmojis) {
+                        const icon = stampIcon || '☕️'  // Default to coffee for stamp cards
+                        const emptyIcon = '⚪'
                         // Use repeat to generate string with spaces
                         val = (icon + ' ').repeat(current) + (emptyIcon + ' ').repeat(Math.max(0, max - current))
                         val = val.trim()
@@ -107,7 +113,7 @@ export async function GET(
                         val = `${current} von ${max}`
                     }
 
-                    console.log(`[PASS UPDATE] Updating ${f.key} (Primary: ${isPrimary}): ${originalVal} -> ${val}`)
+                    console.log(`[PASS UPDATE] Updating ${f.key} (isProgressVisual: ${isProgressVisual}): ${originalVal} -> ${val}`)
                     return { ...f, value: val }
                 }
                 // POINTS Logic
