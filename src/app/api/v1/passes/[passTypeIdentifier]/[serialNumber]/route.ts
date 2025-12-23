@@ -85,12 +85,15 @@ export async function GET(
                     // If the original value had emojis, preserve that style
                     const originalVal = String(f.value || '')
 
-                    // Get config for stamp icon from campaign
+                    // Get config for stamp icon from campaign - check multiple locations
                     const campaignConfig = pass.campaign?.config || {}
-                    // @ts-ignore - designConfig may exist in design_assets
-                    const designConfig = pass.campaign?.design_assets?.designConfig || {}
+                    const designAssets = pass.campaign?.design_assets || {}
+                    // @ts-ignore - stampIcon may exist directly or in designConfig
+                    const stampIcon = designAssets.stampIcon || designAssets.designConfig?.stampIcon || campaignConfig.stampIcon || (originalVal.match(/[\u{1F300}-\u{1F9FF}]/u)?.[0])
 
-                    const stampIcon = designConfig.stampIcon || campaignConfig.stampIcon || (originalVal.match(/[\u{1F300}-\u{1F9FF}]/u)?.[0])
+                    console.log(`[STAMP DEBUG] Looking for stampIcon. designAssets keys: ${Object.keys(designAssets).join(', ')}`)
+                    console.log(`[STAMP DEBUG] stampIcon found: ${stampIcon || 'none'}`)
+
                     const hasEmojis = originalVal.includes('⚪') || !!stampIcon || originalVal.includes('✅') || originalVal.includes('❌') || originalVal.includes('⭐')
 
                     let val: string;
