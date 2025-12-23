@@ -1,10 +1,20 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import Link from "next/link"
 import { Users, QrCode, Activity, ArrowUpRight, TrendingUp } from "lucide-react"
 
 export default async function ClientDashboardPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params
+
+    // Check Auth
+    const cookieStore = await cookies()
+    const authRole = cookieStore.get(`auth_${slug}`)?.value
+
+    if (authRole !== 'admin') {
+        redirect(`/login/${slug}`)
+    }
+
     const supabase = await createClient()
 
     // 1. Fetch Client & Campaign Info
@@ -146,7 +156,7 @@ export default async function ClientDashboardPage({ params }: { params: Promise<
                                         </div>
                                         <div className="text-xs text-zinc-500">
                                             {new Date(scan.created_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
-                                            • Pass ...{scan.passes?.serial_number.slice(-4)}
+                                            • Pass ...{Array.isArray(scan.passes) ? scan.passes[0]?.serial_number.slice(-4) : (scan.passes as any)?.serial_number?.slice(-4)}
                                         </div>
                                     </div>
                                 </div>
