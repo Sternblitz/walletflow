@@ -270,24 +270,34 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
 
         const buffers: Record<string, Buffer> = {}
 
+        console.log('[IMAGES] draft.images:', JSON.stringify(draft.images || {}, null, 2))
+
         for (const [key, image] of Object.entries(draft.images || {})) {
+            console.log(`[IMAGES] Processing ${key}:`, typeof image, image?.url?.substring(0, 50) || 'no url')
             if (!image?.url) continue
 
             if (image.url.startsWith('data:')) {
                 const base64Data = image.url.split(',')[1]
                 buffers[key] = Buffer.from(base64Data, 'base64')
+                console.log(`[IMAGES] ${key}: Loaded from base64, size: ${buffers[key].length}`)
             } else if (image.url.startsWith('http')) {
                 try {
+                    console.log(`[IMAGES] ${key}: Fetching from URL: ${image.url}`)
                     const response = await fetch(image.url)
                     if (response.ok) {
                         const arrayBuffer = await response.arrayBuffer()
                         buffers[key] = Buffer.from(arrayBuffer)
+                        console.log(`[IMAGES] ${key}: Loaded from URL, size: ${buffers[key].length}`)
+                    } else {
+                        console.error(`[IMAGES] ${key}: Fetch failed with status ${response.status}`)
                     }
                 } catch (err) {
-                    console.error(`Error fetching image ${key}:`, err)
+                    console.error(`[IMAGES] Error fetching image ${key}:`, err)
                 }
             }
         }
+
+        console.log('[IMAGES] Buffers ready:', Object.keys(buffers))
 
         // Always add icon
         if (!buffers['icon']) {
