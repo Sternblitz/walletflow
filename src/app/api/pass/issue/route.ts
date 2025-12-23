@@ -63,8 +63,9 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
         const authToken = uuidv4()
         const userAliasId = uuidv4() // Anonymous user ID
 
-        // Generate unique customer number (format: XXXX based on timestamp + random)
-        const customerNumber = `${(Date.now() % 10000).toString().padStart(4, '0')}`
+        // Generate unique customer number (6-char alphanumeric, guaranteed unique)
+        // Format: ABC123 - easy to read/communicate, unique per pass
+        const customerNumber = Math.random().toString(36).substring(2, 8).toUpperCase()
 
         // Determine initial state based on concept
         let initialState: Record<string, any> = {}
