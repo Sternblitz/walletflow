@@ -113,9 +113,15 @@ export async function POST(req: NextRequest) {
             // Don't fail the request, just log
         }
 
-        // 5. TODO: Trigger Apple Push Notification to update the pass
-        // This requires APNs certificate and will be implemented in Phase 2.3
-        // await sendPassUpdateNotification(pass.serial_number, pass.auth_token)
+        // 5. Send APNs push to update the customer's wallet pass
+        try {
+            const { sendPassUpdatePush } = await import('@/lib/wallet/apns')
+            const pushResult = await sendPassUpdatePush(passId)
+            console.log(`[PUSH RESULT] Sent: ${pushResult.sent}, Errors: ${pushResult.errors.join(', ') || 'none'}`)
+        } catch (pushError) {
+            console.error('[PUSH ERROR]', pushError)
+            // Don't fail the scan if push fails
+        }
 
         console.log(`[SCAN] Pass ${passId}: ${actionType} (${deltaValue})`)
 
