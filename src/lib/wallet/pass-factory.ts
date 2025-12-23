@@ -90,11 +90,27 @@ export class PassFactory {
 
                     // ICON STRATEGY:
                     // 1. Persisted Icon in State (Highest Priority - set at creation)
-                    // 2. Default Fallback
-                    const icon = state.stamp_icon || '☕️'
+                    // 2. Extract from existing value (Legacy Editor / Fields Editor)
+                    // 3. Default Fallback
+
+                    let icon = state.stamp_icon;
+
+                    if (!icon) {
+                        // Attempt extraction from current field string (e.g. "🟢 🟢 ⚪")
+                        const val = String(f.value || '')
+                        const match = val.match(/(?!⚪)[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu)
+                        // Ignore the empty circle ⚪ if it's the only one found (unless we want to use it as active?)
+                        // Usually we want the 'active' stamp.
+                        if (match && match.length > 0) {
+                            icon = match[0]
+                        }
+                    }
+
+                    // Fallback
+                    const activeIcon = icon || '☕️'
                     const emptyIcon = '⚪'
 
-                    processed.value = (icon + ' ').repeat(current) + (emptyIcon + ' ').repeat(Math.max(0, max - current)).trim()
+                    processed.value = (activeIcon + ' ').repeat(current) + (emptyIcon + ' ').repeat(Math.max(0, max - current)).trim()
                 }
 
                 return {
