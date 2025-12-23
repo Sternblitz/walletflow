@@ -89,6 +89,15 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
             initialState = { created: new Date().toISOString() }
         }
 
+        // PERSISTENCE: Save specific design elements to state to prevent them changing on updates
+        // 1. Stamp Icon
+        const designAssets = campaign.design_assets || {}
+        // @ts-ignore
+        const savedStampIcon = designAssets.stampIcon || designAssets.designConfig?.stampIcon || campaign.config?.stampIcon || "☕️"
+        initialState.stamp_icon = savedStampIcon
+
+        console.log(`[PASS CREATED] Persisting stamp icon: ${savedStampIcon}`)
+
         // Insert into passes table
         const { data: passRecord, error: passError } = await supabase
             .from('passes')
@@ -137,11 +146,10 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
                 if ((f.key === 'progress_visual' || f.key === 'progress' || f.key === 'visual') && state.stamps !== undefined) {
                     const current = state.stamps || 0
                     const max = state.max_stamps || 10
-                    const originalVal = String(f.value || '')
 
-                    // Extract emoji from original value if any (not the empty circle)
-                    const emojiMatch = originalVal.match(/(?!⚪)[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu)
-                    const icon = emojiMatch ? emojiMatch[0] : '☕️'
+                    // Use persisted icon from state, or fallback to extraction/default
+                    // @ts-ignore
+                    const icon = state.stamp_icon || '☕️'
                     const emptyIcon = '⚪'
 
                     const val = (icon + ' ').repeat(current) + (emptyIcon + ' ').repeat(Math.max(0, max - current))

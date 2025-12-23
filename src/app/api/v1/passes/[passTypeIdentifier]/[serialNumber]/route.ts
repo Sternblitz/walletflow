@@ -100,18 +100,26 @@ export async function GET(
                     // If the original value had emojis, preserve that style
                     const originalVal = String(f.value || '')
 
-                    // Extract the stamp emoji from the original value
-                    // Passes start with 1 stamp, so the emoji is already there from the editor
+                    // 1. Try to find explicitly configured stampIcon
+                    // @ts-ignore
+                    const configuredIcon = state.stamp_icon || designAssets.stampIcon || designAssets.designConfig?.stampIcon || campaignConfig.stampIcon
+
+                    // 2. Try to extract from original value (if pass started with emojis)
                     // Match any emoji that's NOT the empty circle (⚪)
                     const emojiMatch = originalVal.match(/(?!⚪)[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu)
-                    const stampIcon = emojiMatch ? emojiMatch[0] : null
+                    const extractedIcon = emojiMatch ? emojiMatch[0] : null
+
+                    // Prioritize configured icon, then extracted, then default
+                    const stampIcon = configuredIcon || extractedIcon
 
                     console.log(`[STAMP DEBUG] originalVal: ${originalVal}`)
-                    console.log(`[STAMP DEBUG] Extracted stampIcon: ${stampIcon || 'none (using default ☕️)'}`)
+                    console.log(`[STAMP DEBUG] Configured icon: ${configuredIcon}`)
+                    console.log(`[STAMP DEBUG] Extracted icon: ${extractedIcon}`)
+                    console.log(`[STAMP DEBUG] Final stampIcon: ${stampIcon || 'none (using default ☕️)'}`)
 
                     // For progress_visual, always use emojis
                     // For stamps field, check if original had emojis
-                    const useEmojis = isProgressVisual || originalVal.includes('⚪') || !!stampIcon
+                    const useEmojis = isProgressVisual || originalVal.includes('⚪') || !!stampIcon || originalVal.includes('✅')
 
                     let val: string;
                     if (useEmojis) {
