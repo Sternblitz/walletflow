@@ -5,28 +5,70 @@ import * as path from 'path'
 import { randomUUID } from 'crypto'
 
 export interface AppleCertConfig {
-    wwdr: string            // Pfad zur WWDR-PEM-Datei
-    signerCert: string      // Pfad zum Zertifikat (PEM)
-    signerKey: string       // Pfad zum Private Key (PEM)
+    wwdr: string            // Path or Buffer content
+    signerCert: string      // Path or Buffer content
+    signerKey: string       // Path or Buffer content
     signerKeyPassphrase: string
     passTypeIdentifier: string
     teamIdentifier?: string
+    // For base64 mode, we store the actual buffers
+    wwdrBuffer?: Buffer
+    signerCertBuffer?: Buffer
+    signerKeyBuffer?: Buffer
 }
 
 /**
- * Loads and validates Apple Wallet certificates from environment variables
+ * Loads and validates Apple Wallet certificates
+ * 
+ * Supports two modes:
+ * 1. FILE MODE (local dev): Uses file paths from env vars
+ * 2. BASE64 MODE (production): Uses base64-encoded certs from env vars
+ * 
+ * For production (Vercel), set these env vars:
+ * - APPLE_WWDR_CERT_BASE64: base64 encoded WWDR.pem content
+ * - APPLE_SIGNER_CERT_BASE64: base64 encoded signerCert.pem content  
+ * - APPLE_SIGNER_KEY_BASE64: base64 encoded signerKey.pem content
  */
 export function loadAppleCerts(): AppleCertConfig {
+    const passTypeId = process.env.APPLE_PASS_TYPE_ID
+    const signerKeyPassphrase = process.env.APPLE_SIGNER_KEY_PASSPHRASE
+    const teamId = process.env.APPLE_TEAM_ID
+
+    if (!passTypeId || !signerKeyPassphrase) {
+        throw new Error(
+            'Missing Apple Wallet configuration. Please set: APPLE_PASS_TYPE_ID, APPLE_SIGNER_KEY_PASSPHRASE'
+        )
+    }
+
+    // Check for BASE64 mode (production/Vercel)
+    const wwdrBase64 = process.env.APPLE_WWDR_CERT_BASE64
+    const signerCertBase64 = process.env.APPLE_SIGNER_CERT_BASE64
+    const signerKeyBase64 = process.env.APPLE_SIGNER_KEY_BASE64
+
+    if (wwdrBase64 && signerCertBase64 && signerKeyBase64) {
+        console.log('[CERTS] Using BASE64 mode (production)')
+        return {
+            wwdr: '', // Not used in base64 mode
+            signerCert: '',
+            signerKey: '',
+            signerKeyPassphrase,
+            passTypeIdentifier: passTypeId,
+            teamIdentifier: teamId,
+            wwdrBuffer: Buffer.from(wwdrBase64, 'base64'),
+            signerCertBuffer: Buffer.from(signerCertBase64, 'base64'),
+            signerKeyBuffer: Buffer.from(signerKeyBase64, 'base64'),
+        }
+    }
+
+    // FILE MODE (local development)
+    console.log('[CERTS] Using FILE mode (local dev)')
     const wwdrPath = process.env.APPLE_WWDR_CERT_PATH
     const signerCertPath = process.env.APPLE_SIGNER_CERT_PATH
     const signerKeyPath = process.env.APPLE_SIGNER_KEY_PATH || signerCertPath
-    const signerKeyPassphrase = process.env.APPLE_SIGNER_KEY_PASSPHRASE
-    const passTypeId = process.env.APPLE_PASS_TYPE_ID
-    const teamId = process.env.APPLE_TEAM_ID
 
-    if (!wwdrPath || !signerCertPath || !signerKeyPath || !signerKeyPassphrase || !passTypeId) {
+    if (!wwdrPath || !signerCertPath) {
         throw new Error(
-            'Missing Apple Wallet configuration. Please set: APPLE_WWDR_CERT_PATH, APPLE_SIGNER_CERT_PATH, APPLE_SIGNER_KEY_PATH, APPLE_SIGNER_KEY_PASSPHRASE, APPLE_PASS_TYPE_ID'
+            'Missing Apple Wallet certs. Set either BASE64 vars (production) or PATH vars (local dev)'
         )
     }
 
@@ -40,7 +82,7 @@ export function loadAppleCerts(): AppleCertConfig {
 
     const resolvedWwdr = resolvePath(wwdrPath)
     const resolvedSignerCert = resolvePath(signerCertPath)
-    const resolvedSignerKey = resolvePath(signerKeyPath)
+    const resolvedSignerKey = resolvePath(signerKeyPath!)
 
     // Validate files exist
     if (!fs.existsSync(resolvedWwdr)) {
@@ -55,8 +97,6 @@ export function loadAppleCerts(): AppleCertConfig {
         throw new Error(`Signer private key not found at: ${resolvedSignerKey}`)
     }
 
-    // For .p12 files, both cert and key are in the same file
-    // passkit-generator expects the same path for both
     return {
         wwdr: resolvedWwdr,
         signerCert: resolvedSignerCert,

@@ -154,13 +154,13 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
         // The pass style key (storeCard, coupon, generic, eventTicket)
         const passStyle = draft.meta.style || 'storeCard'
 
-        // Create pass
+        // Create pass - use buffers if available (production), otherwise read files (local)
         const pkPass = new PKPass(
             {},
             {
-                wwdr: fs.readFileSync(certs.wwdr),
-                signerCert: fs.readFileSync(certs.signerCert),
-                signerKey: fs.readFileSync(certs.signerKey),
+                wwdr: certs.wwdrBuffer || fs.readFileSync(certs.wwdr),
+                signerCert: certs.signerCertBuffer || fs.readFileSync(certs.signerCert),
+                signerKey: certs.signerKeyBuffer || fs.readFileSync(certs.signerKey),
                 signerKeyPassphrase: certs.signerKeyPassphrase,
             },
             {
