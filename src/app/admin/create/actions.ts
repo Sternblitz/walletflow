@@ -93,6 +93,13 @@ export async function createCampaignAction(data: any) {
             locations: data.locations || [] // Multiple locations support
         }))
 
+        // EXPLICITLY PRESERVE STAMP ICON
+        // This is critical effectively because if it's missing it defaults to coffee tea
+        if (designConfig.stampIcon) {
+            cleanDesignConfig.stampIcon = designConfig.stampIcon
+            console.log(`[CREATE CAMPAIGN] Preserving stamp icon: ${designConfig.stampIcon}`)
+        }
+
         // Upload data URL images to Storage before stripping
         if (cleanDesignConfig.images) {
             for (const key of Object.keys(cleanDesignConfig.images)) {

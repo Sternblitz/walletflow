@@ -76,10 +76,29 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
         }
 
         // PERSISTENCE: Save specific design elements to state to prevent them changing on updates
-        // 1. Stamp Icon
+        // PERSISTENCE: Save specific design elements to state to prevent them changing on updates
+        // 1. Stamp Icon - ROBUST EXTRACTION
         const designAssets = campaign.design_assets || {}
+
+        // Check multiple possible locations for the icon
+        // Priority: 
+        // 1. Direct property on designAssets (from create action fix)
+        // 2. Inside designConfig object (nested)
+        // 3. Campaign config (root level)
+        // 4. Default "☕️"
+
         // @ts-ignore
-        const savedStampIcon = designAssets.stampIcon || designAssets.designConfig?.stampIcon || campaign.config?.stampIcon || "☕️"
+        let savedStampIcon = designAssets.stampIcon
+        // @ts-ignore
+        if (!savedStampIcon) savedStampIcon = designAssets.designConfig?.stampIcon
+        // @ts-ignore
+        if (!savedStampIcon) savedStampIcon = campaign.config?.stampIcon
+
+        if (!savedStampIcon) {
+            console.log("[PASS CREATION] Warning: No stamp icon found in assets, using default.")
+            savedStampIcon = "☕️"
+        }
+
         initialState.stamp_icon = savedStampIcon
 
         console.log(`[PASS CREATED] Persisting stamp icon: ${savedStampIcon}`)
