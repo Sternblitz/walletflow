@@ -159,12 +159,13 @@ export function Step3DesignV2({ data, update }: Step3DesignProps) {
         labelColor: data.designConfig?.labelColor || "#71717A",
         foregroundColor: data.designConfig?.foregroundColor || "#FFFFFF",
         logoText: data.designConfig?.logoText || (data.clientName || "Store"),
+        hideLogoText: data.designConfig?.hideLogoText || false,
         iconUrl: data.designConfig?.iconUrl || "",
         stripImageUrl: data.designConfig?.stripImageUrl || "",
         headerLabel: data.designConfig?.headerLabel || "BONUSKARTE",
         headerValue: data.designConfig?.headerValue || "#" + Math.floor(Math.random() * 9000 + 1000),
         primaryLabel: data.designConfig?.primaryLabel || "DEINE STEMPEL",
-        primaryValue: data.designConfig?.primaryValue || "2 / 10",
+        primaryValue: data.designConfig?.primaryValue || "1 / 10",
         secLabel1: data.designConfig?.secLabel1 || "NÄCHSTE PRÄMIE",
         secValue1: data.designConfig?.secValue1 || "Gratis Produkt",
         secLabel2: data.designConfig?.secLabel2 || "",
@@ -177,7 +178,7 @@ export function Step3DesignV2({ data, update }: Step3DesignProps) {
     // Stamp Config - Extended with layout options
     const [stampConfig, setStampConfig] = useState({
         total: 10,
-        current: 2,
+        current: 1, // Start with 1 stamp by default per user request
         icon: config.stampIcon,
         // Layout - auto sizing for perfect fit
         layout: 'bottom-spread' as 'bottom-spread' | 'bottom-centered' | 'right',
@@ -253,7 +254,7 @@ export function Step3DesignV2({ data, update }: Step3DesignProps) {
         return `/api/preview/strip?${params.toString()}`
     }, [concept, stampConfig, config.stripImageUrl, config.backgroundColor, config.labelColor])
 
-    const handleChange = useCallback((key: string, value: string) => {
+    const handleChange = useCallback((key: string, value: any) => {
         setConfig(prev => ({ ...prev, [key]: value }))
     }, [])
 
@@ -895,11 +896,26 @@ export function Step3DesignV2({ data, update }: Step3DesignProps) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label className="text-[10px] text-white/40">🏪 Shop Name</Label>
+                            <div className="flex items-center justify-between">
+                                <Label className="text-[10px] text-white/40">🏪 Shop Name</Label>
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={config.hideLogoText}
+                                        onChange={(e) => handleChange('hideLogoText', e.target.checked as any)}
+                                        className="w-3 h-3 rounded border-white/20 bg-white/5 checked:bg-violet-500 transition-colors cursor-pointer"
+                                    />
+                                    <span className="text-[9px] text-white/40 group-hover:text-white/60 transition-colors">Nicht anzeigen</span>
+                                </label>
+                            </div>
                             <Input
                                 value={config.logoText}
                                 onChange={(e) => handleChange('logoText', e.target.value)}
-                                className="bg-white/5 border-white/10 h-10"
+                                disabled={config.hideLogoText}
+                                className={cn(
+                                    "bg-white/5 border-white/10 h-10 transition-opacity",
+                                    config.hideLogoText && "opacity-50"
+                                )}
                                 placeholder="Dein Shop"
                             />
                         </div>

@@ -169,7 +169,12 @@ export async function GET(
                 backgroundColor: draft.colors.backgroundColor,
                 foregroundColor: draft.colors.foregroundColor,
                 labelColor: draft.colors.labelColor,
-                logoText: draft.content.logoText || draft.content.organizationName
+                logoText: undefined, // Clear default to ensure spread works
+                // Logo text - respect hideLogoText preference
+                ...(!draft.content.hideLogoText && (draft.content.logoText || draft.content.organizationName)
+                    ? { logoText: draft.content.logoText || draft.content.organizationName }
+                    : {}
+                ),
             } as any
         )
 
