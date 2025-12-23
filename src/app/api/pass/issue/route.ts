@@ -80,7 +80,7 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
         // Determine initial state based on concept
         let initialState: Record<string, any> = {}
         if (campaign.concept === 'STAMP_CARD' || campaign.concept === 'STAMP_CARD_V2') {
-            initialState = { stamps: 0, max_stamps: 10 }
+            initialState = { stamps: 1, max_stamps: 10 }  // Start with 1 stamp
         } else if (campaign.concept === 'POINTS_CARD') {
             initialState = { points: 0, tier: 'bronze' }
         } else if (campaign.concept === 'MEMBER_CARD' || campaign.concept === 'VIP_CLUB') {

@@ -52,6 +52,17 @@ export async function GET(
         const draft = pass.campaign?.design_assets as WalletPassDraft
         const currentState = pass.current_state || {}
 
+        // Debug: Log what's in the draft
+        console.log('[PASS UPDATE] Draft loaded:', {
+            hasDraft: !!draft,
+            style: draft?.meta?.style,
+            logoText: draft?.content?.logoText,
+            headerFieldsCount: draft?.fields?.headerFields?.length || 0,
+            headerFields: draft?.fields?.headerFields?.map(f => ({ key: f.key, value: f.value })),
+            imagesKeys: Object.keys(draft?.images || {}),
+        })
+        console.log('[PASS UPDATE] Current state:', currentState)
+
         if (!draft || !draft.meta) {
             return new NextResponse(null, { status: 500 })
         }
