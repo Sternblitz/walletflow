@@ -157,10 +157,11 @@ async function generatePass(draft: WalletPassDraft, campaign: any, supabase: any
 
         // Extract locations from campaign config for GPS notifications
         const campaignConfig = campaign.config || {}
+        const defaultMessage = campaignConfig.locationMessage || "Du bist in der Nähe! 🎉"
         const locations = campaignConfig.locations?.map((loc: any) => ({
             latitude: loc.latitude,
             longitude: loc.longitude,
-            relevantText: campaignConfig.locationMessage || "Du bist in der Nähe! 🎉"
+            relevantText: loc.relevantText || defaultMessage
         })) || []
 
         if (locations.length > 0) {

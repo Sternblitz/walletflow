@@ -70,10 +70,11 @@ export async function GET(
         // Generate the pass using the shared factory
         // Extract locations from campaign config for GPS notifications
         const campaignConfig = pass.campaign?.config || {}
+        const defaultMessage = campaignConfig.locationMessage || "Du bist in der Nähe! 🎉"
         const locations = campaignConfig.locations?.map((loc: any) => ({
             latitude: loc.latitude,
             longitude: loc.longitude,
-            relevantText: campaignConfig.locationMessage || "Du bist in der Nähe! 🎉"
+            relevantText: loc.relevantText || defaultMessage
         })) || []
 
         const pkPass = await PassFactory.createPass({
