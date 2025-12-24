@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { WalletPassDraft, ImageSlot } from '@/lib/wallet/types'
 import { getLayoutDefinition } from '@/lib/wallet/layout-definitions'
-import { Upload, X, AlertCircle, Sparkles, Loader2, Type, Pencil, Wand2 } from 'lucide-react'
+import { Upload, X, AlertCircle, Sparkles, Loader2, Type, Pencil, Wand2, Palette } from 'lucide-react'
 import { ImageAdjustmentModal } from './image-adjustment-modal'
 import { FadeEditorModal } from './fade-editor-modal'
+import { IconEditor } from '@/components/ui/icon-editor'
 
 interface ImagesEditorProps {
   draft: WalletPassDraft
@@ -30,6 +31,7 @@ export function ImagesEditor({ draft, onChange }: ImagesEditorProps) {
   const [thumbnailMode, setThumbnailMode] = useState<'text' | 'ai'>('text')
   const [prompts, setPrompts] = useState<Partial<Record<ImageSlot, string>>>({})
   const [errors, setErrors] = useState<Partial<Record<ImageSlot, string>>>({})
+  const [showIconEditor, setShowIconEditor] = useState(false)
 
   // Generic AI Image Generation
   const generateAIImage = async (slot: ImageSlot) => {
@@ -271,8 +273,19 @@ export function ImagesEditor({ draft, onChange }: ImagesEditorProps) {
               )
               }
 
+              {/* Icon Editor Button */}
+              {slot === 'icon' && (
+                <button
+                  className="ai-generate-btn mt-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500"
+                  onClick={() => setShowIconEditor(true)}
+                >
+                  <Palette size={16} />
+                  Icon Editor (Vorlagen & AI)
+                </button>
+              )}
+
               {/* Thumbnail/Icon Generator Options (Text vs AI) */}
-              {(slot === 'thumbnail' || slot === 'icon') && (
+              {(slot === 'thumbnail') && (
                 <div className="flex flex-col gap-2 mt-2">
                   {/* Toggle Mode */}
                   <div className="flex gap-2 p-1 bg-black/20 rounded-lg">
@@ -502,6 +515,23 @@ export function ImagesEditor({ draft, onChange }: ImagesEditorProps) {
           </div>
         )
       }
+
+      {/* Icon Editor Modal */}
+      <IconEditor
+        isOpen={showIconEditor}
+        onClose={() => setShowIconEditor(false)}
+        onSave={(iconUrl) => {
+          onChange({
+            ...draft,
+            images: {
+              ...draft.images,
+              icon: { url: iconUrl, fileName: 'custom-icon.png' }
+            }
+          })
+        }}
+        backgroundColor={draft.colors.backgroundColor}
+        businessType={draft.content.logoText || draft.content.organizationName || ''}
+      />
 
       <style jsx>{`
         .images-editor {
