@@ -368,7 +368,7 @@ export function LocationPicker({ locations, onChange, maxLocations = 10 }: Locat
                             <input
                                 type="text"
                                 placeholder="Deine eigene Nachricht eingeben..."
-                                className="w-full px-3 py-2 text-sm border border-green-300 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                                className="w-full px-3 py-2 text-sm text-zinc-900 bg-white border border-green-300 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
                                         applyMessageToAll((e.target as HTMLInputElement).value.trim())
@@ -496,7 +496,7 @@ export function LocationPicker({ locations, onChange, maxLocations = 10 }: Locat
                                             <input
                                                 type="text"
                                                 placeholder="Eigene Nachricht eingeben..."
-                                                className="w-full px-2 py-1.5 text-xs border border-zinc-200 rounded focus:outline-none focus:border-green-500"
+                                                className="w-full px-2 py-1.5 text-xs text-zinc-900 bg-white border border-zinc-200 rounded focus:outline-none focus:border-green-500"
                                                 defaultValue={loc.relevantText}
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') {
