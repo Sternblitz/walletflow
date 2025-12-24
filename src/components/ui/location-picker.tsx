@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { MapPin, Trash2, Loader2, Navigation, ChevronDown, Sparkles } from 'lucide-react'
+import { MapPin, Trash2, Loader2, Navigation, ChevronDown, Sparkles, Edit3 } from 'lucide-react'
 
 export interface Location {
     id: string
@@ -147,8 +147,10 @@ export function LocationPicker({ locations, onChange, maxLocations = 10 }: Locat
     const [isLoaded, setIsLoaded] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showCategoryPicker, setShowCategoryPicker] = useState(false)
-    const [selectedMessage, setSelectedMessage] = useState(MESSAGE_CATEGORIES.generisch.messages[0])
+    // Default: "Ich sehe dich! (Spaß 😉)"
+    const [selectedMessage, setSelectedMessage] = useState(MESSAGE_CATEGORIES.generisch.messages[2])
     const [locatingMe, setLocatingMe] = useState(false)
+    const [editingLocationId, setEditingLocationId] = useState<string | null>(null)
 
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
@@ -437,11 +439,60 @@ export function LocationPicker({ locations, onChange, maxLocations = 10 }: Locat
                             <div className="w-7 h-7 bg-green-500 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0">
                                 {idx + 1}
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm text-zinc-800 truncate">{loc.relevantText}</p>
+                            <div className="flex-1 min-w-0 relative">
+                                {/* Editable message */}
+                                <button
+                                    onClick={() => setEditingLocationId(editingLocationId === loc.id ? null : loc.id)}
+                                    className="w-full text-left text-sm text-zinc-800 hover:text-green-600 flex items-center gap-1 group/msg"
+                                >
+                                    <span className="truncate flex-1">{loc.relevantText}</span>
+                                    <Edit3 size={12} className="text-zinc-300 group-hover/msg:text-green-500 shrink-0" />
+                                </button>
                                 <p className="text-xs text-zinc-400 truncate mt-0.5">
                                     {loc.address || `${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}`}
                                 </p>
+
+                                {/* Per-location message dropdown */}
+                                {editingLocationId === loc.id && (
+                                    <div className="absolute top-full left-0 mt-1 w-80 bg-white border border-zinc-200 rounded-xl shadow-xl z-30 max-h-[300px] overflow-y-auto">
+                                        {Object.entries(MESSAGE_CATEGORIES).map(([key, category]) => (
+                                            <div key={key} className="border-b border-zinc-100 last:border-0">
+                                                <div className="px-3 py-1.5 bg-zinc-50 sticky top-0">
+                                                    <span className="text-xs font-medium text-zinc-500">{category.emoji} {category.label}</span>
+                                                </div>
+                                                {category.messages.map((msg, msgIdx) => (
+                                                    <button
+                                                        key={msgIdx}
+                                                        onClick={() => {
+                                                            onChange(locations.map(l => l.id === loc.id ? { ...l, relevantText: msg } : l))
+                                                            setEditingLocationId(null)
+                                                        }}
+                                                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-green-50 transition-colors ${loc.relevantText === msg ? 'bg-green-100 text-green-800' : 'text-zinc-600'
+                                                            }`}
+                                                    >
+                                                        {msg}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ))}
+                                        {/* Custom input */}
+                                        <div className="p-2 border-t border-zinc-100">
+                                            <input
+                                                type="text"
+                                                placeholder="Eigene Nachricht eingeben..."
+                                                className="w-full px-2 py-1.5 text-xs border border-zinc-200 rounded focus:outline-none focus:border-green-500"
+                                                defaultValue={loc.relevantText}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        onChange(locations.map(l => l.id === loc.id ? { ...l, relevantText: (e.target as HTMLInputElement).value } : l))
+                                                        setEditingLocationId(null)
+                                                    }
+                                                }}
+                                            />
+                                            <p className="text-[10px] text-zinc-400 mt-1">Enter drücken zum speichern</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <button
                                 onClick={() => removeLocation(loc.id)}
