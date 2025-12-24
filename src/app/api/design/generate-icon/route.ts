@@ -4,11 +4,37 @@ import { createClient } from "@/lib/supabase/server"
 
 export async function POST(req: NextRequest) {
     try {
-        const { prompt, reward, businessType } = await req.json()
+        const body = await req.json()
+        const { prompt, reward, businessType, imageData, uploadOnly } = body
 
-        if (!prompt && !reward) {
-            return NextResponse.json({ error: "Missing prompt or reward" }, { status: 400 })
+        // Direct upload mode (from IconEditor canvas)
+        if (uploadOnly && imageData) {
+            const supabase = await createClient()
+
+            // Convert data URL to buffer
+            const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '')
+            const imageBuffer = Buffer.from(base64Data, 'base64')
+            const fileName = `icons/${Date.now()}-${Math.random().toString(36).slice(2)}.png`
+
+            const { error: uploadError } = await supabase.storage
+                .from('pass-assets')
+                .upload(fileName, imageBuffer, {
+                    contentType: 'image/png',
+                    upsert: true
+                })
+
+            if (!uploadError) {
+                const { data: { publicUrl } } = supabase.storage
+                    .from('pass-assets')
+                    .getPublicUrl(fileName)
+
+                return NextResponse.json({ iconUrl: publicUrl, source: 'upload' })
+            } else {
+                console.error("Upload error:", uploadError)
+                return NextResponse.json({ error: uploadError.message, iconUrl: null }, { status: 500 })
+            }
         }
+
 
         const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
 
