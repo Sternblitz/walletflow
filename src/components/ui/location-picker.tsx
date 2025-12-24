@@ -362,9 +362,25 @@ export function LocationPicker({ locations, onChange, maxLocations = 10 }: Locat
                 {/* Category Dropdown */}
                 {showCategoryPicker && (
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-zinc-200 rounded-xl shadow-xl z-30 max-h-[400px] overflow-y-auto">
+                        {/* Custom input at top */}
+                        <div className="p-3 border-b border-zinc-200 bg-gradient-to-r from-green-50 to-emerald-50 sticky top-0 z-10">
+                            <div className="text-xs font-medium text-green-700 mb-1.5">✏️ Eigene Nachricht (für alle Standorte)</div>
+                            <input
+                                type="text"
+                                placeholder="Deine eigene Nachricht eingeben..."
+                                className="w-full px-3 py-2 text-sm border border-green-300 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
+                                        applyMessageToAll((e.target as HTMLInputElement).value.trim())
+                                    }
+                                }}
+                            />
+                            <p className="text-[10px] text-green-600 mt-1">Enter drücken zum Anwenden auf alle Standorte</p>
+                        </div>
+
                         {Object.entries(MESSAGE_CATEGORIES).map(([key, category]) => (
                             <div key={key} className="border-b border-zinc-100 last:border-0">
-                                <div className="px-4 py-2 bg-zinc-50 sticky top-0">
+                                <div className="px-4 py-2 bg-zinc-50 sticky top-[88px]">
                                     <div className="flex items-center gap-2">
                                         <span>{category.emoji}</span>
                                         <span className="font-semibold text-sm text-zinc-700">{category.label}</span>
