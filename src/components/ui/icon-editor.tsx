@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { X, Upload, Sparkles, Palette, Check, Loader2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
+import { X, Upload, Sparkles, Palette, Check, Loader2, ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react'
 import { Button } from './button'
 
 interface IconEditorProps {
@@ -83,18 +83,20 @@ const COLOR_PRESETS = [
     '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F43F5E', '#78716C',
 ]
 
+const PREVIEW_SIZE = 176
+
 export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000', businessType = '' }: IconEditorProps) {
     const [activeTab, setActiveTab] = useState<'logo' | 'ai' | 'templates'>('templates')
 
     // Logo editor state
     const [logoImage, setLogoImage] = useState<string | null>(null)
-    const [logoScale, setLogoScale] = useState(1)
+    const [logoImageEl, setLogoImageEl] = useState<HTMLImageElement | null>(null)
+    const [logoScale, setLogoScale] = useState(0.7)
     const [logoPosition, setLogoPosition] = useState({ x: 0, y: 0 })
     const [logoBgColor, setLogoBgColor] = useState(backgroundColor)
     const [isDragging, setIsDragging] = useState(false)
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-    const canvasRef = useRef<HTMLCanvasElement>(null)
-    const previewRef = useRef<HTMLDivElement>(null)
+    const previewCanvasRef = useRef<HTMLCanvasElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     // AI state
@@ -108,7 +110,6 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
     const [templateColor, setTemplateColor] = useState('#FFFFFF')
     const [templateBgColor, setTemplateBgColor] = useState(backgroundColor)
 
-    // Business type suggestions for AI
     const businessTypes = [
         { value: 'doener kebab food', label: '🥙 Döner/Kebab' },
         { value: 'coffee cafe espresso', label: '☕ Café' },
@@ -126,21 +127,68 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         { value: 'nails manicure beauty', label: '💅 Nagelstudio' },
     ]
 
-    // Handle logo upload
+    // Load logo image when uploaded
     const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
             const reader = new FileReader()
             reader.onload = (ev) => {
-                setLogoImage(ev.target?.result as string)
-                setLogoScale(0.8) // Start at 80%
+                const dataUrl = ev.target?.result as string
+                setLogoImage(dataUrl)
+
+                // Load image element
+                const img = new Image()
+                img.onload = () => setLogoImageEl(img)
+                img.src = dataUrl
+
+                setLogoScale(0.7)
                 setLogoPosition({ x: 0, y: 0 })
             }
             reader.readAsDataURL(file)
         }
     }
 
-    // Mouse/Touch drag handlers
+    // Draw preview canvas
+    const drawPreview = useCallback(() => {
+        const canvas = previewCanvasRef.current
+        if (!canvas || !logoImageEl) return
+
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+
+        const size = PREVIEW_SIZE
+
+        // Clear and draw background
+        ctx.fillStyle = logoBgColor
+        ctx.fillRect(0, 0, size, size)
+
+        // Calculate image dimensions
+        const imgAspect = logoImageEl.width / logoImageEl.height
+        let drawWidth, drawHeight
+
+        if (imgAspect > 1) {
+            drawWidth = size * logoScale
+            drawHeight = drawWidth / imgAspect
+        } else {
+            drawHeight = size * logoScale
+            drawWidth = drawHeight * imgAspect
+        }
+
+        // Center position + offset
+        const x = (size - drawWidth) / 2 + logoPosition.x
+        const y = (size - drawHeight) / 2 + logoPosition.y
+
+        ctx.drawImage(logoImageEl, x, y, drawWidth, drawHeight)
+    }, [logoImageEl, logoScale, logoPosition, logoBgColor])
+
+    // Redraw when dependencies change
+    useEffect(() => {
+        if (logoImageEl) {
+            drawPreview()
+        }
+    }, [logoImageEl, logoScale, logoPosition, logoBgColor, drawPreview])
+
+    // Drag handlers
     const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault()
         setIsDragging(true)
@@ -178,52 +226,43 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         }
     }, [isDragging, handleDragMove, handleDragEnd])
 
-    // Generate logo icon to canvas
-    const generateLogoIcon = useCallback(async () => {
-        if (!logoImage) return null
+    // Generate final icon (2x resolution for retina)
+    const generateLogoIcon = useCallback(() => {
+        if (!logoImageEl) return null
 
         const canvas = document.createElement('canvas')
-        const size = 174 // 2x for retina
+        const size = 174 // 2x for retina (87 * 2)
         canvas.width = size
         canvas.height = size
         const ctx = canvas.getContext('2d')
         if (!ctx) return null
 
+        // Scale factor from preview to final
+        const scaleFactor = size / PREVIEW_SIZE
+
         // Background
         ctx.fillStyle = logoBgColor
         ctx.fillRect(0, 0, size, size)
 
-        // Load and draw image
-        const img = new Image()
-        img.crossOrigin = 'anonymous'
-        img.src = logoImage
+        // Calculate image dimensions (same logic as preview, scaled)
+        const imgAspect = logoImageEl.width / logoImageEl.height
+        let drawWidth, drawHeight
 
-        return new Promise<string>((resolve) => {
-            img.onload = () => {
-                const scale = logoScale
-                // Calculate size maintaining aspect ratio
-                const aspectRatio = img.width / img.height
-                let drawWidth, drawHeight
+        if (imgAspect > 1) {
+            drawWidth = size * logoScale
+            drawHeight = drawWidth / imgAspect
+        } else {
+            drawHeight = size * logoScale
+            drawWidth = drawHeight * imgAspect
+        }
 
-                if (aspectRatio > 1) {
-                    drawWidth = size * scale
-                    drawHeight = (size * scale) / aspectRatio
-                } else {
-                    drawHeight = size * scale
-                    drawWidth = (size * scale) * aspectRatio
-                }
+        // Center position + offset (scaled)
+        const x = (size - drawWidth) / 2 + (logoPosition.x * scaleFactor)
+        const y = (size - drawHeight) / 2 + (logoPosition.y * scaleFactor)
 
-                // Position calculation (scale position for canvas size)
-                const posScale = size / 176 // Preview is ~176px
-                const x = (size - drawWidth) / 2 + (logoPosition.x * posScale)
-                const y = (size - drawHeight) / 2 + (logoPosition.y * posScale)
-
-                ctx.drawImage(img, x, y, drawWidth, drawHeight)
-                resolve(canvas.toDataURL('image/png'))
-            }
-            img.onerror = () => resolve(canvas.toDataURL('image/png'))
-        })
-    }, [logoImage, logoScale, logoPosition, logoBgColor])
+        ctx.drawImage(logoImageEl, x, y, drawWidth, drawHeight)
+        return canvas.toDataURL('image/png')
+    }, [logoImageEl, logoScale, logoPosition, logoBgColor])
 
     // Generate template icon
     const generateTemplateIcon = useCallback(() => {
@@ -236,11 +275,9 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         const ctx = canvas.getContext('2d')
         if (!ctx) return null
 
-        // Background
         ctx.fillStyle = templateBgColor
         ctx.fillRect(0, 0, size, size)
 
-        // Draw icon path
         const categoryKey = selectedTemplate.category as keyof typeof TEMPLATE_ICONS
         const icon = TEMPLATE_ICONS[categoryKey]?.[selectedTemplate.index]
 
@@ -249,11 +286,8 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
             ctx.lineWidth = 6
             ctx.lineCap = 'round'
             ctx.lineJoin = 'round'
-
-            // Scale and center
             ctx.translate(size / 2 - 72, size / 2 - 72)
             ctx.scale(6, 6)
-
             const path = new Path2D(icon.path)
             ctx.stroke(path)
         }
@@ -261,7 +295,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         return canvas.toDataURL('image/png')
     }, [selectedTemplate, templateColor, templateBgColor])
 
-    // AI generation using notification icon API
+    // AI generation
     const generateAiIcon = async () => {
         if (!aiPrompt) {
             setAiError('Bitte wähle einen Geschäftstyp oder gib ein Keyword ein')
@@ -299,31 +333,26 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         setAiGenerating(false)
     }
 
-    // Save icon
+    // Save
     const handleSave = async () => {
         let iconDataUrl: string | null = null
 
-        if (activeTab === 'logo' && logoImage) {
-            iconDataUrl = await generateLogoIcon()
+        if (activeTab === 'logo' && logoImageEl) {
+            iconDataUrl = generateLogoIcon()
         } else if (activeTab === 'templates' && selectedTemplate) {
             iconDataUrl = generateTemplateIcon()
         } else if (activeTab === 'ai' && aiResult) {
-            // AI result is already a URL, use directly
             onSave(aiResult)
             onClose()
             return
         }
 
         if (iconDataUrl) {
-            // Upload to Supabase
             try {
                 const response = await fetch('/api/design/generate-icon', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        imageData: iconDataUrl,
-                        uploadOnly: true
-                    })
+                    body: JSON.stringify({ imageData: iconDataUrl, uploadOnly: true })
                 })
                 const data = await response.json()
                 if (data.iconUrl) {
@@ -334,16 +363,14 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
             } catch (error) {
                 console.error('Upload error:', error)
             }
-            // Fallback: use data URL directly
             onSave(iconDataUrl)
             onClose()
         }
     }
 
-    // Reset position
     const resetPosition = () => {
         setLogoPosition({ x: 0, y: 0 })
-        setLogoScale(0.8)
+        setLogoScale(0.7)
     }
 
     if (!isOpen) return null
@@ -384,12 +411,11 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                     </button>
                 </div>
 
-                {/* Content - Scrollable */}
+                {/* Content */}
                 <div className="p-4 overflow-y-auto flex-1">
                     {/* Templates Tab */}
                     {activeTab === 'templates' && (
                         <div className="space-y-4">
-                            {/* Color pickers */}
                             <div className="flex gap-4">
                                 <div className="flex-1">
                                     <label className="text-xs text-zinc-400 mb-2 block">Icon-Farbe</label>
@@ -419,7 +445,6 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                 </div>
                             </div>
 
-                            {/* Template grid */}
                             {Object.entries(TEMPLATE_ICONS).map(([category, icons]) => (
                                 <div key={category}>
                                     <h4 className="text-xs text-zinc-500 uppercase mb-2 font-medium">{category}</h4>
@@ -429,8 +454,8 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                                 key={idx}
                                                 onClick={() => setSelectedTemplate({ category, index: idx })}
                                                 className={`aspect-square rounded-lg border-2 flex items-center justify-center p-1.5 transition-all ${selectedTemplate?.category === category && selectedTemplate?.index === idx
-                                                        ? 'border-green-500 bg-green-500/20 scale-105'
-                                                        : 'border-white/10 hover:border-white/30 hover:bg-white/5'
+                                                    ? 'border-green-500 bg-green-500/20 scale-105'
+                                                    : 'border-white/10 hover:border-white/30 hover:bg-white/5'
                                                     }`}
                                                 style={{ backgroundColor: templateBgColor }}
                                                 title={icon.name}
@@ -460,50 +485,38 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {/* Interactive Preview */}
+                                    {/* Canvas Preview */}
                                     <div className="flex justify-center">
-                                        <div
-                                            ref={previewRef}
-                                            className="relative w-44 h-44 rounded-xl overflow-hidden cursor-move select-none"
-                                            style={{ backgroundColor: logoBgColor }}
-                                            onMouseDown={handleDragStart}
-                                            onTouchStart={handleDragStart}
-                                        >
-                                            <img
-                                                src={logoImage}
-                                                alt="Logo"
-                                                className="absolute pointer-events-none"
-                                                style={{
-                                                    transform: `translate(${logoPosition.x}px, ${logoPosition.y}px) scale(${logoScale})`,
-                                                    transformOrigin: 'center',
-                                                    left: '50%',
-                                                    top: '50%',
-                                                    marginLeft: '-50%',
-                                                    marginTop: '-50%',
-                                                    maxWidth: 'none',
-                                                    maxHeight: 'none',
-                                                }}
-                                                draggable={false}
+                                        <div className="relative">
+                                            <canvas
+                                                ref={previewCanvasRef}
+                                                width={PREVIEW_SIZE}
+                                                height={PREVIEW_SIZE}
+                                                className="rounded-xl cursor-move border-2 border-white/20"
+                                                onMouseDown={handleDragStart}
+                                                onTouchStart={handleDragStart}
+                                                style={{ touchAction: 'none' }}
                                             />
-                                            {/* Drag hint */}
-                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30">
-                                                <span className="text-white text-xs bg-black/50 px-2 py-1 rounded">Ziehen zum Verschieben</span>
+                                            {/* Move indicator */}
+                                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-2 py-1 rounded flex items-center gap-1 pointer-events-none">
+                                                <Move size={12} />
+                                                Ziehen zum Verschieben
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Controls */}
+                                    {/* Zoom Controls */}
                                     <div className="flex items-center justify-center gap-3">
                                         <button
-                                            onClick={() => setLogoScale(s => Math.max(0.2, s - 0.1))}
+                                            onClick={() => setLogoScale(s => Math.max(0.1, s - 0.1))}
                                             className="p-2 bg-white/10 rounded-lg hover:bg-white/20"
                                         >
                                             <ZoomOut size={18} />
                                         </button>
-                                        <div className="flex items-center gap-2 w-32">
+                                        <div className="w-40">
                                             <input
                                                 type="range"
-                                                min="20"
+                                                min="10"
                                                 max="200"
                                                 value={logoScale * 100}
                                                 onChange={(e) => setLogoScale(parseInt(e.target.value) / 100)}
@@ -524,9 +537,9 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                             <RotateCcw size={18} />
                                         </button>
                                     </div>
-                                    <p className="text-xs text-zinc-500 text-center">{Math.round(logoScale * 100)}% Zoom</p>
+                                    <p className="text-xs text-zinc-500 text-center">{Math.round(logoScale * 100)}% Größe</p>
 
-                                    {/* Background color */}
+                                    {/* Background Color */}
                                     <div>
                                         <label className="text-xs text-zinc-400 mb-2 block">Hintergrundfarbe</label>
                                         <div className="flex gap-1 flex-wrap">
@@ -542,7 +555,10 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                     </div>
 
                                     <button
-                                        onClick={() => setLogoImage(null)}
+                                        onClick={() => {
+                                            setLogoImage(null)
+                                            setLogoImageEl(null)
+                                        }}
                                         className="text-xs text-zinc-500 hover:text-red-400 flex items-center gap-1"
                                     >
                                         <X size={12} />
@@ -557,7 +573,6 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                 onChange={handleLogoUpload}
                                 className="hidden"
                             />
-                            <canvas ref={canvasRef} className="hidden" />
                         </div>
                     )}
 
@@ -568,15 +583,14 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                 Wähle einen Geschäftstyp um automatisch ein passendes Icon zu generieren.
                             </p>
 
-                            {/* Business type grid */}
                             <div className="grid grid-cols-2 gap-2">
                                 {businessTypes.map((type) => (
                                     <button
                                         key={type.value}
                                         onClick={() => setAiPrompt(type.value)}
                                         className={`py-2.5 px-3 rounded-lg text-sm text-left transition-all ${aiPrompt === type.value
-                                                ? 'bg-green-500/20 text-green-400 border border-green-500/50'
-                                                : 'bg-white/5 text-zinc-300 hover:bg-white/10 border border-transparent'
+                                            ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                                            : 'bg-white/5 text-zinc-300 hover:bg-white/10 border border-transparent'
                                             }`}
                                     >
                                         {type.label}
@@ -584,7 +598,6 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                 ))}
                             </div>
 
-                            {/* Custom prompt */}
                             <div>
                                 <label className="text-xs text-zinc-400 mb-1 block">Oder eigenes Keyword:</label>
                                 <input
@@ -596,14 +609,12 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                 />
                             </div>
 
-                            {/* Error message */}
                             {aiError && (
                                 <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
                                     {aiError}
                                 </div>
                             )}
 
-                            {/* Generate button */}
                             <Button
                                 onClick={generateAiIcon}
                                 disabled={!aiPrompt || aiGenerating}
@@ -622,7 +633,6 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                 )}
                             </Button>
 
-                            {/* AI Result */}
                             {aiResult && (
                                 <div className="flex items-center gap-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
                                     <img src={aiResult} alt="Generated Icon" className="w-20 h-20 rounded-lg object-cover bg-black" />
@@ -651,7 +661,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                     <Button
                         onClick={handleSave}
                         disabled={
-                            (activeTab === 'logo' && !logoImage) ||
+                            (activeTab === 'logo' && !logoImageEl) ||
                             (activeTab === 'templates' && !selectedTemplate) ||
                             (activeTab === 'ai' && !aiResult)
                         }
