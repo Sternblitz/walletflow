@@ -296,14 +296,17 @@ async function generateGooglePass(
         }
 
         // Generate save link with class configuration
+        // Note: Google Wallet IDs can only contain alphanumeric + underscores, no dashes!
+        const objectId = (passRecord?.id || initialState.customer_number).replace(/-/g, '_')
+
         const saveLink = googleService.generateSaveLink({
             classId,
-            objectId: passRecord?.id || initialState.customer_number,
+            objectId,
             customerName: personalization.customerName || undefined,
             customerId: initialState.customer_number,
             stamps,
             points,
-            barcodeValue: passRecord?.id || initialState.customer_number,
+            barcodeValue: passRecord?.id || initialState.customer_number, // Keep original for QR
             textFields,
             // Include class config so JWT creates both class + object
             classConfig: {
