@@ -135,22 +135,44 @@ export async function POST(req: NextRequest) {
             // Don't fail the request, just log
         }
 
-        // 5. Send APNs push to update the customer's wallet pass
+        // 5. Update the customer's wallet pass (platform-specific)
         let pushStatus = { sent: 0, errors: [] as string[] }
-        try {
-            const { sendPassUpdatePush } = await import('@/lib/wallet/apns')
-            const pushResult = await sendPassUpdatePush(passId)
-            pushStatus = { sent: pushResult.sent, errors: pushResult.errors }
+        const walletType = pass.wallet_type || 'apple'
 
-            if (pushResult.sent > 0) {
-                console.log(`[PUSH ✅] Sent ${pushResult.sent} notification(s) for pass ${passId}`)
-            } else if (pushResult.errors.length > 0) {
-                console.log(`[PUSH ❌] Failed for pass ${passId}: ${pushResult.errors.join(', ')}`)
+        try {
+            if (walletType === 'google') {
+                // Google Wallet: Direct API mutation
+                const { GoogleWalletService } = await import('@/lib/wallet/google')
+                const googleService = new GoogleWalletService()
+
+                if (newState.stamps !== undefined) {
+                    await googleService.updateStamps(passId, {
+                        current: newState.stamps,
+                        max: newState.max_stamps || 10
+                    })
+                    pushStatus.sent = 1
+                    console.log(`[GOOGLE ✅] Updated stamps for pass ${passId}`)
+                } else if (newState.points !== undefined) {
+                    await googleService.updatePoints(passId, newState.points)
+                    pushStatus.sent = 1
+                    console.log(`[GOOGLE ✅] Updated points for pass ${passId}`)
+                }
             } else {
-                console.log(`[PUSH ⚠️] No devices registered for pass ${passId}`)
+                // Apple Wallet: Send APNs push notification
+                const { sendPassUpdatePush } = await import('@/lib/wallet/apns')
+                const pushResult = await sendPassUpdatePush(passId)
+                pushStatus = { sent: pushResult.sent, errors: pushResult.errors }
+
+                if (pushResult.sent > 0) {
+                    console.log(`[APNS ✅] Sent ${pushResult.sent} notification(s) for pass ${passId}`)
+                } else if (pushResult.errors.length > 0) {
+                    console.log(`[APNS ❌] Failed for pass ${passId}: ${pushResult.errors.join(', ')}`)
+                } else {
+                    console.log(`[APNS ⚠️] No devices registered for pass ${passId}`)
+                }
             }
         } catch (pushError: any) {
-            console.error('[PUSH ERROR]', pushError?.message || pushError)
+            console.error('[WALLET UPDATE ERROR]', pushError?.message || pushError)
             pushStatus.errors.push(pushError?.message || 'Unknown error')
             // Don't fail the scan if push fails
         }

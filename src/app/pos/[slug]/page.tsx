@@ -2,18 +2,105 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { Camera, X, RotateCcw, Zap } from 'lucide-react'
+import { Camera, X, RotateCcw, Zap, BarChart3, Send, Users, TrendingUp, Wallet, Settings } from 'lucide-react'
+
+type Role = 'none' | 'staff' | 'chef'
+type Mode = 'idle' | 'scanning' | 'camera' | 'result'
 
 export default function POSPage() {
     const params = useParams()
     const slug = params.slug as string
 
-    const [mode, setMode] = useState<'idle' | 'scanning' | 'camera' | 'result'>('idle')
+    // Authentication state
+    const [role, setRole] = useState<Role>('none')
+    const [pin, setPin] = useState('')
+    const [authError, setAuthError] = useState<string | null>(null)
+    const [campaignData, setCampaignData] = useState<any>(null)
+
+    // Scanner state
+    const [mode, setMode] = useState<Mode>('idle')
     const [result, setResult] = useState<any>(null)
     const [error, setError] = useState<string | null>(null)
     const [manualId, setManualId] = useState('')
     const [cameraError, setCameraError] = useState<string | null>(null)
     const scannerRef = useRef<any>(null)
+
+    // Dashboard state
+    const [stats, setStats] = useState<any>(null)
+    const [view, setView] = useState<'scanner' | 'dashboard' | 'push'>('scanner')
+
+    // Push request state
+    const [pushMessage, setPushMessage] = useState('')
+    const [pushSchedule, setPushSchedule] = useState('')
+    const [pushSubmitting, setPushSubmitting] = useState(false)
+    const [pushSuccess, setPushSuccess] = useState(false)
+
+    // Load campaign data
+    useEffect(() => {
+        loadCampaignData()
+    }, [slug])
+
+    // Load stats when entering dashboard
+    useEffect(() => {
+        if (role === 'chef' && view === 'dashboard') {
+            loadStats()
+        }
+    }, [role, view])
+
+    const loadCampaignData = async () => {
+        try {
+            const res = await fetch(`/api/campaign/${slug}`)
+            if (res.ok) {
+                const data = await res.json()
+                setCampaignData(data)
+            }
+        } catch (e) {
+            console.error('Failed to load campaign:', e)
+        }
+    }
+
+    const loadStats = async () => {
+        try {
+            const res = await fetch(`/api/pos/stats?slug=${slug}`)
+            if (res.ok) {
+                const data = await res.json()
+                setStats(data)
+            }
+        } catch (e) {
+            console.error('Failed to load stats:', e)
+        }
+    }
+
+    // PIN Authentication
+    const handlePinSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setAuthError(null)
+
+        try {
+            const res = await fetch(`/api/pos/auth`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug, pin })
+            })
+
+            const data = await res.json()
+
+            if (res.ok && data.success) {
+                setRole(data.role)
+                setPin('')
+            } else {
+                setAuthError(data.error || 'Falscher PIN')
+            }
+        } catch (e) {
+            setAuthError('Netzwerkfehler')
+        }
+    }
+
+    const handleLogout = () => {
+        setRole('none')
+        setPin('')
+        setView('scanner')
+    }
 
     // Clean up scanner on unmount
     useEffect(() => {
@@ -36,19 +123,16 @@ export default function POSPage() {
             scannerRef.current = scanner
 
             await scanner.start(
-                { facingMode: 'environment' }, // Back camera
+                { facingMode: 'environment' },
                 {
                     fps: 10,
                     qrbox: { width: 250, height: 250 },
                 },
                 async (decodedText) => {
-                    // QR code scanned!
                     await scanner.stop()
                     handleScan(decodedText)
                 },
-                () => {
-                    // Ignore scan errors (no QR found yet)
-                }
+                () => { }
             )
         } catch (err: any) {
             console.error('Camera error:', err)
@@ -82,7 +166,6 @@ export default function POSPage() {
             if (res.ok) {
                 setResult(data)
                 setMode('result')
-                // Vibrate on success (mobile)
                 if (navigator.vibrate) navigator.vibrate(200)
             } else {
                 setError(data.error || 'Scan fehlgeschlagen')
@@ -94,7 +177,6 @@ export default function POSPage() {
         }
     }
 
-    // Manual scan (text input)
     const handleManualScan = async () => {
         if (!manualId.trim()) return
         handleScan(manualId.trim())
@@ -107,6 +189,260 @@ export default function POSPage() {
         setError(null)
     }
 
+    // Push request submission
+    const handlePushRequest = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!pushMessage.trim()) return
+
+        setPushSubmitting(true)
+        try {
+            const res = await fetch('/api/pos/push-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    slug,
+                    message: pushMessage,
+                    scheduledAt: pushSchedule || null
+                })
+            })
+
+            if (res.ok) {
+                setPushSuccess(true)
+                setPushMessage('')
+                setPushSchedule('')
+                setTimeout(() => setPushSuccess(false), 3000)
+            }
+        } catch (e) {
+            console.error('Push request failed:', e)
+        }
+        setPushSubmitting(false)
+    }
+
+    // ========================================
+    // RENDER: PIN Login Screen
+    // ========================================
+    if (role === 'none') {
+        return (
+            <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center p-6">
+                <div className="w-full max-w-sm space-y-8">
+                    {/* Logo */}
+                    <div className="text-center">
+                        <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-500/20">
+                            <Zap className="w-10 h-10" />
+                        </div>
+                        <h1 className="text-2xl font-bold">Passify POS</h1>
+                        <p className="text-zinc-500 text-sm mt-1">{slug}</p>
+                    </div>
+
+                    {/* PIN Form */}
+                    <form onSubmit={handlePinSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm text-zinc-400 mb-2">PIN eingeben</label>
+                            <input
+                                type="password"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                maxLength={6}
+                                value={pin}
+                                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                                placeholder="••••"
+                                className="w-full px-4 py-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white text-center text-2xl tracking-[0.5em] placeholder:tracking-normal placeholder:text-zinc-600 focus:outline-none focus:border-green-500"
+                                autoFocus
+                            />
+                        </div>
+
+                        {authError && (
+                            <div className="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-center text-sm">
+                                {authError}
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={pin.length < 4}
+                            className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:from-zinc-700 disabled:to-zinc-700 rounded-xl font-semibold transition-all"
+                        >
+                            Anmelden
+                        </button>
+                    </form>
+
+                    <p className="text-center text-zinc-600 text-xs">
+                        Standard: 1234 (Kellner) • 9999 (Chef)
+                    </p>
+                </div>
+            </div>
+        )
+    }
+
+    // ========================================
+    // RENDER: Chef Dashboard
+    // ========================================
+    if (role === 'chef' && view === 'dashboard') {
+        return (
+            <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
+                {/* Header */}
+                <header className="p-4 border-b border-white/10 flex items-center justify-between">
+                    <div>
+                        <h1 className="text-xl font-bold flex items-center gap-2">
+                            <BarChart3 className="w-5 h-5 text-purple-500" />
+                            Dashboard
+                        </h1>
+                        <p className="text-sm text-zinc-500">{slug}</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setView('scanner')}
+                            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm"
+                        >
+                            Scanner
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="px-3 py-1.5 text-zinc-500 hover:text-white text-sm"
+                        >
+                            Logout
+                        </button>
+                    </div>
+                </header>
+
+                {/* Stats Grid */}
+                <main className="flex-1 p-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Total Passes */}
+                        <div className="bg-zinc-900 rounded-2xl p-4">
+                            <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2">
+                                <Wallet className="w-4 h-4" />
+                                Aktive Karten
+                            </div>
+                            <div className="text-3xl font-bold">{stats?.totalPasses || 0}</div>
+                        </div>
+
+                        {/* Today's Scans */}
+                        <div className="bg-zinc-900 rounded-2xl p-4">
+                            <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2">
+                                <TrendingUp className="w-4 h-4" />
+                                Heute Stempel
+                            </div>
+                            <div className="text-3xl font-bold text-green-400">{stats?.todayStamps || 0}</div>
+                        </div>
+
+                        {/* Apple vs Google */}
+                        <div className="bg-zinc-900 rounded-2xl p-4">
+                            <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2">
+                                <Wallet className="w-4 h-4" />
+                                Apple Wallet
+                            </div>
+                            <div className="text-2xl font-bold">{stats?.appleCount || 0}</div>
+                        </div>
+
+                        <div className="bg-zinc-900 rounded-2xl p-4">
+                            <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2">
+                                <Wallet className="w-4 h-4" />
+                                Google Wallet
+                            </div>
+                            <div className="text-2xl font-bold">{stats?.googleCount || 0}</div>
+                        </div>
+
+                        {/* Redemptions */}
+                        <div className="col-span-2 bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-2xl p-4 border border-purple-500/20">
+                            <div className="flex items-center gap-2 text-purple-300 text-sm mb-2">
+                                <Users className="w-4 h-4" />
+                                Einlösungen (Gesamt)
+                            </div>
+                            <div className="text-3xl font-bold text-purple-300">{stats?.totalRedemptions || 0}</div>
+                        </div>
+                    </div>
+
+                    {/* Push Request Button */}
+                    <button
+                        onClick={() => setView('push')}
+                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl font-semibold flex items-center justify-center gap-2"
+                    >
+                        <Send className="w-5 h-5" />
+                        Push-Nachricht beantragen
+                    </button>
+                </main>
+            </div>
+        )
+    }
+
+    // ========================================
+    // RENDER: Push Request Form (Chef only)
+    // ========================================
+    if (role === 'chef' && view === 'push') {
+        return (
+            <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
+                <header className="p-4 border-b border-white/10 flex items-center justify-between">
+                    <div>
+                        <h1 className="text-xl font-bold flex items-center gap-2">
+                            <Send className="w-5 h-5 text-blue-500" />
+                            Push beantragen
+                        </h1>
+                    </div>
+                    <button
+                        onClick={() => setView('dashboard')}
+                        className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm"
+                    >
+                        Zurück
+                    </button>
+                </header>
+
+                <main className="flex-1 p-4">
+                    <form onSubmit={handlePushRequest} className="space-y-4">
+                        <div>
+                            <label className="block text-sm text-zinc-400 mb-2">Nachricht</label>
+                            <textarea
+                                value={pushMessage}
+                                onChange={(e) => setPushMessage(e.target.value)}
+                                placeholder="z.B. Happy Hour heute ab 17 Uhr! 🍻"
+                                rows={4}
+                                className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500 resize-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm text-zinc-400 mb-2">Wann senden? (optional)</label>
+                            <input
+                                type="datetime-local"
+                                value={pushSchedule}
+                                onChange={(e) => setPushSchedule(e.target.value)}
+                                className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-blue-500"
+                            />
+                        </div>
+
+                        {pushSuccess && (
+                            <div className="bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-center">
+                                ✅ Anfrage gesendet! Wir prüfen deine Nachricht.
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={!pushMessage.trim() || pushSubmitting}
+                            className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-zinc-700 disabled:to-zinc-700 rounded-xl font-semibold flex items-center justify-center gap-2"
+                        >
+                            {pushSubmitting ? (
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <>
+                                    <Send className="w-5 h-5" />
+                                    Zur Genehmigung senden
+                                </>
+                            )}
+                        </button>
+
+                        <p className="text-center text-zinc-600 text-xs">
+                            Nachrichten werden von Passify geprüft bevor sie versendet werden.
+                        </p>
+                    </form>
+                </main>
+            </div>
+        )
+    }
+
+    // ========================================
+    // RENDER: Scanner (Staff & Chef)
+    // ========================================
     return (
         <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
             {/* Header */}
@@ -114,11 +450,27 @@ export default function POSPage() {
                 <div>
                     <h1 className="text-xl font-bold flex items-center gap-2">
                         <Zap className="w-5 h-5 text-green-500" />
-                        WalletFlow Scanner
+                        Passify Scanner
                     </h1>
-                    <p className="text-sm text-zinc-500">{slug || 'Demo'}</p>
+                    <p className="text-sm text-zinc-500">{slug} • {role === 'chef' ? '👑 Chef' : '👤 Staff'}</p>
                 </div>
-                <div className="text-xs text-zinc-600 bg-zinc-900 px-2 py-1 rounded">v2.0</div>
+                <div className="flex gap-2">
+                    {role === 'chef' && (
+                        <button
+                            onClick={() => setView('dashboard')}
+                            className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm flex items-center gap-1"
+                        >
+                            <BarChart3 className="w-4 h-4" />
+                            Dashboard
+                        </button>
+                    )}
+                    <button
+                        onClick={handleLogout}
+                        className="px-3 py-1.5 text-zinc-500 hover:text-white text-sm"
+                    >
+                        Logout
+                    </button>
+                </div>
             </header>
 
             {/* Main Content */}
@@ -172,13 +524,11 @@ export default function POSPage() {
 
                 {mode === 'camera' && (
                     <div className="w-full max-w-sm space-y-4">
-                        {/* Camera View */}
                         <div className="relative">
                             <div
                                 id="qr-reader"
                                 className="w-full aspect-square rounded-2xl overflow-hidden bg-black"
                             />
-                            {/* Close Button */}
                             <button
                                 onClick={stopCamera}
                                 className="absolute top-3 right-3 p-2 bg-black/50 backdrop-blur rounded-full text-white hover:bg-black/70"
@@ -209,8 +559,11 @@ export default function POSPage() {
                 {mode === 'result' && result && (
                     <div className="w-full max-w-sm text-center space-y-6 animate-in zoom-in-50 duration-300">
                         {/* Success Icon */}
-                        <div className="w-28 h-28 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto text-5xl shadow-2xl shadow-green-500/30">
-                            ✅
+                        <div className={`w-28 h-28 rounded-full flex items-center justify-center mx-auto text-5xl shadow-2xl ${result.celebration
+                                ? 'bg-gradient-to-br from-yellow-500 to-orange-600 shadow-yellow-500/30'
+                                : 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/30'
+                            }`}>
+                            {result.celebration ? '🎉' : '✅'}
                         </div>
 
                         {/* Message */}
@@ -230,19 +583,19 @@ export default function POSPage() {
                                         </span>
                                     </div>
                                 )}
-                                {result.newState.points !== undefined && (
+                                {result.newState.customer_name && (
                                     <div className="flex justify-between items-center">
-                                        <span className="text-zinc-400">Punkte</span>
-                                        <span className="text-2xl font-bold text-purple-400">
-                                            {result.newState.points}
+                                        <span className="text-zinc-400">Kunde</span>
+                                        <span className="text-lg font-semibold">
+                                            {result.newState.customer_name}
                                         </span>
                                     </div>
                                 )}
-                                {result.newState.tier && (
+                                {result.newState.redemptions > 0 && (
                                     <div className="flex justify-between items-center">
-                                        <span className="text-zinc-400">Level</span>
-                                        <span className="text-lg font-semibold capitalize text-amber-400">
-                                            {result.newState.tier}
+                                        <span className="text-zinc-400">Einlösungen</span>
+                                        <span className="text-lg font-semibold text-purple-400">
+                                            {result.newState.redemptions}
                                         </span>
                                     </div>
                                 )}
@@ -263,7 +616,7 @@ export default function POSPage() {
 
             {/* Footer */}
             <footer className="p-4 border-t border-white/10 text-center text-xs text-zinc-600">
-                Powered by WALLETFLOW
+                Powered by PASSIFY
             </footer>
         </div>
     )
