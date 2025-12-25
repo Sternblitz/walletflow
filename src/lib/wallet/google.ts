@@ -407,6 +407,7 @@ export class GoogleWalletService implements WalletService {
 
     /**
      * Generate a "Save to Google Wallet" link (signed JWT)
+     * This includes BOTH the class and object in the JWT so they are created together
      */
     generateSaveLink(objectConfig: {
         classId: string
@@ -417,13 +418,45 @@ export class GoogleWalletService implements WalletService {
         points?: number
         barcodeValue: string
         textFields?: Array<{ header: string; body: string }>
+        // Class configuration (required for first-time creation)
+        classConfig?: {
+            programName: string
+            issuerName: string
+            logoUrl?: string
+            heroImageUrl?: string
+            backgroundColor?: string
+        }
     }): GoogleWalletSaveLink {
         const { serviceAccount, issuerId } = this.getCredentials()
 
         const fullObjectId = `${issuerId}.${objectConfig.objectId}`
         const fullClassId = `${issuerId}.${objectConfig.classId}`
 
-        // Build the loyalty object payload
+        // Build the loyalty CLASS (template)
+        const loyaltyClass: GoogleLoyaltyClass = {
+            id: fullClassId,
+            issuerName: objectConfig.classConfig?.issuerName || 'Passify',
+            programName: objectConfig.classConfig?.programName || 'Loyalty Card',
+            reviewStatus: 'UNDER_REVIEW',
+            multipleDevicesAndHoldersAllowedStatus: 'MULTIPLE_HOLDERS',
+            ...(objectConfig.classConfig?.logoUrl && {
+                programLogo: {
+                    sourceUri: { uri: objectConfig.classConfig.logoUrl },
+                    contentDescription: { defaultValue: { language: 'de', value: objectConfig.classConfig.programName } }
+                }
+            }),
+            ...(objectConfig.classConfig?.heroImageUrl && {
+                heroImage: {
+                    sourceUri: { uri: objectConfig.classConfig.heroImageUrl },
+                    contentDescription: { defaultValue: { language: 'de', value: 'Banner' } }
+                }
+            }),
+            ...(objectConfig.classConfig?.backgroundColor && {
+                hexBackgroundColor: objectConfig.classConfig.backgroundColor
+            }),
+        }
+
+        // Build the loyalty OBJECT (customer's pass instance)
         const loyaltyObject: GoogleLoyaltyObject = {
             id: fullObjectId,
             classId: fullClassId,
@@ -458,13 +491,14 @@ export class GoogleWalletService implements WalletService {
             }),
         }
 
-        // Create the JWT payload
+        // Create the JWT payload - include BOTH class and object
         const claims = {
             iss: serviceAccount.client_email,
             aud: 'google',
             origins: [process.env.NEXT_PUBLIC_BASE_URL || 'https://passify.io'],
             typ: 'savetowallet',
             payload: {
+                loyaltyClasses: [loyaltyClass],  // Include class!
                 loyaltyObjects: [loyaltyObject],
             },
         }

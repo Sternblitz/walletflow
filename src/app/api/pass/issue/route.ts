@@ -295,7 +295,7 @@ async function generateGooglePass(
             textFields.push({ header: 'Prämie', body: campaignConfig.reward })
         }
 
-        // Generate save link
+        // Generate save link with class configuration
         const saveLink = googleService.generateSaveLink({
             classId,
             objectId: passRecord?.id || initialState.customer_number,
@@ -304,7 +304,15 @@ async function generateGooglePass(
             stamps,
             points,
             barcodeValue: passRecord?.id || initialState.customer_number,
-            textFields
+            textFields,
+            // Include class config so JWT creates both class + object
+            classConfig: {
+                programName: campaign.name || 'Loyalty Card',
+                issuerName: campaign.client?.name || 'Passify',
+                logoUrl: draft.images?.logo?.url,
+                heroImageUrl: draft.images?.strip?.url,
+                backgroundColor: draft.colors?.backgroundColor
+            }
         })
 
         console.log(`[GOOGLE] Generated save link for pass: ${passRecord?.id}`)
