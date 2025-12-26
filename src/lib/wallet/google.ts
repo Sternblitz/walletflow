@@ -463,6 +463,19 @@ export class GoogleWalletService implements WalletService {
             }),
         }
 
+        // Generate visual stamp string (e.g. "☕ ☕ ⚪ ⚪")
+        let stampVisual = ''
+        if (objectConfig.stamps) {
+            const filled = objectConfig.stamps.current
+            const total = objectConfig.stamps.max
+            // Use coffee cup for filled, white circle for empty (or similar default)
+            // Ideally this should come from campaign config, but simplified for now
+            const filledChar = '☕'
+            const emptyChar = '⚪'
+
+            stampVisual = filledChar.repeat(filled) + ' ' + emptyChar.repeat(total - filled)
+        }
+
         // Build the loyalty OBJECT (customer's pass instance)
         const loyaltyObject: GoogleLoyaltyObject = {
             id: fullObjectId,
@@ -489,13 +502,19 @@ export class GoogleWalletService implements WalletService {
                     balance: { int: objectConfig.points },
                 },
             }),
-            ...(objectConfig.textFields && objectConfig.textFields.length > 0 && {
-                textModulesData: objectConfig.textFields.map((field, i) => ({
+            textModulesData: [
+                // Add the visual stamps as the first text module
+                ...(stampVisual ? [{
+                    id: 'visual_stamps',
+                    header: 'Deine Karte',
+                    body: stampVisual
+                }] : []),
+                ...(objectConfig.textFields?.map((field, i) => ({
                     id: `text_${i}`,
                     header: field.header,
                     body: field.body,
-                })),
-            }),
+                })) || [])
+            ],
         }
 
         // Create the JWT payload - include BOTH class and object
