@@ -418,6 +418,7 @@ export class GoogleWalletService implements WalletService {
         points?: number
         barcodeValue: string
         textFields?: Array<{ header: string; body: string }>
+        stampEmoji?: string  // Custom emoji for stamps
         // Class configuration (required for first-time creation)
         classConfig?: {
             programName: string
@@ -468,9 +469,8 @@ export class GoogleWalletService implements WalletService {
         if (objectConfig.stamps) {
             const filled = objectConfig.stamps.current
             const total = objectConfig.stamps.max
-            // Use coffee cup for filled, white circle for empty (or similar default)
-            // Ideally this should come from campaign config, but simplified for now
-            const filledChar = '☕'
+            // Use custom emoji from campaign config, or default to coffee
+            const filledChar = objectConfig.stampEmoji || '☕'
             const emptyChar = '⚪'
 
             stampVisual = filledChar.repeat(filled) + ' ' + emptyChar.repeat(total - filled)
@@ -541,12 +541,13 @@ export class GoogleWalletService implements WalletService {
     /**
      * Update stamps for a Google Wallet pass
      * (Called after scan, instead of APNs push for Apple)
+     * @param stampEmoji - The emoji to use for filled stamps (from campaign config)
      */
-    async updateStamps(objectId: string, stamps: { current: number; max: number }): Promise<void> {
+    async updateStamps(objectId: string, stamps: { current: number; max: number }, stampEmoji: string = '☕'): Promise<void> {
         // Generate visual stamp string (e.g. "☕ ☕ ⚪ ⚪")
         const filled = stamps.current
         const total = stamps.max
-        const filledChar = '☕'
+        const filledChar = stampEmoji
         const emptyChar = '⚪'
         const stampVisual = filledChar.repeat(filled) + ' ' + emptyChar.repeat(total - filled)
 

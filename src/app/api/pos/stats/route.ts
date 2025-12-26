@@ -29,24 +29,28 @@ export async function GET(req: NextRequest) {
 
         const campaignId = client.campaigns[0].id
 
-        // Get total passes
+        // Get total passes (only count those that have been downloaded/accessed)
+        // A pass is "active" when last_updated_at is set (was fetched at least once)
         const { count: totalPasses } = await supabase
             .from('passes')
             .select('*', { count: 'exact', head: true })
             .eq('campaign_id', campaignId)
+            .not('last_updated_at', 'is', null)
 
-        // Get Apple vs Google count
+        // Get Apple vs Google count (only downloaded ones)
         const { count: appleCount } = await supabase
             .from('passes')
             .select('*', { count: 'exact', head: true })
             .eq('campaign_id', campaignId)
             .eq('wallet_type', 'apple')
+            .not('last_updated_at', 'is', null)
 
         const { count: googleCount } = await supabase
             .from('passes')
             .select('*', { count: 'exact', head: true })
             .eq('campaign_id', campaignId)
             .eq('wallet_type', 'google')
+            .not('last_updated_at', 'is', null)
 
         // Get today's stamps
         const todayStart = new Date()

@@ -308,6 +308,7 @@ async function generateGooglePass(
             points,
             barcodeValue: passRecord?.id || initialState.customer_number, // Keep original for QR
             textFields,
+            stampEmoji: campaignConfig.stampEmoji || '☕',  // Use campaign-configured emoji
             // Include class config so JWT creates both class + object
             classConfig: {
                 programName: campaign.name || 'Loyalty Card',

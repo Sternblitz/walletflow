@@ -145,17 +145,24 @@ export async function POST(req: NextRequest) {
                 const { GoogleWalletService } = await import('@/lib/wallet/google')
                 const googleService = new GoogleWalletService()
 
+                // Google Wallet object IDs use underscores, not dashes
+                const googleObjectId = passId.replace(/-/g, '_')
+
+                // Get stamp emoji from campaign config (default to coffee)
+                const campaignConfig = pass.campaign?.config || {}
+                const stampEmoji = campaignConfig.stampEmoji || '☕'
+
                 if (newState.stamps !== undefined) {
-                    await googleService.updateStamps(passId, {
+                    await googleService.updateStamps(googleObjectId, {
                         current: newState.stamps,
                         max: newState.max_stamps || 10
-                    })
+                    }, stampEmoji)
                     pushStatus.sent = 1
-                    console.log(`[GOOGLE ✅] Updated stamps for pass ${passId}`)
+                    console.log(`[GOOGLE ✅] Updated stamps for pass ${googleObjectId}`)
                 } else if (newState.points !== undefined) {
-                    await googleService.updatePoints(passId, newState.points)
+                    await googleService.updatePoints(googleObjectId, newState.points)
                     pushStatus.sent = 1
-                    console.log(`[GOOGLE ✅] Updated points for pass ${passId}`)
+                    console.log(`[GOOGLE ✅] Updated points for pass ${googleObjectId}`)
                 }
             } else {
                 // Apple Wallet: Send APNs push notification
