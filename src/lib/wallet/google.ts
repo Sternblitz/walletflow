@@ -439,15 +439,15 @@ export class GoogleWalletService implements WalletService {
             programName: objectConfig.classConfig?.programName || 'Loyalty Card',
             reviewStatus: 'UNDER_REVIEW',
             multipleDevicesAndHoldersAllowedStatus: 'MULTIPLE_HOLDERS',
-            ...(objectConfig.classConfig?.logoUrl && {
+            ...(isValidUrl(objectConfig.classConfig?.logoUrl) && {
                 programLogo: {
-                    sourceUri: { uri: objectConfig.classConfig.logoUrl },
-                    contentDescription: { defaultValue: { language: 'de', value: objectConfig.classConfig.programName } }
+                    sourceUri: { uri: objectConfig.classConfig!.logoUrl! },
+                    contentDescription: { defaultValue: { language: 'de', value: objectConfig.classConfig!.programName } }
                 }
             }),
-            ...(objectConfig.classConfig?.heroImageUrl && {
+            ...(isValidUrl(objectConfig.classConfig?.heroImageUrl) && {
                 heroImage: {
-                    sourceUri: { uri: objectConfig.classConfig.heroImageUrl },
+                    sourceUri: { uri: objectConfig.classConfig!.heroImageUrl! },
                     contentDescription: { defaultValue: { language: 'de', value: 'Banner' } }
                 }
             }),
@@ -584,5 +584,20 @@ export class GoogleWalletService implements WalletService {
         } catch (error: any) {
             return { valid: false, error: error.message }
         }
+    }
+}
+
+// Helper to validate URLs for Google Wallet
+function isValidUrl(url: string | undefined): boolean {
+    if (!url) return false
+    try {
+        const parsed = new URL(url)
+        // Must be HTTPS and publicly accessible (no localhost)
+        return parsed.protocol === 'https:' &&
+            !parsed.hostname.includes('localhost') &&
+            !parsed.hostname.includes('127.0.0.1') &&
+            !parsed.hostname.includes('10.0.2.2')
+    } catch {
+        return false
     }
 }
