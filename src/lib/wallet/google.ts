@@ -439,12 +439,19 @@ export class GoogleWalletService implements WalletService {
             programName: objectConfig.classConfig?.programName || 'Loyalty Card',
             reviewStatus: 'UNDER_REVIEW',
             multipleDevicesAndHoldersAllowedStatus: 'MULTIPLE_HOLDERS',
-            ...(isValidUrl(objectConfig.classConfig?.logoUrl) && {
-                programLogo: {
-                    sourceUri: { uri: objectConfig.classConfig!.logoUrl! },
-                    contentDescription: { defaultValue: { language: 'de', value: objectConfig.classConfig!.programName } }
+            programLogo: {
+                sourceUri: {
+                    uri: isValidUrl(objectConfig.classConfig?.logoUrl)
+                        ? objectConfig.classConfig!.logoUrl!
+                        : 'https://www.gstatic.com/images/branding/product/2x/google_wallet_512dp.png' // Fallback valid logo
+                },
+                contentDescription: {
+                    defaultValue: {
+                        language: 'de',
+                        value: objectConfig.classConfig?.programName || 'Loyalty Card'
+                    }
                 }
-            }),
+            },
             ...(isValidUrl(objectConfig.classConfig?.heroImageUrl) && {
                 heroImage: {
                     sourceUri: { uri: objectConfig.classConfig!.heroImageUrl! },
