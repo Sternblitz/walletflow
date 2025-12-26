@@ -543,6 +543,13 @@ export class GoogleWalletService implements WalletService {
      * (Called after scan, instead of APNs push for Apple)
      */
     async updateStamps(objectId: string, stamps: { current: number; max: number }): Promise<void> {
+        // Generate visual stamp string (e.g. "☕ ☕ ⚪ ⚪")
+        const filled = stamps.current
+        const total = stamps.max
+        const filledChar = '☕'
+        const emptyChar = '⚪'
+        const stampVisual = filledChar.repeat(filled) + ' ' + emptyChar.repeat(total - filled)
+
         await this.updateObject(objectId, {
             loyaltyPoints: {
                 label: 'Stempel',
@@ -550,6 +557,11 @@ export class GoogleWalletService implements WalletService {
                     string: `${stamps.current}/${stamps.max}`
                 },
             },
+            textModulesData: [{
+                id: 'visual_stamps',
+                header: 'Deine Karte',
+                body: stampVisual
+            }]
         })
     }
 
