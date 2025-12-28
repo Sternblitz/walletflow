@@ -127,18 +127,25 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         <div className="p-8 max-w-5xl mx-auto space-y-8">
 
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <Link href="/admin">
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                        <ArrowLeft className="w-5 h-5" />
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Link href="/admin">
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                            <ArrowLeft className="w-5 h-5" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl font-bold">{campaign.client?.name || campaign.name}</h1>
+                        <p className="text-sm text-zinc-400">
+                            {campaign.passes?.length || 0} Kunden • Erstellt am {new Date(campaign.created_at).toLocaleDateString('de-DE')}
+                        </p>
+                    </div>
+                </div>
+                <Link href={`/admin/campaign/${campaignId}/edit`}>
+                    <Button className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500">
+                        ✏️ Design bearbeiten
                     </Button>
                 </Link>
-                <div>
-                    <h1 className="text-2xl font-bold">{campaign.client?.name || campaign.name}</h1>
-                    <p className="text-sm text-zinc-400">
-                        {campaign.passes?.length || 0} Kunden • Erstellt am {new Date(campaign.created_at).toLocaleDateString('de-DE')}
-                    </p>
-                </div>
             </div>
 
             {/* Messaging Section */}
