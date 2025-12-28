@@ -90,7 +90,10 @@ export async function createCampaignAction(data: any) {
         cleanConfig = JSON.parse(JSON.stringify({
             address: data.address || "",
             locationMessage: data.locationMessage || "Du bist in der Nähe! 🎉",
-            locations: data.locations || [] // Multiple locations support
+            locations: data.locations || [], // Multiple locations support
+            // Sync stamp emoji for Google Wallet (reads from config, not designConfig)
+            stampEmoji: designConfig?.stampConfig?.icon || '☕',
+            maxStamps: designConfig?.stampConfig?.total || 10
         }))
 
         // EXPLICITLY PRESERVE STAMP ICON

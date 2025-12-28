@@ -97,11 +97,12 @@ async function generatePass(
         const walletType = platform === 'android' ? 'google' : 'apple'
 
         // Determine initial state based on concept
+        const campaignConfig = campaign.config || {}
         let initialState: Record<string, any> = {}
         if (campaign.concept === 'STAMP_CARD' || campaign.concept === 'STAMP_CARD_V2') {
             initialState = {
                 stamps: 1,
-                max_stamps: 10,
+                max_stamps: campaignConfig.maxStamps || 10,
                 customer_number: customerNumber,
                 redemptions: 0
             }
