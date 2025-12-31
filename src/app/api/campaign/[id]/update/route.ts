@@ -79,6 +79,13 @@ export async function POST(
             }
 
             updateData.design_assets = processedDesignAssets
+
+            // Log colors being saved
+            console.log('[UPDATE] Colors being saved:', {
+                backgroundColor: processedDesignAssets.colors?.backgroundColor,
+                foregroundColor: processedDesignAssets.colors?.foregroundColor,
+                labelColor: processedDesignAssets.colors?.labelColor
+            })
         }
 
         if (config) {
