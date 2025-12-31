@@ -17,13 +17,15 @@ export async function GET(
             is_active,
             created_at,
             config,
+            design_assets,
             client:clients(name, slug),
             passes(
                 id,
                 serial_number,
                 current_state,
                 created_at,
-                last_updated_at
+                last_updated_at,
+                wallet_type
             )
         `)
         .eq('id', id)
