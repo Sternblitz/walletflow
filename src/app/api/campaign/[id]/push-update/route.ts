@@ -138,50 +138,9 @@ export async function POST(
                 // ─────────────────────────────────────────────────────────
                 const textModulesData: any[] = []
 
-                // Header fields (usually small labels at top)
-                if (designAssets.fields?.headerFields) {
-                    designAssets.fields.headerFields.forEach((f: any, i: number) => {
-                        if (f.value) textModulesData.push({
-                            id: `header_${i}`,
-                            header: f.label || '',
-                            body: String(f.value)
-                        })
-                    })
-                }
-
-                // Secondary fields (info rows)
-                if (designAssets.fields?.secondaryFields) {
-                    designAssets.fields.secondaryFields.forEach((f: any, i: number) => {
-                        if (f.value) textModulesData.push({
-                            id: `secondary_${i}`,
-                            header: f.label || '',
-                            body: String(f.value)
-                        })
-                    })
-                }
-
-                // Auxiliary fields
-                if (designAssets.fields?.auxiliaryFields) {
-                    designAssets.fields.auxiliaryFields.forEach((f: any, i: number) => {
-                        if (f.value) textModulesData.push({
-                            id: `aux_${i}`,
-                            header: f.label || '',
-                            body: String(f.value)
-                        })
-                    })
-                }
-
-                // Back fields
-                if (designAssets.fields?.backFields) {
-                    designAssets.fields.backFields.forEach((f: any, i: number) => {
-                        if (f.value) textModulesData.push({
-                            id: `back_${i}`,
-                            header: f.label || '',
-                            body: String(f.value)
-                        })
-                    })
-                }
-
+                // Only essential text modules - skip editor fields that duplicate stamps
+                // (The "DEIN FORTSCHRITT" from editor caused duplicates)
+                const reward = configData.reward || 'Prämie'
                 // ─────────────────────────────────────────────────────────
                 // 3. UPDATE EACH OBJECT (Individual passes)
                 // ─────────────────────────────────────────────────────────
@@ -210,22 +169,21 @@ export async function POST(
                                 balance: { string: `${currentStamps}/${newMaxStamps}` }
                             },
 
-                            // Text modules (shows in details view)
+                            // Text modules - use text_0 ID to overwrite old "DEIN FORTSCHRITT"
+                            // Google Wallet merges by ID, so using text_0 overwrites the original
                             textModulesData: [
-                                // Visual stamps with emojis
+                                // Overwrite text_0 (usually "DEIN FORTSCHRITT") with updated stamps  
+                                {
+                                    id: 'text_0',
+                                    header: 'Deine Stempel',
+                                    body: stampVisual
+                                },
+                                // Also update visual_stamps if it exists
                                 {
                                     id: 'visual_stamps',
                                     header: 'Deine Stempel',
                                     body: stampVisual
-                                },
-                                // Reward info if configured
-                                ...(configData.reward ? [{
-                                    id: 'reward_info',
-                                    header: 'Deine Prämie',
-                                    body: configData.reward
-                                }] : []),
-                                // All editor fields
-                                ...textModulesData
+                                }
                             ],
 
                             // Optional: Add a message about the update
