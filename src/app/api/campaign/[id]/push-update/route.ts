@@ -79,7 +79,7 @@ export async function POST(
         }
 
         // GOOGLE: 1. Update Class (Design)
-        //         2. Update Objects (Stamps/Emoji)
+        //         2. Update Objects (Stamps & Text Modules)
         if (googlePasses.length > 0) {
             try {
                 const { GoogleWalletService } = await import('@/lib/wallet/google')
@@ -88,7 +88,6 @@ export async function POST(
                 // 1. Update Class (Design)
                 const classId = `campaign_${campaign.id.replace(/-/g, '_')}`
                 try {
-                    // Update class with new design
                     await googleService.createOrUpdateClass({
                         classId,
                         programName: campaign.client?.name || campaign.name || 'Loyalty Card',
@@ -103,8 +102,45 @@ export async function POST(
                     errors.push(`Google Class: ${e.message}`)
                 }
 
-                // 2. Update Objects (Stamps)
+                // 2. Update Objects (Stamps & Text Modules)
                 const stampEmoji = campaign.config?.stampEmoji || '☕'
+                const designAssets = campaign.design_assets || {}
+
+                // Prepare Text Modules from Design
+                const textModulesData: any[] = []
+
+                // Add header fields
+                if (designAssets.fields?.headerFields) {
+                    designAssets.fields.headerFields.forEach((f: any, i: number) => {
+                        if (f.value) textModulesData.push({
+                            id: `header_${i}`,
+                            header: f.label || '',
+                            body: f.value
+                        })
+                    })
+                }
+
+                // Add primary fields
+                if (designAssets.fields?.primaryFields) {
+                    designAssets.fields.primaryFields.forEach((f: any, i: number) => {
+                        if (f.value) textModulesData.push({
+                            id: `primary_${i}`,
+                            header: f.label || '',
+                            body: f.value
+                        })
+                    })
+                }
+
+                // Add secondary fields
+                if (designAssets.fields?.secondaryFields) {
+                    designAssets.fields.secondaryFields.forEach((f: any, i: number) => {
+                        if (f.value) textModulesData.push({
+                            id: `secondary_${i}`,
+                            header: f.label || '',
+                            body: f.value
+                        })
+                    })
+                }
 
                 for (const pass of googlePasses) {
                     try {
@@ -112,11 +148,29 @@ export async function POST(
                         // We fetch current_state in query now
                         const currentState = (pass as any).current_state || { stamps: 0, max_stamps: 10 }
 
-                        // Re-render stamps with new emoji
-                        await googleService.updateStamps(googleObjectId, {
-                            current: currentState.stamps || 0,
-                            max: currentState.max_stamps || 10
-                        }, stampEmoji)
+                        // Generate visual stamp string
+                        const filled = currentState.stamps || 0
+                        const total = currentState.max_stamps || 10
+                        const stampVisual = stampEmoji.repeat(filled) + ' ' + '⚪'.repeat(Math.max(0, total - filled))
+
+                        // Combine stamps + text modules
+                        const objectPatch = {
+                            loyaltyPoints: {
+                                label: 'Stempel',
+                                balance: { string: `${filled}/${total}` }
+                            },
+                            textModulesData: [
+                                {
+                                    id: 'visual_stamps',
+                                    header: 'Deine Karte',
+                                    body: stampVisual
+                                },
+                                ...textModulesData // Include all other text fields!
+                            ]
+                        }
+
+                        // Use generic updateObject
+                        await googleService.updateObject(googleObjectId, objectPatch)
 
                         console.log(`[PUSH-UPDATE] Google pass ${googleObjectId} updated`)
                         sent += 1
