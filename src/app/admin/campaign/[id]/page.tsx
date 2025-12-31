@@ -14,7 +14,8 @@ import {
     Clock,
     Stamp,
     MessageSquare,
-    RefreshCw
+    RefreshCw,
+    Trash2
 } from "lucide-react"
 
 interface Pass {
@@ -50,6 +51,8 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     const [sending, setSending] = useState(false)
     const [sendResult, setSendResult] = useState<{ sent: number; total: number } | null>(null)
     const [campaignId, setCampaignId] = useState<string | null>(null)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [deleting, setDeleting] = useState(false)
 
     useEffect(() => {
         params.then(p => setCampaignId(p.id))
@@ -104,6 +107,30 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         }
     }
 
+    const handleDelete = async () => {
+        if (!campaignId) return
+
+        setDeleting(true)
+        try {
+            const response = await fetch(`/api/campaign/${campaignId}`, {
+                method: 'DELETE'
+            })
+
+            if (response.ok) {
+                // Redirect to admin page
+                window.location.href = '/admin'
+            } else {
+                alert('Fehler beim Löschen der Kampagne')
+            }
+        } catch (error) {
+            console.error('Error deleting campaign:', error)
+            alert('Fehler beim Löschen der Kampagne')
+        } finally {
+            setDeleting(false)
+            setShowDeleteConfirm(false)
+        }
+    }
+
     if (loading) {
         return (
             <div className="p-8 max-w-5xl mx-auto flex items-center justify-center min-h-[400px]">
@@ -141,14 +168,58 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         </p>
                     </div>
                 </div>
-                <Link href={`/admin/campaign/${campaignId}/edit`}>
-                    <Button className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500">
-                        ✏️ Design bearbeiten
+                <div className="flex gap-2">
+                    <Link href={`/admin/campaign/${campaignId}/edit`}>
+                        <Button className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500">
+                            ✏️ Design bearbeiten
+                        </Button>
+                    </Link>
+                    <Button
+                        variant="outline"
+                        className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() => setShowDeleteConfirm(true)}
+                    >
+                        <Trash2 className="w-4 h-4" />
                     </Button>
-                </Link>
+                </div>
             </div>
 
-            {/* Messaging Section */}
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-md mx-4 space-y-4">
+                        <h3 className="text-xl font-bold text-red-400">⚠️ Kampagne löschen?</h3>
+                        <p className="text-zinc-300">
+                            Bist du sicher, dass du <strong>"{campaign.client?.name || campaign.name}"</strong> dauerhaft löschen möchtest?
+                        </p>
+                        <p className="text-sm text-zinc-500">
+                            Dies löscht auch alle {campaign.passes?.length || 0} Kundenkarten. Diese Aktion kann nicht rückgängig gemacht werden.
+                        </p>
+                        <div className="flex gap-3 pt-2">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => setShowDeleteConfirm(false)}
+                                disabled={deleting}
+                            >
+                                Abbrechen
+                            </Button>
+                            <Button
+                                className="flex-1 bg-red-600 hover:bg-red-500 text-white"
+                                onClick={handleDelete}
+                                disabled={deleting}
+                            >
+                                {deleting ? (
+                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                ) : (
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                )}
+                                Endgültig löschen
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="rounded-xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 p-6 space-y-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">

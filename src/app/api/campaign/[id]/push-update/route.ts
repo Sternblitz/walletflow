@@ -98,11 +98,15 @@ export async function POST(
                 // ─────────────────────────────────────────────────────────
                 const classId = `campaign_${campaign.id.replace(/-/g, '_')}`
                 try {
+                    // Get client name (handle both array and object from Supabase)
+                    const clientData = Array.isArray(campaign.client) ? campaign.client[0] : campaign.client
+                    const clientName = clientData?.name || campaign.name || 'Passify'
+
                     await googleService.createOrUpdateClass({
                         classId,
                         // Program name from logoText or client name
-                        programName: designAssets.content?.logoText || campaign.client?.name || campaign.name || 'Loyalty Card',
-                        issuerName: campaign.client?.name || 'Passify',
+                        programName: designAssets.content?.logoText || clientName || 'Loyalty Card',
+                        issuerName: clientName,
                         logoUrl: designAssets.images?.logo?.url,
                         heroImageUrl: designAssets.images?.strip?.url,
                         backgroundColor: designAssets.colors?.backgroundColor
