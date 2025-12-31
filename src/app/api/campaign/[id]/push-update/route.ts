@@ -190,12 +190,13 @@ export async function POST(
                         const googleObjectId = pass.id.replace(/-/g, '_')
                         const currentState = (pass as any).current_state || {}
                         const currentStamps = currentState.stamps || 0
-                        const currentMaxStamps = currentState.max_stamps || maxStamps
+                        // Use NEW maxStamps from campaign config, not old value from state
+                        const newMaxStamps = maxStamps
                         const customerName = currentState.customer_name || 'Stammkunde'
                         const customerNumber = currentState.customer_number || ''
 
                         // Generate visual stamp string for text module
-                        const stampVisual = stampEmoji.repeat(currentStamps) + ' ' + '⚪'.repeat(Math.max(0, currentMaxStamps - currentStamps))
+                        const stampVisual = stampEmoji.repeat(currentStamps) + ' ' + '⚪'.repeat(Math.max(0, newMaxStamps - currentStamps))
 
                         // Build comprehensive object update
                         const objectPatch: any = {
@@ -206,7 +207,7 @@ export async function POST(
                             // Loyalty points (shows on card front!)
                             loyaltyPoints: {
                                 label: 'Stempel',
-                                balance: { string: `${currentStamps}/${currentMaxStamps}` }
+                                balance: { string: `${currentStamps}/${newMaxStamps}` }
                             },
 
                             // Text modules (shows in details view)
