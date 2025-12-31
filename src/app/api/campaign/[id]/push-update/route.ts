@@ -172,15 +172,8 @@ export async function POST(
                             // Text modules - use text_0 ID to overwrite old "DEIN FORTSCHRITT"
                             // Google Wallet merges by ID, so using text_0 overwrites the original
                             textModulesData: [
-                                // Overwrite text_0 (usually "DEIN FORTSCHRITT") with updated stamps  
                                 {
                                     id: 'text_0',
-                                    header: 'Deine Stempel',
-                                    body: stampVisual
-                                },
-                                // Also update visual_stamps if it exists
-                                {
-                                    id: 'visual_stamps',
                                     header: 'Deine Stempel',
                                     body: stampVisual
                                 }
