@@ -225,6 +225,10 @@ async function generateApplePass(
         console.log(`[PASS] Adding ${locations.length} GPS locations to pass`)
     }
 
+    // DEBUG: Verify baseUrl for webServiceURL
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    console.log(`[PASS] Base URL for webServiceURL: ${baseUrl} (https: ${baseUrl?.startsWith('https')})`)
+
     // Generate the pass using the shared factory
     const pkPass = await PassFactory.createPass({
         draft,
@@ -232,7 +236,7 @@ async function generateApplePass(
         serialNumber,
         authToken,
         state: initialState,
-        baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+        baseUrl,
         locations
     })
 
