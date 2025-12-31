@@ -42,21 +42,37 @@ export async function POST(
         console.log(`[PUSH-UPDATE] Campaign ${campaignId}: ${applePasses.length} Apple, ${googlePasses.length} Google`)
 
         // ═══════════════════════════════════════════════════════════════
-        // APPLE: Update timestamps + Send APNs push
+        // APPLE: Update timestamps + Sync max_stamps + Send APNs push
         // ═══════════════════════════════════════════════════════════════
         if (applePasses.length > 0) {
             try {
-                // Bulk update timestamps so device sees new Last-Modified
-                const passIds = applePasses.map((p: any) => p.id)
-                const { error: updateError } = await supabase
-                    .from('passes')
-                    .update({ last_updated_at: new Date().toISOString() })
-                    .in('id', passIds)
+                // Get new maxStamps from campaign config
+                const configData = campaign.config || {}
+                const newMaxStamps = configData.maxStamps || 10
 
-                if (updateError) {
-                    console.error('[PUSH-UPDATE] Failed to update timestamps:', updateError)
-                    errors.push(`DB Timestamp update failed: ${updateError.message}`)
+                // Bulk update timestamps AND sync max_stamps in current_state
+                for (const pass of applePasses) {
+                    const currentState = (pass as any).current_state || {}
+                    const updatedState = {
+                        ...currentState,
+                        max_stamps: newMaxStamps  // Sync from campaign config
+                    }
+
+                    const { error: updateError } = await supabase
+                        .from('passes')
+                        .update({
+                            last_updated_at: new Date().toISOString(),
+                            current_state: updatedState
+                        })
+                        .eq('id', pass.id)
+
+                    if (updateError) {
+                        console.error(`[PUSH-UPDATE] Failed to update pass ${pass.id}:`, updateError)
+                        errors.push(`DB update failed for ${pass.id}: ${updateError.message}`)
+                    }
                 }
+
+                console.log(`[PUSH-UPDATE] Updated timestamps and max_stamps (${newMaxStamps}) for ${applePasses.length} Apple passes`)
 
                 const { sendPassUpdatePush } = await import('@/lib/wallet/apns')
 
