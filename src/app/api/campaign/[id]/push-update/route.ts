@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
  * POST /api/campaign/[id]/push-update
  * Push design update notifications to all pass holders
  * - Apple: Triggers APNs push to all registered devices
- * - Google: Updates all loyalty objects via API
+ * - Google: Updates Class (design) + all Objects (content)
  */
 export async function POST(
     req: NextRequest,
@@ -20,7 +20,7 @@ export async function POST(
 
         const supabase = await createClient()
 
-        // Get campaign with all passes
+        // Get campaign with all passes AND client info
         const { data: campaign, error: fetchError } = await supabase
             .from('campaigns')
             .select('id, design_assets, config, name, client:clients(name), passes(id, wallet_type, current_state)')
@@ -41,7 +41,9 @@ export async function POST(
 
         console.log(`[PUSH-UPDATE] Campaign ${campaignId}: ${applePasses.length} Apple, ${googlePasses.length} Google`)
 
-        // APPLE: Send APNs push to trigger pass refresh
+        // ═══════════════════════════════════════════════════════════════
+        // APPLE: Update timestamps + Send APNs push
+        // ═══════════════════════════════════════════════════════════════
         if (applePasses.length > 0) {
             try {
                 // Bulk update timestamps so device sees new Last-Modified
@@ -78,23 +80,32 @@ export async function POST(
             }
         }
 
-        // GOOGLE: 1. Update Class (Design)
-        //         2. Update Objects (Stamps & Text Modules)
+        // ═══════════════════════════════════════════════════════════════
+        // GOOGLE: Maximum Update Coverage
+        // ═══════════════════════════════════════════════════════════════
         if (googlePasses.length > 0) {
             try {
                 const { GoogleWalletService } = await import('@/lib/wallet/google')
                 const googleService = new GoogleWalletService()
 
-                // 1. Update Class (Design)
+                const designAssets = campaign.design_assets || {}
+                const configData = campaign.config || {}
+                const stampEmoji = configData.stampEmoji || '☕'
+                const maxStamps = configData.maxStamps || 10
+
+                // ─────────────────────────────────────────────────────────
+                // 1. UPDATE CLASS (Design elements - may take time to sync)
+                // ─────────────────────────────────────────────────────────
                 const classId = `campaign_${campaign.id.replace(/-/g, '_')}`
                 try {
                     await googleService.createOrUpdateClass({
                         classId,
-                        programName: campaign.client?.name || campaign.name || 'Loyalty Card',
+                        // Program name from logoText or client name
+                        programName: designAssets.content?.logoText || campaign.client?.name || campaign.name || 'Loyalty Card',
                         issuerName: campaign.client?.name || 'Passify',
-                        logoUrl: campaign.design_assets?.images?.logo?.url,
-                        heroImageUrl: campaign.design_assets?.images?.strip?.url,
-                        backgroundColor: campaign.design_assets?.colors?.backgroundColor
+                        logoUrl: designAssets.images?.logo?.url,
+                        heroImageUrl: designAssets.images?.strip?.url,
+                        backgroundColor: designAssets.colors?.backgroundColor
                     })
                     console.log(`[PUSH-UPDATE] Google Class ${classId} updated`)
                 } catch (e: any) {
@@ -102,77 +113,112 @@ export async function POST(
                     errors.push(`Google Class: ${e.message}`)
                 }
 
-                // 2. Update Objects (Stamps & Text Modules)
-                const stampEmoji = campaign.config?.stampEmoji || '☕'
-                const designAssets = campaign.design_assets || {}
-
-                // Prepare Text Modules from Design
+                // ─────────────────────────────────────────────────────────
+                // 2. BUILD TEXT MODULES from Editor Fields
+                // ─────────────────────────────────────────────────────────
                 const textModulesData: any[] = []
 
-                // Add header fields
+                // Header fields (usually small labels at top)
                 if (designAssets.fields?.headerFields) {
                     designAssets.fields.headerFields.forEach((f: any, i: number) => {
                         if (f.value) textModulesData.push({
                             id: `header_${i}`,
                             header: f.label || '',
-                            body: f.value
+                            body: String(f.value)
                         })
                     })
                 }
 
-                // Add primary fields
-                if (designAssets.fields?.primaryFields) {
-                    designAssets.fields.primaryFields.forEach((f: any, i: number) => {
-                        if (f.value) textModulesData.push({
-                            id: `primary_${i}`,
-                            header: f.label || '',
-                            body: f.value
-                        })
-                    })
-                }
-
-                // Add secondary fields
+                // Secondary fields (info rows)
                 if (designAssets.fields?.secondaryFields) {
                     designAssets.fields.secondaryFields.forEach((f: any, i: number) => {
                         if (f.value) textModulesData.push({
                             id: `secondary_${i}`,
                             header: f.label || '',
-                            body: f.value
+                            body: String(f.value)
                         })
                     })
                 }
 
+                // Auxiliary fields
+                if (designAssets.fields?.auxiliaryFields) {
+                    designAssets.fields.auxiliaryFields.forEach((f: any, i: number) => {
+                        if (f.value) textModulesData.push({
+                            id: `aux_${i}`,
+                            header: f.label || '',
+                            body: String(f.value)
+                        })
+                    })
+                }
+
+                // Back fields
+                if (designAssets.fields?.backFields) {
+                    designAssets.fields.backFields.forEach((f: any, i: number) => {
+                        if (f.value) textModulesData.push({
+                            id: `back_${i}`,
+                            header: f.label || '',
+                            body: String(f.value)
+                        })
+                    })
+                }
+
+                // ─────────────────────────────────────────────────────────
+                // 3. UPDATE EACH OBJECT (Individual passes)
+                // ─────────────────────────────────────────────────────────
                 for (const pass of googlePasses) {
                     try {
                         const googleObjectId = pass.id.replace(/-/g, '_')
-                        // We fetch current_state in query now
-                        const currentState = (pass as any).current_state || { stamps: 0, max_stamps: 10 }
+                        const currentState = (pass as any).current_state || {}
+                        const currentStamps = currentState.stamps || 0
+                        const currentMaxStamps = currentState.max_stamps || maxStamps
+                        const customerName = currentState.customer_name || 'Stammkunde'
+                        const customerNumber = currentState.customer_number || ''
 
-                        // Generate visual stamp string
-                        const filled = currentState.stamps || 0
-                        const total = currentState.max_stamps || 10
-                        const stampVisual = stampEmoji.repeat(filled) + ' ' + '⚪'.repeat(Math.max(0, total - filled))
+                        // Generate visual stamp string for text module
+                        const stampVisual = stampEmoji.repeat(currentStamps) + ' ' + '⚪'.repeat(Math.max(0, currentMaxStamps - currentStamps))
 
-                        // Combine stamps + text modules
-                        const objectPatch = {
+                        // Build comprehensive object update
+                        const objectPatch: any = {
+                            // Account info (shows on card front!)
+                            accountName: customerName,
+                            accountId: customerNumber,
+
+                            // Loyalty points (shows on card front!)
                             loyaltyPoints: {
                                 label: 'Stempel',
-                                balance: { string: `${filled}/${total}` }
+                                balance: { string: `${currentStamps}/${currentMaxStamps}` }
                             },
+
+                            // Text modules (shows in details view)
                             textModulesData: [
+                                // Visual stamps with emojis
                                 {
                                     id: 'visual_stamps',
-                                    header: 'Deine Karte',
+                                    header: 'Deine Stempel',
                                     body: stampVisual
                                 },
-                                ...textModulesData // Include all other text fields!
-                            ]
+                                // Reward info if configured
+                                ...(configData.reward ? [{
+                                    id: 'reward_info',
+                                    header: 'Deine Prämie',
+                                    body: configData.reward
+                                }] : []),
+                                // All editor fields
+                                ...textModulesData
+                            ],
+
+                            // Optional: Add a message about the update
+                            messages: [{
+                                header: 'Karte aktualisiert',
+                                body: 'Deine Karte wurde aktualisiert.',
+                                id: `update_${Date.now()}`
+                            }]
                         }
 
-                        // Use generic updateObject
+                        // Update the object
                         await googleService.updateObject(googleObjectId, objectPatch)
 
-                        console.log(`[PUSH-UPDATE] Google pass ${googleObjectId} updated`)
+                        console.log(`[PUSH-UPDATE] Google pass ${googleObjectId} fully updated`)
                         sent += 1
                     } catch (e: any) {
                         console.error(`[PUSH-UPDATE] Google update failed for ${pass.id}:`, e.message)
