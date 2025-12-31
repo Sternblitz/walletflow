@@ -23,7 +23,7 @@ export async function POST(
         // Get campaign with all passes
         const { data: campaign, error: fetchError } = await supabase
             .from('campaigns')
-            .select('id, design_assets, config, passes(id, wallet_type)')
+            .select('id, design_assets, config, name, client:clients(name), passes(id, wallet_type, current_state)')
             .eq('id', campaignId)
             .single()
 
@@ -44,6 +44,18 @@ export async function POST(
         // APPLE: Send APNs push to trigger pass refresh
         if (applePasses.length > 0) {
             try {
+                // Bulk update timestamps so device sees new Last-Modified
+                const passIds = applePasses.map((p: any) => p.id)
+                const { error: updateError } = await supabase
+                    .from('passes')
+                    .update({ last_updated_at: new Date().toISOString() })
+                    .in('id', passIds)
+
+                if (updateError) {
+                    console.error('[PUSH-UPDATE] Failed to update timestamps:', updateError)
+                    errors.push(`DB Timestamp update failed: ${updateError.message}`)
+                }
+
                 const { sendPassUpdatePush } = await import('@/lib/wallet/apns')
 
                 for (const pass of applePasses) {
@@ -66,25 +78,47 @@ export async function POST(
             }
         }
 
-        // GOOGLE: Update all loyalty objects
-        // Note: Google Wallet doesn't have push notifications like APNs
-        // The pass updates when user opens it or syncs
-        // We can proactively update the object data so it's ready when they open
+        // GOOGLE: 1. Update Class (Design)
+        //         2. Update Objects (Stamps/Emoji)
         if (googlePasses.length > 0) {
             try {
                 const { GoogleWalletService } = await import('@/lib/wallet/google')
                 const googleService = new GoogleWalletService()
+
+                // 1. Update Class (Design)
+                const classId = `campaign_${campaign.id.replace(/-/g, '_')}`
+                try {
+                    // Update class with new design
+                    await googleService.createOrUpdateClass({
+                        classId,
+                        programName: campaign.client?.name || campaign.name || 'Loyalty Card',
+                        issuerName: campaign.client?.name || 'Passify',
+                        logoUrl: campaign.design_assets?.images?.logo?.url,
+                        heroImageUrl: campaign.design_assets?.images?.strip?.url,
+                        backgroundColor: campaign.design_assets?.colors?.backgroundColor
+                    })
+                    console.log(`[PUSH-UPDATE] Google Class ${classId} updated`)
+                } catch (e: any) {
+                    console.error('[PUSH-UPDATE] Google Class update failed:', e)
+                    errors.push(`Google Class: ${e.message}`)
+                }
+
+                // 2. Update Objects (Stamps)
                 const stampEmoji = campaign.config?.stampEmoji || '☕'
 
                 for (const pass of googlePasses) {
                     try {
-                        // Convert pass ID to Google format
                         const googleObjectId = pass.id.replace(/-/g, '_')
+                        // We fetch current_state in query now
+                        const currentState = (pass as any).current_state || { stamps: 0, max_stamps: 10 }
 
-                        // For now, we just log that we'd update
-                        // The actual update happens when they scan next time
-                        // Full object update would require fetching current state
-                        console.log(`[PUSH-UPDATE] Google pass ${googleObjectId} marked for update`)
+                        // Re-render stamps with new emoji
+                        await googleService.updateStamps(googleObjectId, {
+                            current: currentState.stamps || 0,
+                            max: currentState.max_stamps || 10
+                        }, stampEmoji)
+
+                        console.log(`[PUSH-UPDATE] Google pass ${googleObjectId} updated`)
                         sent += 1
                     } catch (e: any) {
                         console.error(`[PUSH-UPDATE] Google update failed for ${pass.id}:`, e.message)
@@ -92,7 +126,7 @@ export async function POST(
                     }
                 }
 
-                console.log(`[PUSH-UPDATE] Google: Marked ${googlePasses.length} passes for update`)
+                console.log(`[PUSH-UPDATE] Google: Updated ${googlePasses.length} passes`)
             } catch (e: any) {
                 console.error('[PUSH-UPDATE] Google module error:', e.message)
                 errors.push(`Google module: ${e.message}`)
