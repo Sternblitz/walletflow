@@ -32,9 +32,16 @@ export async function sendPassUpdatePush(passId: string): Promise<{ success: boo
     }
 
     if (!registrations || registrations.length === 0) {
-        console.log(`[PUSH] No devices registered for pass ${pass.serial_number}`)
-        return { success: true, sent: 0, errors: [] }
+        console.log(`[PUSH] ❌ No devices registered for pass ${pass.serial_number}`)
+        return { success: true, sent: 0, errors: ['No devices registered'] }
     }
+
+    console.log(`[PUSH] Found ${registrations.length} registrations for pass ${pass.serial_number}:`,
+        registrations.map(r => ({
+            device: r.device_library_identifier?.substring(0, 8) + '...',
+            hasToken: !!r.push_token
+        }))
+    )
 
     // Filter registrations with push tokens
     const tokensToNotify = registrations
@@ -42,9 +49,11 @@ export async function sendPassUpdatePush(passId: string): Promise<{ success: boo
         .map(r => r.push_token)
 
     if (tokensToNotify.length === 0) {
-        console.log(`[PUSH] No push tokens available for pass ${pass.serial_number}`)
-        return { success: true, sent: 0, errors: [] }
+        console.log(`[PUSH] ❌ No push tokens available for pass ${pass.serial_number}`)
+        return { success: true, sent: 0, errors: ['No push tokens available'] }
     }
+
+    console.log(`[PUSH] Will send to ${tokensToNotify.length} tokens`)
 
     const errors: string[] = []
     let sent = 0
