@@ -134,13 +134,30 @@ export async function POST(
                 }
 
                 // ─────────────────────────────────────────────────────────
-                // 2. BUILD TEXT MODULES from Editor Fields
+                // 2. BUILD TEXT MODULES from Editor Fields (excluding stamps/progress)
                 // ─────────────────────────────────────────────────────────
-                const textModulesData: any[] = []
+                const editorTextModules: any[] = []
+                const skipKeys = ['progress', 'progress_visual', 'visual', 'stamps', 'balance']
 
-                // Only essential text modules - skip editor fields that duplicate stamps
-                // (The "DEIN FORTSCHRITT" from editor caused duplicates)
-                const reward = configData.reward || 'Prämie'
+                // Helper to add fields if they're not stamp-related
+                const addFieldsIfNotStamps = (fields: any[], prefix: string) => {
+                    if (!fields) return
+                    fields.forEach((f: any, i: number) => {
+                        // Skip stamp/progress fields
+                        if (skipKeys.includes(f.key)) return
+                        if (f.value) editorTextModules.push({
+                            id: `${prefix}_${i}`,
+                            header: f.label || '',
+                            body: String(f.value)
+                        })
+                    })
+                }
+
+                addFieldsIfNotStamps(designAssets.fields?.headerFields, 'header')
+                addFieldsIfNotStamps(designAssets.fields?.secondaryFields, 'secondary')
+                addFieldsIfNotStamps(designAssets.fields?.auxiliaryFields, 'aux')
+                addFieldsIfNotStamps(designAssets.fields?.backFields, 'back')
+
                 // ─────────────────────────────────────────────────────────
                 // 3. UPDATE EACH OBJECT (Individual passes)
                 // ─────────────────────────────────────────────────────────
@@ -169,14 +186,16 @@ export async function POST(
                                 balance: { string: `${currentStamps}/${newMaxStamps}` }
                             },
 
-                            // Text modules - use text_0 ID to overwrite old "DEIN FORTSCHRITT"
-                            // Google Wallet merges by ID, so using text_0 overwrites the original
+                            // Text modules - stamps first, then editor fields
                             textModulesData: [
+                                // Overwrite text_0 (old progress) with updated stamps
                                 {
                                     id: 'text_0',
                                     header: 'Deine Stempel',
                                     body: stampVisual
-                                }
+                                },
+                                // Add all other editor fields
+                                ...editorTextModules
                             ],
 
                             // Optional: Add a message about the update
