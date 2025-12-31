@@ -53,11 +53,12 @@ export async function GET(
         // Add ID to state to ensure barcodes work correctly
         currentState.id = pass.id
 
-        // Debug: Log what's in the draft
+        // Debug: Log what's in the draft including colors
         console.log('[PASS UPDATE] Draft loaded:', {
             hasDraft: !!draft,
             style: draft?.meta?.style,
             logoText: draft?.content?.logoText,
+            colors: draft?.colors,
             headerFieldsCount: draft?.fields?.headerFields?.length || 0,
             imagesKeys: Object.keys(draft?.images || {}),
         })
