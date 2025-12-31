@@ -54,6 +54,15 @@ export class PassFactory {
             } as any
         )
 
+        // Debug: Log colors being applied to pass
+        console.log('[PassFactory] Colors applied:', {
+            backgroundColor: draft.colors.backgroundColor,
+            foregroundColor: draft.colors.foregroundColor,
+            labelColor: draft.colors.labelColor,
+            pkPassBg: (pkPass as any).backgroundColor,
+            pkPassFg: (pkPass as any).foregroundColor
+        })
+
         /* 
         // Removed: setAuthToken/setWebServiceURL methods do not exist on PKPass
         // Handled in constructor above
