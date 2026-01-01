@@ -138,7 +138,7 @@ export const PASS_TEMPLATES: PassTemplate[] = [
             },
             fields: {
                 // Header: Card number right side
-                headerFields: [{ key: 'card', label: 'NR.', value: '0001' }],
+                headerFields: [],
                 // Primary: "0 von 10" displayed BIG
                 primaryFields: [{ key: 'stamps', label: 'DEINE STEMPEL', value: '0 von 10' }],
                 // Secondary: Reward info
@@ -171,7 +171,7 @@ export const PASS_TEMPLATES: PassTemplate[] = [
             fields: {
                 // Event Ticket has different layout.
                 // Header: Logo Text usually visible. Added Customer ID top right.
-                headerFields: [{ key: 'id', label: 'KUNDEN-NR', value: '00123' }],
+                headerFields: [],
                 // Primary: Big Progress -> Now coupled with logic
                 primaryFields: [{ key: 'stamps', label: 'DEINE STEMPEL', value: '0 / 10' }],
                 // Secondary: Reward info only
