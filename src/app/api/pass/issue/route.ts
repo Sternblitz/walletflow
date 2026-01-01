@@ -21,6 +21,31 @@ export async function GET(req: NextRequest) {
 
     const supabase = await createClient()
 
+    // Check if user already has a pass for this campaign (cookie-based deduplication)
+    const existingPassId = req.cookies.get(`pass_${campaignId}`)?.value
+    if (existingPassId) {
+        // User already has a pass - redirect to existing pass download
+        console.log(`[PASS ISSUE] Reusing existing pass ${existingPassId} for campaign ${campaignId}`)
+
+        const { data: existingPass } = await supabase
+            .from('passes')
+            .select('id, serial_number')
+            .eq('id', existingPassId)
+            .single()
+
+        if (existingPass) {
+            // For Apple, redirect to the pass download
+            if (platform !== 'android') {
+                const passTypeIdentifier = process.env.APPLE_PASS_TYPE_IDENTIFIER || 'pass.com.passify.wallet'
+                return NextResponse.redirect(
+                    new URL(`/api/v1/passes/${passTypeIdentifier}/${existingPass.serial_number}`, req.url)
+                )
+            }
+            // For Android, we already have a pass - but can't easily regenerate the Google link
+            // Just let them create a new one (Google handles duplicates)
+        }
+    }
+
     // 1. Fetch Campaign Data
     const { data: campaign } = await supabase
         .from('campaigns')
@@ -240,13 +265,23 @@ async function generateApplePass(
 
     const passBuffer = pkPass.getAsBuffer()
 
-    return new NextResponse(passBuffer as any, {
+    // Create response with cookie to prevent duplicate pass creation
+    const response = new NextResponse(passBuffer as any, {
         status: 200,
         headers: {
             'Content-Type': 'application/vnd.apple.pkpass',
             'Content-Disposition': `attachment; filename="pass.pkpass"`,
         },
     })
+
+    // Set cookie to remember this pass (expires in 1 year)
+    response.cookies.set(`pass_${campaign.id}`, passRecord.id, {
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+        httpOnly: true,
+        sameSite: 'lax'
+    })
+
+    return response
 }
 
 async function generateGooglePass(
@@ -326,17 +361,23 @@ async function generateGooglePass(
 
         console.log(`[GOOGLE] Generated save link for pass: ${passRecord?.id}`)
 
-        // Mark as installed (optimistic - Google doesn't have a callback like Apple)
-        // We assume if we got this far, the user will add it
+        // NOTE: We do NOT mark as installed automatically for Google 
+        // because Google doesn't have a callback like Apple.
+        // The pass stays is_installed_on_android=false until we find a better way.
+
+        // Redirect to Google Wallet save URL with cookie to prevent duplicates
+        const response = NextResponse.redirect(saveLink.url)
+
+        // Set cookie to remember this pass (expires in 1 year)
         if (passRecord?.id) {
-            await supabase
-                .from('passes')
-                .update({ is_installed_on_android: true })
-                .eq('id', passRecord.id)
+            response.cookies.set(`pass_${campaign.id}`, passRecord.id, {
+                maxAge: 60 * 60 * 24 * 365, // 1 year
+                httpOnly: true,
+                sameSite: 'lax'
+            })
         }
 
-        // Redirect to Google Wallet save URL
-        return NextResponse.redirect(saveLink.url)
+        return response
 
     } catch (e) {
         console.error("Google Wallet generation failed:", e)
