@@ -17,11 +17,13 @@ interface Campaign {
         slug: string
     }
     passes: { id: string }[]
+    _installedCount?: number
 }
 
 async function getCampaigns(): Promise<Campaign[]> {
     const supabase = await createClient()
 
+    // First get campaigns with basic info
     const { data: campaigns, error } = await supabase
         .from('campaigns')
         .select(`
@@ -40,7 +42,32 @@ async function getCampaigns(): Promise<Campaign[]> {
         return []
     }
 
-    return (campaigns || []) as unknown as Campaign[]
+    // For each campaign, get ACTUAL installed passes count
+    // A pass is "installed" if it has a device_registration (Apple) or is_installed_on_android=true (Google)
+    const campaignsWithCounts = await Promise.all(
+        (campaigns || []).map(async (campaign: any) => {
+            // Count passes that have device registrations (actually installed on Apple)
+            const { count: appleCount } = await supabase
+                .from('device_registrations')
+                .select('pass_id', { count: 'exact', head: true })
+                .in('pass_id', campaign.passes?.map((p: any) => p.id) || [])
+
+            // Count passes installed on Android
+            const { count: androidCount } = await supabase
+                .from('passes')
+                .select('id', { count: 'exact', head: true })
+                .eq('campaign_id', campaign.id)
+                .eq('is_installed_on_android', true)
+                .eq('wallet_type', 'google')
+
+            return {
+                ...campaign,
+                _installedCount: (appleCount || 0) + (androidCount || 0)
+            }
+        })
+    )
+
+    return campaignsWithCounts as unknown as Campaign[]
 }
 
 function getConceptIcon(concept: string) {
@@ -148,7 +175,7 @@ export default async function DashboardPage() {
                                             <div className="flex items-center gap-4 mt-1 text-sm text-zinc-400">
                                                 <span className="flex items-center gap-1">
                                                     <Users className="w-3.5 h-3.5" />
-                                                    {campaign.passes?.length || 0} Kunden
+                                                    {campaign._installedCount ?? campaign.passes?.length ?? 0} Kunden
                                                 </span>
                                                 <span className="flex items-center gap-1">
                                                     <Clock className="w-3.5 h-3.5" />
