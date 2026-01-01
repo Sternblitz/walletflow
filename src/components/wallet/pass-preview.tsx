@@ -90,8 +90,8 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
               </div>
             </div>
 
-            {/* EVENTTICKET LAYOUT (with background image) */}
-            {def.style === 'eventTicket' && draft.images.background && (
+            {/* EVENTTICKET LAYOUT */}
+            {def.style === 'eventTicket' && (
               <div className="eventticket-content">
                 {/* Primary with optional thumbnail */}
                 <div className="primary-row">
