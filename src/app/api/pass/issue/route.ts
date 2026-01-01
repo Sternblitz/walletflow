@@ -268,7 +268,8 @@ async function generateGooglePass(
                 programName: campaign.name || 'Loyalty Card',
                 issuerName: campaign.client?.name || 'Passify',
                 logoUrl: draft.images?.logo?.url,
-                heroImageUrl: draft.images?.strip?.url,
+                // Use strip image, or fall back to background image for eventTicket style
+                heroImageUrl: draft.images?.strip?.url || draft.images?.background?.url,
                 backgroundColor: draft.colors?.backgroundColor
             })
         } catch (classError) {
