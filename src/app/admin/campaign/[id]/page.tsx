@@ -29,6 +29,9 @@ interface Pass {
     }
     created_at: string
     last_updated_at: string
+    wallet_type?: 'apple' | 'google'
+    is_installed_on_ios?: boolean
+    is_installed_on_android?: boolean
 }
 
 interface Campaign {
@@ -298,9 +301,17 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                                 {campaign.passes?.map((pass) => (
                                     <tr key={pass.id} className="hover:bg-white/5 transition-colors">
                                         <td className="px-4 py-3">
-                                            <span className="font-mono text-sm text-white">
-                                                {pass.current_state?.customer_number || pass.serial_number.slice(0, 8)}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                {/* Platform Icon */}
+                                                {pass.wallet_type === 'google' ? (
+                                                    <span title="Google Wallet" className="text-lg">🤖</span>
+                                                ) : (
+                                                    <span title="Apple Wallet" className="text-lg">🍎</span>
+                                                )}
+                                                <span className="font-mono text-sm text-white">
+                                                    {pass.current_state?.customer_number || pass.serial_number.slice(0, 8)}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3">
                                             {campaign.concept.includes('STAMP') ? (

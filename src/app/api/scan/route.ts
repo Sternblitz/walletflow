@@ -106,12 +106,21 @@ export async function POST(req: NextRequest) {
         }
 
         // 3. Update pass state
+        // Also mark Google passes as "installed" on first scan (since Google has no registration callback)
+        const updateData: any = {
+            current_state: newState,
+            last_updated_at: new Date().toISOString()
+        }
+
+        // For Google passes: mark as installed on first interaction
+        if (pass.wallet_type === 'google' && !pass.is_installed_on_android) {
+            updateData.is_installed_on_android = true
+            console.log(`[SCAN] Marking Google pass ${passId} as installed`)
+        }
+
         const { error: updateError } = await supabase
             .from('passes')
-            .update({
-                current_state: newState,
-                last_updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', passId)
 
         if (updateError) {
