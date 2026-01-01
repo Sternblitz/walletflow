@@ -72,6 +72,12 @@ export async function POST(
     if (regError) {
         console.error('[REGISTER] Failed to save registration:', regError)
         // Return 200 anyway - device is already registered
+    } else {
+        // Mark the pass as installed on iOS
+        await supabase
+            .from('passes')
+            .update({ is_installed_on_ios: true })
+            .eq('id', pass.id)
     }
 
     console.log(`[REGISTER] ✅ Device ${deviceLibraryIdentifier} registered for pass ${serialNumber} with push token: ${pushToken ? 'Yes' : 'No'}`)

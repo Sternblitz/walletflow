@@ -42,27 +42,19 @@ async function getCampaigns(): Promise<Campaign[]> {
         return []
     }
 
-    // For each campaign, get ACTUAL installed passes count
-    // A pass is "installed" if it has a device_registration (Apple) or is_installed_on_android=true (Google)
+    // For each campaign, count only ACTUALLY installed passes
     const campaignsWithCounts = await Promise.all(
         (campaigns || []).map(async (campaign: any) => {
-            // Count passes that have device registrations (actually installed on Apple)
-            const { count: appleCount } = await supabase
-                .from('device_registrations')
-                .select('pass_id', { count: 'exact', head: true })
-                .in('pass_id', campaign.passes?.map((p: any) => p.id) || [])
-
-            // Count passes installed on Android
-            const { count: androidCount } = await supabase
+            // Count passes that are actually installed (iOS or Android)
+            const { count: installedCount } = await supabase
                 .from('passes')
                 .select('id', { count: 'exact', head: true })
                 .eq('campaign_id', campaign.id)
-                .eq('is_installed_on_android', true)
-                .eq('wallet_type', 'google')
+                .or('is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
 
             return {
                 ...campaign,
-                _installedCount: (appleCount || 0) + (androidCount || 0)
+                _installedCount: installedCount || 0
             }
         })
     )

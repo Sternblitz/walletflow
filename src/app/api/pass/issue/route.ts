@@ -142,7 +142,7 @@ async function generatePass(
 
         console.log(`[PASS CREATED] Platform: ${walletType}, Persisting stamp icon: ${savedStampIcon}`)
 
-        // Insert into passes table
+        // Insert into passes table (NOT installed yet - will be marked when device registers)
         const { data: passRecord, error: passError } = await supabase
             .from('passes')
             .insert({
@@ -152,8 +152,8 @@ async function generatePass(
                 auth_token: authToken,
                 current_state: initialState,
                 wallet_type: walletType,
-                is_installed_on_ios: walletType === 'apple',
-                is_installed_on_android: walletType === 'google',
+                is_installed_on_ios: false,  // Will be set when device registers
+                is_installed_on_android: false,  // Will be set when Google confirms
                 customer_name: personalization.customerName || null,
                 customer_birthday: personalization.customerBirthday || null
             })
