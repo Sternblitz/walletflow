@@ -73,17 +73,18 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
             {/* Logo + Header Row */}
             <div className="pass-header">
               <div className="logo-area">
-                {draft.images.logo ? (
+                {draft.images.logo && (
                   <img src={draft.images.logo.url} alt="Logo" className="logo-image" />
-                ) : (
-                  <span className="logo-text">{content.logoText || content.organizationName || 'LOGO'}</span>
+                )}
+                {content.logoText && (
+                  <span className="logo-text" style={{ color: colors.labelColor }}>{content.logoText}</span>
                 )}
               </div>
               <div className="header-fields">
                 {fields.headerFields.map(f => (
                   <div className="field header-field" key={f.key}>
-                    <span className="field-value">{f.value}</span>
                     {f.label && <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>}
+                    <span className="field-value">{f.value}</span>
                   </div>
                 ))}
               </div>
@@ -281,7 +282,9 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
         }
         
         .logo-area {
-          flex: 0 0 auto;
+          display: flex;
+          align-items: center;
+          gap: 0;
         }
         
         .logo-image {
@@ -292,7 +295,8 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
         
         .logo-text {
           font-size: 1.1rem;
-          font-weight: 700;
+          font-weight: 600;
+          margin-left: 8px;
         }
         
         .header-fields {
@@ -313,19 +317,20 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
         }
         
         .header-field .field-label {
-          font-size: 0.6rem;
+          font-size: 0.55rem;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          opacity: 0.8;
+          opacity: 0.7;
+          order: -1;
         }
         
         /* Strip Area */
         .strip-area {
           position: relative;
-          height: 144px;
+          height: 130px;
           display: flex;
-          align-items: center;
-          justify-content: center;
+          align-items: flex-end;
+          justify-content: flex-start;
         }
         
         .strip-area img {
@@ -345,14 +350,14 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
         .primary-overlay {
           position: relative;
           z-index: 1;
-          text-align: center;
-          padding: 20px;
+          text-align: left;
+          padding: 24px 16px;
         }
         
         .primary-field {
           display: flex;
           flex-direction: column;
-          align-items: center;
+          align-items: flex-start;
         }
         
         .primary-value {
@@ -391,9 +396,10 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
         /* Bottom Fields (Secondary + Auxiliary) */
         .bottom-fields {
           display: flex;
-          flex-wrap: wrap;
-          gap: 8px 16px;
-          padding: 12px 16px;
+          justify-content: flex-start;
+          gap: 24px;
+          padding: 14px 16px;
+          border-top: 1px solid rgba(255,255,255,0.08);
         }
         
         .bottom-field {
