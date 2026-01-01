@@ -8,6 +8,7 @@ export async function GET(
     const { id } = await params
     const supabase = await createClient()
 
+    // First get the campaign
     const { data: campaign, error } = await supabase
         .from('campaigns')
         .select(`
@@ -18,15 +19,7 @@ export async function GET(
             created_at,
             config,
             design_assets,
-            client:clients(name, slug),
-            passes(
-                id,
-                serial_number,
-                current_state,
-                created_at,
-                last_updated_at,
-                wallet_type
-            )
+            client:clients(name, slug)
         `)
         .eq('id', id)
         .single()
@@ -36,7 +29,29 @@ export async function GET(
         return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ campaign })
+    // Get only INSTALLED passes (where device actually added to wallet)
+    const { data: passes } = await supabase
+        .from('passes')
+        .select(`
+            id,
+            serial_number,
+            current_state,
+            created_at,
+            last_updated_at,
+            wallet_type,
+            is_installed_on_ios,
+            is_installed_on_android
+        `)
+        .eq('campaign_id', id)
+        .or('is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
+        .order('created_at', { ascending: false })
+
+    return NextResponse.json({
+        campaign: {
+            ...campaign,
+            passes: passes || []
+        }
+    })
 }
 
 export async function DELETE(

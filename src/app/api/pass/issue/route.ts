@@ -172,7 +172,7 @@ async function generatePass(
 
         if (walletType === 'google') {
             // === GOOGLE WALLET ===
-            return await generateGooglePass(draft, campaign, passRecord, initialState, personalization)
+            return await generateGooglePass(supabase, draft, campaign, passRecord, initialState, personalization)
         } else {
             // === APPLE WALLET ===
             return await generateApplePass(draft, campaign, passRecord, serialNumber, authToken, initialState)
@@ -250,6 +250,7 @@ async function generateApplePass(
 }
 
 async function generateGooglePass(
+    supabase: any,
     draft: WalletPassDraft,
     campaign: any,
     passRecord: any,
@@ -324,6 +325,15 @@ async function generateGooglePass(
         })
 
         console.log(`[GOOGLE] Generated save link for pass: ${passRecord?.id}`)
+
+        // Mark as installed (optimistic - Google doesn't have a callback like Apple)
+        // We assume if we got this far, the user will add it
+        if (passRecord?.id) {
+            await supabase
+                .from('passes')
+                .update({ is_installed_on_android: true })
+                .eq('id', passRecord.id)
+        }
 
         // Redirect to Google Wallet save URL
         return NextResponse.redirect(saveLink.url)
