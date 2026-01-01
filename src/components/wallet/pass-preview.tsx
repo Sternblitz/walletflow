@@ -90,16 +90,59 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
               </div>
             </div>
 
-            {/* Strip Area (storeCard, coupon, or eventTicket with strip) */}
-            {def.allowedImages.includes('strip') && (
+            {/* EVENTTICKET LAYOUT (with background image) */}
+            {def.style === 'eventTicket' && draft.images.background && (
+              <div className="eventticket-content">
+                {/* Primary with optional thumbnail */}
+                <div className="primary-row">
+                  <div className="primary-left">
+                    {fields.primaryFields.map(f => (
+                      <div className="field primary-field" key={f.key}>
+                        {f.label && <span className="primary-label" style={{ color: colors.labelColor }}>{f.label}</span>}
+                        <span className="primary-value">{f.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {draft.images.thumbnail && (
+                    <div className="primary-thumbnail">
+                      <img src={draft.images.thumbnail.url} alt="Thumbnail" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Secondary Fields Row */}
+                {fields.secondaryFields.length > 0 && (
+                  <div className="eventticket-fields-row">
+                    {fields.secondaryFields.map(f => (
+                      <div className="field eventticket-field" key={f.key}>
+                        <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>
+                        <span className="field-value">{f.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Auxiliary Fields (Progress) */}
+                {fields.auxiliaryFields.length > 0 && (
+                  <div className="eventticket-aux-fields">
+                    {fields.auxiliaryFields.map(f => (
+                      <div className="field eventticket-field" key={f.key}>
+                        <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>
+                        <span className="field-value">{f.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* STORECARD/COUPON LAYOUT (with strip image) */}
+            {def.style !== 'eventTicket' && def.allowedImages.includes('strip') && (
               <div className="strip-area">
                 {draft.images.strip ? (
                   <img src={draft.images.strip.url} alt="Strip" />
                 ) : (
-                  // Only show placeholder if NOT eventTicket with background
-                  !(def.style === 'eventTicket' && (draft.images.background || draft.images.thumbnail)) && (
-                    <div className="strip-placeholder" />
-                  )
+                  <div className="strip-placeholder" />
                 )}
 
                 {/* Primary field overlays the strip */}
@@ -114,12 +157,23 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
               </div>
             )}
 
-            {/* Thumbnail Area (generic or eventTicket WITHOUT strip) */}
-            {def.allowedImages.includes('thumbnail') && (!draft.images.strip) && (
+            {/* STORECARD Bottom Fields */}
+            {def.style !== 'eventTicket' && bottomFields.length > 0 && (
+              <div className="bottom-fields">
+                {bottomFields.map(f => (
+                  <div className="field bottom-field" key={f.key}>
+                    <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>
+                    <span className="field-value">{f.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Thumbnail Area (generic style WITHOUT strip/background) */}
+            {def.style === 'generic' && (
               <div className="content-with-thumbnail">
                 <div className="primary-no-strip">
-                  {/* If we didn't show primary fields in strip area (because no strip), show them here */}
-                  {(!def.allowedImages.includes('strip') || !draft.images.strip) && fields.primaryFields.map(f => (
+                  {fields.primaryFields.map(f => (
                     <div className="field primary-field" key={f.key}>
                       <span className="primary-value">{f.value}</span>
                       {f.label && <span className="primary-label" style={{ color: colors.labelColor }}>{f.label}</span>}
@@ -131,18 +185,6 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
                     <img src={draft.images.thumbnail.url} alt="Thumbnail" />
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Secondary + Auxiliary Fields (ONE ROW per Apple) */}
-            {bottomFields.length > 0 && (
-              <div className="bottom-fields">
-                {bottomFields.map(f => (
-                  <div className="field bottom-field" key={f.key}>
-                    <span className="field-value">{f.value}</span>
-                    {f.label && <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>}
-                  </div>
-                ))}
               </div>
             )}
 
@@ -417,6 +459,74 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
           text-transform: uppercase;
           letter-spacing: 0.05em;
           opacity: 0.7;
+          order: -1;
+        }
+
+        /* EVENTTICKET SPECIFIC STYLES */
+        .eventticket-content {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          padding: 16px;
+        }
+
+        .primary-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        }
+
+        .primary-left {
+          flex: 1;
+        }
+
+        .primary-left .primary-label {
+          margin-top: 0;
+          margin-bottom: 4px;
+        }
+
+        .primary-thumbnail {
+          flex-shrink: 0;
+        }
+
+        .primary-thumbnail img {
+          width: 50px;
+          height: 50px;
+          border-radius: 8px;
+          object-fit: cover;
+        }
+
+        .eventticket-fields-row {
+          display: flex;
+          gap: 24px;
+        }
+
+        .eventticket-field {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .eventticket-field .field-label {
+          font-size: 0.6rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .eventticket-field .field-value {
+          font-size: 0.9rem;
+          font-weight: 500;
+        }
+
+        .eventticket-aux-fields {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .eventticket-aux-fields .field-value {
+          font-size: 1.1rem;
+          letter-spacing: 0.1em;
         }
         
         /* Barcode Area */
