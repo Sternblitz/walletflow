@@ -7,7 +7,7 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id: campaignId } = await params
-    const { message } = await req.json()
+    const { message, header } = await req.json()
 
     if (!message || typeof message !== 'string') {
         return NextResponse.json({ error: 'Message is required' }, { status: 400 })
@@ -15,10 +15,10 @@ export async function POST(
 
     const supabase = await createClient()
 
-    // Get all passes for this campaign
+    // Get all passes for this campaign WITH wallet_type
     const { data: passes, error: passesError } = await supabase
         .from('passes')
-        .select('id, current_state')
+        .select('id, current_state, wallet_type')
         .eq('campaign_id', campaignId)
 
     if (passesError) {
@@ -35,7 +35,11 @@ export async function POST(
         })
     }
 
-    console.log(`[MESSAGE] Sending to ${passes.length} passes for campaign ${campaignId}`)
+    // Separate by wallet type
+    const applePasses = passes.filter(p => p.wallet_type === 'apple' || !p.wallet_type)
+    const googlePasses = passes.filter(p => p.wallet_type === 'google')
+
+    console.log(`[MESSAGE] Sending to ${passes.length} passes (${applePasses.length} Apple, ${googlePasses.length} Google)`)
 
     // Update all passes with the new notification message
     const updatePromises = passes.map(async (pass) => {
@@ -58,19 +62,54 @@ export async function POST(
 
     await Promise.all(updatePromises)
 
-    // Send push notifications to all registered devices
     let totalSent = 0
     const allErrors: string[] = []
 
-    for (const pass of passes) {
+    // ═══════════════════════════════════════════════════════════════
+    // APPLE: Send APNs push notifications
+    // ═══════════════════════════════════════════════════════════════
+    for (const pass of applePasses) {
         try {
             const result = await sendPassUpdatePush(pass.id)
             totalSent += result.sent
             if (result.errors.length > 0) {
                 allErrors.push(...result.errors)
             }
-        } catch (error) {
-            console.error(`Push failed for pass ${pass.id}:`, error)
+        } catch (error: any) {
+            console.error(`[MESSAGE] Apple push failed for pass ${pass.id}:`, error)
+            allErrors.push(`Apple ${pass.id}: ${error.message}`)
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // GOOGLE: Send custom message via addMessage API
+    // ═══════════════════════════════════════════════════════════════
+    if (googlePasses.length > 0) {
+        try {
+            const { GoogleWalletService } = await import('@/lib/wallet/google')
+            const googleService = new GoogleWalletService()
+
+            for (const pass of googlePasses) {
+                try {
+                    const googleObjectId = pass.id.replace(/-/g, '_')
+
+                    await googleService.addMessage(
+                        googleObjectId,
+                        header || '📢 Nachricht',  // Custom header or default
+                        message,
+                        true  // notify=true triggers push notification
+                    )
+
+                    totalSent += 1
+                    console.log(`[MESSAGE ✅] Google message sent to ${googleObjectId}`)
+                } catch (error: any) {
+                    console.error(`[MESSAGE] Google addMessage failed for ${pass.id}:`, error.message)
+                    allErrors.push(`Google ${pass.id}: ${error.message}`)
+                }
+            }
+        } catch (error: any) {
+            console.error('[MESSAGE] Google module error:', error.message)
+            allErrors.push(`Google module: ${error.message}`)
         }
     }
 
@@ -80,6 +119,8 @@ export async function POST(
         success: true,
         sent: totalSent,
         total: passes.length,
+        apple: applePasses.length,
+        google: googlePasses.length,
         errors: allErrors.length > 0 ? allErrors : undefined
     })
 }
