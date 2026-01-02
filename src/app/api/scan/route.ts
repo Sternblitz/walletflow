@@ -168,10 +168,45 @@ export async function POST(req: NextRequest) {
                 const stampEmoji = campaignConfig.stampEmoji || '☕'
 
                 if (newState.stamps !== undefined) {
+                    // Build preserved fields from campaign design
+                    const designAssets = pass.campaign?.design_assets || {}
+                    const preserveFields: Array<{ id: string; header: string; body: string }> = []
+
+                    // Add secondary fields (e.g., "Powered By")
+                    designAssets.fields?.secondaryFields?.forEach((field: any, i: number) => {
+                        if (field.label && field.value) {
+                            preserveFields.push({
+                                id: `text_${i}`,
+                                header: String(field.label),
+                                body: String(field.value)
+                            })
+                        }
+                    })
+
+                    // Add auxiliary fields
+                    designAssets.fields?.auxiliaryFields?.forEach((field: any, i: number) => {
+                        if (field.label && field.value) {
+                            preserveFields.push({
+                                id: `aux_${i}`,
+                                header: String(field.label),
+                                body: String(field.value)
+                            })
+                        }
+                    })
+
+                    // Add reward info
+                    if (campaignConfig.reward) {
+                        preserveFields.push({
+                            id: 'reward',
+                            header: 'Prämie',
+                            body: campaignConfig.reward
+                        })
+                    }
+
                     await googleService.updateStamps(googleObjectId, {
                         current: newState.stamps,
                         max: newState.max_stamps || 10
-                    }, stampEmoji)
+                    }, stampEmoji, preserveFields)
                     pushStatus.sent = 1
                     console.log(`[GOOGLE ✅] Updated stamps for pass ${googleObjectId}`)
                 } else if (newState.points !== undefined) {

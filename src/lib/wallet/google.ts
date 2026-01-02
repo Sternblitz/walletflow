@@ -558,14 +558,41 @@ export class GoogleWalletService implements WalletService {
      * Update stamps for a Google Wallet pass
      * (Called after scan, instead of APNs push for Apple)
      * @param stampEmoji - The emoji to use for filled stamps (from campaign config)
+     * @param preserveFields - Optional text fields to preserve (Prämie, Powered By etc.)
      */
-    async updateStamps(objectId: string, stamps: { current: number; max: number }, stampEmoji: string = '☕'): Promise<void> {
+    async updateStamps(
+        objectId: string,
+        stamps: { current: number; max: number },
+        stampEmoji: string = '☕',
+        preserveFields?: Array<{ id: string; header: string; body: string }>
+    ): Promise<void> {
         // Generate visual stamp string (e.g. "☕ ☕ ⚪ ⚪")
         const filled = stamps.current
         const total = stamps.max
         const filledChar = stampEmoji
         const emptyChar = '⚪'
         const stampVisual = filledChar.repeat(filled) + ' ' + emptyChar.repeat(total - filled)
+
+        // Build textModulesData: visual_stamps first, then preserved fields
+        const textModulesData: Array<{ id: string; header: string; body: string }> = [
+            {
+                id: 'visual_stamps',
+                header: 'Deine Karte',
+                body: stampVisual
+            }
+        ]
+
+        // Add preserved fields (if provided) - skip any that are stamp-related
+        if (preserveFields) {
+            preserveFields.forEach(field => {
+                // Skip duplicate stamp fields
+                if (field.id !== 'visual_stamps' &&
+                    !field.header.toLowerCase().includes('fortschritt') &&
+                    !field.header.toLowerCase().includes('progress')) {
+                    textModulesData.push(field)
+                }
+            })
+        }
 
         await this.updateObject(objectId, {
             loyaltyPoints: {
@@ -574,11 +601,7 @@ export class GoogleWalletService implements WalletService {
                     string: `${stamps.current}/${stamps.max}`
                 },
             },
-            textModulesData: [{
-                id: 'visual_stamps',
-                header: 'Deine Karte',
-                body: stampVisual
-            }]
+            textModulesData
         })
     }
 
