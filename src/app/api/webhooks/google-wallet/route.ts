@@ -40,9 +40,25 @@ export async function POST(req: NextRequest) {
 
         console.log('[GOOGLE WEBHOOK] Parsed body:', JSON.stringify(body))
 
-        // Google sends different event formats, let's handle them all
-        const event = body.event || body.eventType || body.type
-        const objectId = body.objectId || body.object?.id || body.loyaltyObject?.id
+        // Google sends the actual data inside 'signedMessage' as a JSON string!
+        // We need to parse it to get eventType and objectId
+        let event: string | undefined
+        let objectId: string | undefined
+
+        if (body.signedMessage) {
+            try {
+                const signedData = JSON.parse(body.signedMessage)
+                console.log('[GOOGLE WEBHOOK] Parsed signedMessage:', JSON.stringify(signedData))
+                event = signedData.eventType
+                objectId = signedData.objectId
+            } catch (e) {
+                console.error('[GOOGLE WEBHOOK] Failed to parse signedMessage:', e)
+            }
+        } else {
+            // Fallback for other formats
+            event = body.event || body.eventType || body.type
+            objectId = body.objectId || body.object?.id || body.loyaltyObject?.id
+        }
 
         console.log(`[GOOGLE WEBHOOK] Event: ${event}, ObjectId: ${objectId}`)
 
