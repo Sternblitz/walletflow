@@ -73,10 +73,13 @@ export async function POST(
         console.error('[REGISTER] Failed to save registration:', regError)
         // Return 200 anyway - device is already registered
     } else {
-        // Mark the pass as installed on iOS
+        // Mark the pass as installed on iOS and verified
         await supabase
             .from('passes')
-            .update({ is_installed_on_ios: true })
+            .update({
+                is_installed_on_ios: true,
+                verification_status: 'verified'  // Device registered = real customer
+            })
             .eq('id', pass.id)
     }
 

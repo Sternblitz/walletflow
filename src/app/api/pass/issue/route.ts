@@ -178,7 +178,8 @@ async function generatePass(
                 current_state: initialState,
                 wallet_type: walletType,
                 is_installed_on_ios: false,  // Will be set when device registers
-                is_installed_on_android: false,  // Will be set when Google confirms
+                is_installed_on_android: false,  // Will be set when first scan
+                verification_status: 'pending',  // Will become 'verified' on first real interaction
                 customer_name: personalization.customerName || null,
                 customer_birthday: personalization.customerBirthday || null
             })

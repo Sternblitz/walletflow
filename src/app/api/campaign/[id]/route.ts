@@ -30,6 +30,8 @@ export async function GET(
     }
 
     // Get only INSTALLED passes (where device actually added to wallet)
+    // Get ALL passes for this campaign (both pending and verified)
+    // We'll show them differently in the UI
     const { data: passes } = await supabase
         .from('passes')
         .select(`
@@ -40,10 +42,11 @@ export async function GET(
             last_updated_at,
             wallet_type,
             is_installed_on_ios,
-            is_installed_on_android
+            is_installed_on_android,
+            verification_status
         `)
         .eq('campaign_id', id)
-        .or('is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
+        .order('verification_status', { ascending: false }) // 'verified' comes before 'pending'
         .order('created_at', { ascending: false })
 
     return NextResponse.json({

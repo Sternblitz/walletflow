@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 3. Update pass state
-        // Also mark Google passes as "installed" on first scan (since Google has no registration callback)
+        // Also mark passes as "verified" on first scan (real customer interaction)
         const updateData: any = {
             current_state: newState,
             last_updated_at: new Date().toISOString()
@@ -116,6 +116,12 @@ export async function POST(req: NextRequest) {
         if (pass.wallet_type === 'google' && !pass.is_installed_on_android) {
             updateData.is_installed_on_android = true
             console.log(`[SCAN] Marking Google pass ${passId} as installed`)
+        }
+
+        // Mark as verified on first scan (pending → verified)
+        if (pass.verification_status !== 'verified') {
+            updateData.verification_status = 'verified'
+            console.log(`[SCAN] Verifying customer ${passId}`)
         }
 
         const { error: updateError } = await supabase

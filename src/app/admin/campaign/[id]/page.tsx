@@ -32,6 +32,7 @@ interface Pass {
     wallet_type?: 'apple' | 'google'
     is_installed_on_ios?: boolean
     is_installed_on_android?: boolean
+    verification_status?: 'pending' | 'verified'
 }
 
 interface Campaign {
@@ -311,6 +312,18 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                                                 <span className="font-mono text-sm text-white">
                                                     {pass.current_state?.customer_number || pass.serial_number.slice(0, 8)}
                                                 </span>
+                                                {/* Verification Badge */}
+                                                {pass.verification_status === 'verified' ? (
+                                                    <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 font-medium">
+                                                        <CheckCircle2 className="w-3 h-3" />
+                                                        Verifiziert
+                                                    </span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 font-medium">
+                                                        <Clock className="w-3 h-3" />
+                                                        Pending
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-4 py-3">
