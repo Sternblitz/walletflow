@@ -196,20 +196,27 @@ export async function POST(
                                 },
                                 // Add all other editor fields
                                 ...editorTextModules
-                            ],
-
-                            // Optional: Add a message about the update
-                            messages: [{
-                                header: 'Karte aktualisiert',
-                                body: 'Deine Karte wurde aktualisiert.',
-                                id: `update_${Date.now()}`
-                            }]
+                            ]
                         }
 
-                        // Update the object
-                        await googleService.updateObject(googleObjectId, objectPatch)
+                        // Update the object WITH push notification (notify=true)
+                        await googleService.updateObject(googleObjectId, objectPatch, true)
 
-                        console.log(`[PUSH-UPDATE] Google pass ${googleObjectId} fully updated`)
+                        // Also send a custom message to appear on the pass back
+                        // This triggers a lock screen notification!
+                        try {
+                            await googleService.addMessage(
+                                googleObjectId,
+                                '🔔 Neuigkeiten',
+                                'Deine Karte wurde aktualisiert. Tippe hier für Details!',
+                                true  // notify=true triggers push
+                            )
+                        } catch (msgError: any) {
+                            // Message might fail if limit (3/day) reached, but card update still succeeded
+                            console.log(`[PUSH-UPDATE] addMessage for ${googleObjectId} skipped: ${msgError.message}`)
+                        }
+
+                        console.log(`[PUSH-UPDATE] Google pass ${googleObjectId} updated + notified`)
                         sent += 1
                     } catch (e: any) {
                         console.error(`[PUSH-UPDATE] Google update failed for ${pass.id}:`, e.message)
