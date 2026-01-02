@@ -52,6 +52,10 @@ export interface GoogleLoyaltyClass {
     // Localized strings
     localizedIssuerName?: { defaultValue: { language: string; value: string } }
     localizedProgramName?: { defaultValue: { language: string; value: string } }
+    callbackOptions?: {
+        url: string
+        updateRequestUrl?: string
+    }
 }
 
 export interface GoogleLoyaltyObject {
@@ -212,6 +216,7 @@ export class GoogleWalletService implements WalletService {
         logoUrl?: string
         heroImageUrl?: string
         backgroundColor?: string
+        callbackUrl?: string
     }): Promise<GoogleLoyaltyClass> {
         const { serviceAccount, issuerId } = this.getCredentials()
         const accessToken = await this.getAccessToken()
@@ -239,6 +244,11 @@ export class GoogleWalletService implements WalletService {
             ...(classConfig.backgroundColor && {
                 hexBackgroundColor: classConfig.backgroundColor
             }),
+            ...(classConfig.callbackUrl && {
+                callbackOptions: {
+                    url: classConfig.callbackUrl
+                }
+            })
         }
 
         // Try to get existing class first
@@ -426,6 +436,7 @@ export class GoogleWalletService implements WalletService {
             logoUrl?: string
             heroImageUrl?: string
             backgroundColor?: string
+            callbackUrl?: string
         }
     }): GoogleWalletSaveLink {
         const { serviceAccount, issuerId } = this.getCredentials()
@@ -462,6 +473,11 @@ export class GoogleWalletService implements WalletService {
             ...(objectConfig.classConfig?.backgroundColor && {
                 hexBackgroundColor: objectConfig.classConfig.backgroundColor
             }),
+            ...(objectConfig.classConfig?.callbackUrl && {
+                callbackOptions: {
+                    url: objectConfig.classConfig.callbackUrl
+                }
+            })
         }
 
         // Generate visual stamp string (e.g. "☕ ☕ ⚪ ⚪")

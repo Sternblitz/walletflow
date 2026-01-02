@@ -307,7 +307,8 @@ async function generateGooglePass(
                 logoUrl: draft.images?.logo?.url,
                 // Use strip image, or fall back to background image for eventTicket style
                 heroImageUrl: draft.images?.strip?.url || draft.images?.background?.url,
-                backgroundColor: draft.colors?.backgroundColor
+                backgroundColor: draft.colors?.backgroundColor,
+                callbackUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/google-wallet`
             })
         } catch (classError) {
             console.warn("[GOOGLE] Class creation failed (may already exist):", classError)
@@ -356,7 +357,8 @@ async function generateGooglePass(
                 issuerName: campaign.client?.name || 'Passify',
                 logoUrl: draft.images?.logo?.url,
                 heroImageUrl: draft.images?.strip?.url,
-                backgroundColor: draft.colors?.backgroundColor
+                backgroundColor: draft.colors?.backgroundColor,
+                callbackUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/google-wallet`
             }
         })
 
