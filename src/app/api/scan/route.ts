@@ -22,10 +22,10 @@ export async function POST(req: NextRequest) {
 
         const supabase = await createClient()
 
-        // 1. Fetch the pass
+        // 1. Fetch the pass with full campaign data including design_assets
         const { data: pass, error: fetchError } = await supabase
             .from('passes')
-            .select('*, campaign:campaigns(concept, config)')
+            .select('*, campaign:campaigns(concept, config, design_assets)')
             .eq('id', passId)
             .single()
 

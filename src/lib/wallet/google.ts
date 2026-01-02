@@ -525,7 +525,16 @@ export class GoogleWalletService implements WalletService {
                     header: 'Deine Karte',
                     body: stampVisual
                 }] : []),
-                ...(objectConfig.textFields?.map((field, i) => ({
+                // Add other text fields, but filter out any stamp-related duplicates
+                ...(objectConfig.textFields?.filter(field => {
+                    const headerLower = field.header.toLowerCase()
+                    // Skip fields that would duplicate the stamp visual
+                    return !headerLower.includes('fortschritt') &&
+                        !headerLower.includes('progress') &&
+                        !headerLower.includes('stempel') &&
+                        !headerLower.includes('karte') &&
+                        !headerLower.includes('stamps')
+                }).map((field, i) => ({
                     id: `text_${i}`,
                     header: field.header,
                     body: field.body,
