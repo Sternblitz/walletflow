@@ -628,7 +628,7 @@ export class GoogleWalletService implements WalletService {
 
     /**
      * Void a voucher (mark as redeemed) in Google Wallet
-     * Shows "EINGELÖST" status on the pass
+     * Shows "EINGELÖST" status on the pass - changes main display
      */
     async voidVoucher(objectId: string, redeemedAt?: string): Promise<void> {
         const redeemDate = redeemedAt
@@ -637,11 +637,19 @@ export class GoogleWalletService implements WalletService {
 
         await this.updateObject(objectId, {
             state: 'COMPLETED',  // Google Wallet state for completed/used passes
+            // Update the main display field (loyaltyPoints becomes the primary visual)
+            loyaltyPoints: {
+                label: 'STATUS',
+                balance: {
+                    string: '✅ EINGELÖST'
+                }
+            },
+            // Update text fields to show redemption info
             textModulesData: [
                 {
-                    id: 'status',
-                    header: 'STATUS',
-                    body: '✅ EINGELÖST'
+                    id: 'redeemed_status',
+                    header: 'GUTSCHEIN',
+                    body: 'Wurde erfolgreich eingelöst'
                 },
                 {
                     id: 'redeemed_date',
