@@ -71,6 +71,28 @@ export async function GET(req: NextRequest) {
                     const campaignConfig = campaign.config || {}
                     const designAssets = campaign.design_assets || {}
 
+                    // Build text fields from design assets (same as new pass creation)
+                    const textFields: Array<{ header: string; body: string }> = []
+
+                    // Add secondary fields from design
+                    designAssets.fields?.secondaryFields?.forEach((field: any) => {
+                        if (field.label && field.value) {
+                            textFields.push({ header: String(field.label), body: String(field.value) })
+                        }
+                    })
+
+                    // Add auxiliary fields too
+                    designAssets.fields?.auxiliaryFields?.forEach((field: any) => {
+                        if (field.label && field.value) {
+                            textFields.push({ header: String(field.label), body: String(field.value) })
+                        }
+                    })
+
+                    // Add reward info
+                    if (campaignConfig.reward) {
+                        textFields.push({ header: 'Prämie', body: campaignConfig.reward })
+                    }
+
                     // Generate save link with COMPLETE data
                     const saveLink = googleService.generateSaveLink({
                         classId,
@@ -79,7 +101,7 @@ export async function GET(req: NextRequest) {
                         barcodeValue: fullPass.id,
                         stamps,
                         stampEmoji: campaignConfig.stampEmoji || designAssets.stampConfig?.icon || '☕',
-                        textFields: [],
+                        textFields,
                         classConfig: {
                             programName: campaign.name || 'Loyalty Card',
                             issuerName: campaign.client?.name || 'Passify',
