@@ -313,6 +313,12 @@ function getSuccessMessage(action: string, state: any, concept: string): string 
     if (action === 'ADD_POINTS') {
         return `✅ ${state.points} Punkte (Level: ${state.tier})`
     }
+    if (action === 'REDEEM_VOUCHER') {
+        return `🎫 GUTSCHEIN EINGELÖST! Gilt nur einmal.`
+    }
+    if (action === 'USE_VOUCHER') {
+        return `✅ Gutschein verwendet (${state.uses}x genutzt)`
+    }
     return `✅ Check-In erfolgreich!`
 }
 

@@ -88,6 +88,9 @@ export async function createCampaignAction(data: any) {
     try {
         cleanDesignConfig = JSON.parse(JSON.stringify(designConfig || {}))
         cleanConfig = JSON.parse(JSON.stringify({
+            // Spread user's config options (includes singleUse for vouchers)
+            ...data.config,
+            // Standard fields
             address: data.address || "",
             locationMessage: data.locationMessage || "Du bist in der Nähe! 🎉",
             locations: data.locations || [], // Multiple locations support
