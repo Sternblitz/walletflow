@@ -387,12 +387,25 @@ export class GoogleWalletService implements WalletService {
 
     /**
      * Update an existing loyalty object (e.g., when adding stamps)
+     * @param objectId - The object ID to update
+     * @param updates - The fields to update
+     * @param notify - If true, triggers a push notification to the user (max 3/day)
      */
-    async updateObject(objectId: string, updates: Partial<GoogleLoyaltyObject>): Promise<GoogleLoyaltyObject> {
+    async updateObject(
+        objectId: string,
+        updates: Partial<GoogleLoyaltyObject>,
+        notify: boolean = false
+    ): Promise<GoogleLoyaltyObject> {
         const { issuerId } = this.getCredentials()
         const accessToken = await this.getAccessToken()
 
         const fullObjectId = objectId.includes('.') ? objectId : `${issuerId}.${objectId}`
+
+        // Add notifyPreference if notification is requested
+        const requestBody: any = { ...updates }
+        if (notify) {
+            requestBody.notifyPreference = 'notifyOnUpdate'
+        }
 
         const response = await fetch(
             `https://walletobjects.googleapis.com/walletobjects/v1/loyaltyObject/${fullObjectId}`,
@@ -402,7 +415,7 @@ export class GoogleWalletService implements WalletService {
                     Authorization: `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(updates),
+                body: JSON.stringify(requestBody),
             }
         )
 
@@ -411,7 +424,56 @@ export class GoogleWalletService implements WalletService {
             throw new Error(`Failed to update Google Wallet object: ${error}`)
         }
 
-        console.log(`[GOOGLE] Updated object: ${fullObjectId}`)
+        console.log(`[GOOGLE] Updated object: ${fullObjectId}${notify ? ' (with notification)' : ''}`)
+        return await response.json()
+    }
+
+    /**
+     * Send a custom push notification message to a user's pass
+     * The message appears on the back of the pass and triggers a lock screen notification
+     * 
+     * @param objectId - The loyalty object ID
+     * @param header - Short header text (e.g., "Sonderaktion!")
+     * @param body - Main message body (e.g., "20% Rabatt nur heute!")
+     * @param notify - If true (default), triggers push notification
+     * 
+     * Limits: Max 3 notifications per pass per 24 hours
+     */
+    async addMessage(
+        objectId: string,
+        header: string,
+        body: string,
+        notify: boolean = true
+    ): Promise<GoogleLoyaltyObject> {
+        const { issuerId } = this.getCredentials()
+        const accessToken = await this.getAccessToken()
+
+        const fullObjectId = objectId.includes('.') ? objectId : `${issuerId}.${objectId}`
+
+        const message = {
+            header,
+            body,
+            messageType: notify ? 'TEXT_AND_NOTIFY' : 'TEXT'
+        }
+
+        const response = await fetch(
+            `https://walletobjects.googleapis.com/walletobjects/v1/loyaltyObject/${fullObjectId}/addMessage`,
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message }),
+            }
+        )
+
+        if (!response.ok) {
+            const error = await response.text()
+            throw new Error(`Failed to add message to Google Wallet object: ${error}`)
+        }
+
+        console.log(`[GOOGLE] Added message to ${fullObjectId}: "${header}" (notify: ${notify})`)
         return await response.json()
     }
 
@@ -621,7 +683,7 @@ export class GoogleWalletService implements WalletService {
                 },
             },
             textModulesData
-        })
+        }, true) // notify=true for push notification
     }
 
     /**
@@ -633,7 +695,7 @@ export class GoogleWalletService implements WalletService {
                 label: 'Punkte',
                 balance: { int: points },
             },
-        })
+        }, true) // notify=true for push notification
     }
 
     /**
@@ -667,7 +729,7 @@ export class GoogleWalletService implements WalletService {
                     body: redeemDate
                 }
             ]
-        })
+        }, true) // notify=true for push notification
 
         console.log(`[GOOGLE] Voucher ${objectId} marked as COMPLETED/EINGELÖST`)
     }
