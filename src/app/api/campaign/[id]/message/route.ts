@@ -15,10 +15,12 @@ export async function POST(
 
     const supabase = await createClient()
 
-    // Get all passes for this campaign WITH wallet_type
+    // Get all VERIFIED passes for this campaign (only those with real users)
+    // For Apple: has device registrations
+    // For Google: is_installed_on_android = true OR verification_status = 'verified'
     const { data: passes, error: passesError } = await supabase
         .from('passes')
-        .select('id, current_state, wallet_type')
+        .select('id, current_state, wallet_type, is_installed_on_android, verification_status')
         .eq('campaign_id', campaignId)
 
     if (passesError) {
@@ -26,23 +28,35 @@ export async function POST(
         return NextResponse.json({ error: 'Failed to fetch passes' }, { status: 500 })
     }
 
-    if (!passes || passes.length === 0) {
+    // Filter to only verified/registered passes
+    const verifiedPasses = (passes || []).filter(p => {
+        if (p.wallet_type === 'google') {
+            // Google: check if installed or verified
+            return p.is_installed_on_android === true || p.verification_status === 'verified'
+        } else {
+            // Apple: we'll check for device registrations when sending
+            // For now, include all Apple passes (APNs will fail for unregistered)
+            return true
+        }
+    })
+
+    if (verifiedPasses.length === 0) {
         return NextResponse.json({
             success: true,
             sent: 0,
             total: 0,
-            message: 'No passes found for this campaign'
+            message: 'No verified passes found for this campaign'
         })
     }
 
     // Separate by wallet type
-    const applePasses = passes.filter(p => p.wallet_type === 'apple' || !p.wallet_type)
-    const googlePasses = passes.filter(p => p.wallet_type === 'google')
+    const applePasses = verifiedPasses.filter(p => p.wallet_type === 'apple' || !p.wallet_type)
+    const googlePasses = verifiedPasses.filter(p => p.wallet_type === 'google')
 
-    console.log(`[MESSAGE] Sending to ${passes.length} passes (${applePasses.length} Apple, ${googlePasses.length} Google)`)
+    console.log(`[MESSAGE] Sending to ${verifiedPasses.length} verified passes (${applePasses.length} Apple, ${googlePasses.length} Google)`)
 
-    // Update all passes with the new notification message
-    const updatePromises = passes.map(async (pass) => {
+    // Update all verified passes with the new notification message
+    const updatePromises = verifiedPasses.map(async (pass) => {
         const newState = {
             ...pass.current_state,
             notification_message: message,
@@ -113,12 +127,12 @@ export async function POST(
         }
     }
 
-    console.log(`[MESSAGE ✅] Sent ${totalSent} push notifications to ${passes.length} passes`)
+    console.log(`[MESSAGE ✅] Sent ${totalSent} push notifications to ${verifiedPasses.length} verified passes`)
 
     return NextResponse.json({
         success: true,
         sent: totalSent,
-        total: passes.length,
+        total: verifiedPasses.length,
         apple: applePasses.length,
         google: googlePasses.length,
         errors: allErrors.length > 0 ? allErrors : undefined
