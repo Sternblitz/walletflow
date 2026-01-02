@@ -46,25 +46,48 @@ export async function GET(req: NextRequest) {
             // The existing pass will be used, just redirect to Google save URL
             if (platform === 'android' || existingPass.wallet_type === 'google') {
                 console.log(`[PASS ISSUE] Generating new Google link for existing pass ${existingPassId}`)
-                // Fetch the campaign to generate the link
-                const { data: campaign } = await supabase
-                    .from('campaigns')
-                    .select('*, client:clients(name)')
-                    .eq('id', campaignId)
+
+                // Fetch complete pass data including current state
+                const { data: fullPass } = await supabase
+                    .from('passes')
+                    .select('*, campaign:campaigns(*, client:clients(name))')
+                    .eq('id', existingPassId)
                     .single()
 
-                if (campaign) {
+                if (fullPass && fullPass.campaign) {
+                    const campaign = fullPass.campaign
                     const googleService = new GoogleWalletService()
-                    const objectId = existingPass.id.replace(/-/g, '_')
+                    const objectId = fullPass.id.replace(/-/g, '_')
                     const classId = `campaign_${campaign.id.replace(/-/g, '_')}`
 
-                    // Generate save link (object already exists on Google)
+                    // Get stamp data from current state
+                    const currentState = fullPass.current_state || {}
+                    const stamps = currentState.stamps !== undefined ? {
+                        current: currentState.stamps,
+                        max: currentState.max_stamps || 10
+                    } : undefined
+
+                    // Get campaign config for styling
+                    const campaignConfig = campaign.config || {}
+                    const designAssets = campaign.design_assets || {}
+
+                    // Generate save link with COMPLETE data
                     const saveLink = googleService.generateSaveLink({
                         classId,
                         objectId,
-                        customerId: existingPass.serial_number.slice(0, 8),
-                        barcodeValue: existingPass.id,
-                        textFields: []
+                        customerId: currentState.customer_number || fullPass.serial_number.slice(0, 8),
+                        barcodeValue: fullPass.id,
+                        stamps,
+                        stampEmoji: campaignConfig.stampEmoji || designAssets.stampConfig?.icon || '☕',
+                        textFields: [],
+                        classConfig: {
+                            programName: campaign.name || 'Loyalty Card',
+                            issuerName: campaign.client?.name || 'Passify',
+                            logoUrl: designAssets.images?.logo?.url,
+                            heroImageUrl: designAssets.images?.strip?.url,
+                            backgroundColor: designAssets.colors?.backgroundColor,
+                            callbackUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/google-wallet`
+                        }
                     })
 
                     return NextResponse.redirect(saveLink.url)
