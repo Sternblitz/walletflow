@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
             colors: { backgroundColor: '#1A1A1A', foregroundColor: '#FFFFFF', labelColor: '#888888' },
             images: {},
             fields: {
-                headerFields: [],
+                headerFields: [{ key: 'customerNumber', label: 'Kunde', value: '' }], // Value will be filled by PassFactory
                 primaryFields: [{ key: 'welcome', label: 'WILLKOMMEN', value: 'Passify Test' }],
                 secondaryFields: [],
                 auxiliaryFields: [],

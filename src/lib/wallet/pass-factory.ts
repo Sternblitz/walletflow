@@ -162,7 +162,19 @@ export class PassFactory {
         }
 
         // Apply fields to pass
-        processFields(draft.fields.headerFields).forEach(f => pkPass.headerFields.push(f))
+        const headerFields = processFields(draft.fields.headerFields)
+        headerFields.forEach(f => pkPass.headerFields.push(f))
+
+        // Always add Customer Number to header (Top Right)
+        // User Request: "oben rechts soll bei der apple karte immer die mitgliednummer stehen"
+        if (!headerFields.some(f => f.key === 'customerNumber')) {
+            pkPass.headerFields.push({
+                key: 'customerNumber',
+                label: 'Kunde',
+                value: state.customer_number || serialNumber.slice(0, 8),
+                textAlignment: 'PKTextAlignmentRight'
+            })
+        }
         processFields(draft.fields.primaryFields).forEach(f => pkPass.primaryFields.push(f))
         processFields(draft.fields.secondaryFields).forEach(f => pkPass.secondaryFields.push(f))
         processFields(draft.fields.auxiliaryFields).forEach(f => pkPass.auxiliaryFields.push(f))
