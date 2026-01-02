@@ -2,40 +2,64 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
 /**
+ * GET /api/webhooks/google-wallet
+ * 
+ * Google may verify the callback URL is accessible before sending events.
+ */
+export async function GET(req: NextRequest) {
+    console.log('[GOOGLE WEBHOOK] GET request received - URL verification')
+    return NextResponse.json({
+        status: 'ok',
+        message: 'Google Wallet webhook endpoint is active',
+        timestamp: new Date().toISOString()
+    })
+}
+
+/**
  * POST /api/webhooks/google-wallet
  * 
  * Receives notifications from Google Wallet API when a user saves a pass.
  * This allows us to verify Google Wallet installations without waiting for a scan.
  */
 export async function POST(req: NextRequest) {
-    try {
-        const body = await req.json()
-        console.log('[GOOGLE WEBHOOK] Received event:', JSON.stringify(body))
+    console.log('[GOOGLE WEBHOOK] ========================================')
+    console.log('[GOOGLE WEBHOOK] POST request received!')
+    console.log('[GOOGLE WEBHOOK] Headers:', JSON.stringify(Object.fromEntries(req.headers)))
 
-        const { event, objectId } = body
+    try {
+        const bodyText = await req.text()
+        console.log('[GOOGLE WEBHOOK] Raw body:', bodyText)
+
+        let body: any
+        try {
+            body = JSON.parse(bodyText)
+        } catch {
+            console.log('[GOOGLE WEBHOOK] Body is not JSON, might be form data')
+            return NextResponse.json({ success: true, note: 'Non-JSON body received' })
+        }
+
+        console.log('[GOOGLE WEBHOOK] Parsed body:', JSON.stringify(body))
+
+        // Google sends different event formats, let's handle them all
+        const event = body.event || body.eventType || body.type
+        const objectId = body.objectId || body.object?.id || body.loyaltyObject?.id
+
+        console.log(`[GOOGLE WEBHOOK] Event: ${event}, ObjectId: ${objectId}`)
 
         // Event is 'save' when user adds the pass
-        // Or 'insert' in some contexts
-        if ((event === 'save' || event === 'insert') && objectId) {
+        if ((event === 'save' || event === 'insert' || event === 'SAVE') && objectId) {
             // objectId format: issuerId.passId_with_underscores
-            // Example: 3388000000022230835.PASS_1735848...
-
-            // Extract the pass ID part (suffix after last dot)
             const parts = objectId.split('.')
             const rawPassId = parts.length > 1 ? parts[parts.length - 1] : objectId
 
             // Convert underscores back to dashes to match our UUID format
-            // (Note: we replaced '-' with '_' in generation because Google IDs can't have dashes)
-            // But we can also look up by serial_number or something else if needed. 
-            // However, we used passRecord.id in generation.
-
             let passId = rawPassId.replace(/_/g, '-')
+
+            console.log(`[GOOGLE WEBHOOK] Looking for pass: ${passId}`)
 
             if (passId) {
                 const supabase = await createClient()
 
-                // Try to update pass directly
-                // We use is_installed_on_android = true AND verification_status = 'verified'
                 const { error, data } = await supabase
                     .from('passes')
                     .update({
@@ -48,18 +72,18 @@ export async function POST(req: NextRequest) {
                     .single()
 
                 if (error) {
-                    console.error('[GOOGLE WEBHOOK] Failed to update pass:', error)
-
-                    // Fallback: Maybe the ID logic was different? 
-                    // Try exact match on 'id' with the raw value? unlikely given UUID format
+                    console.error('[GOOGLE WEBHOOK] DB update failed:', error)
                 } else if (data) {
-                    console.log(`[GOOGLE WEBHOOK] ✅ Verified Google pass: ${passId}`)
+                    console.log(`[GOOGLE WEBHOOK] ✅ VERIFIED: ${passId}`)
                 } else {
-                    console.warn(`[GOOGLE WEBHOOK] Pass not found for ID: ${passId} (raw: ${rawPassId})`)
+                    console.warn(`[GOOGLE WEBHOOK] Pass not found: ${passId}`)
                 }
             }
+        } else {
+            console.log('[GOOGLE WEBHOOK] Unhandled event type or missing objectId')
         }
 
+        console.log('[GOOGLE WEBHOOK] ========================================')
         return NextResponse.json({ success: true })
     } catch (error) {
         console.error('[GOOGLE WEBHOOK] Error:', error)

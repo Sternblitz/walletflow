@@ -1,0 +1,7 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Explicitly allow Googlebot for Google Wallet API callbacks
+User-agent: Googlebot
+Allow: /api/webhooks/google-wallet
