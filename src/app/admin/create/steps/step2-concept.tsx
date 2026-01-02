@@ -134,11 +134,44 @@ export function Step2Concept({ data, update }: Step2ConceptProps) {
                 <div className="p-4 rounded-lg bg-white/5 border border-white/10 animate-in fade-in">
                     <p className="text-sm text-muted-foreground">
                         {selected === 'STAMP_CARD' && '✅ Perfekt für Gastronomie, Cafés, Bäckereien'}
+                        {selected === 'STAMP_CARD_V2' && '✅ Modernes Design mit Hintergrundbild für Events'}
                         {selected === 'MEMBER_CARD' && '✅ Ideal für Clubs, Fitnessstudios, VIP-Programme'}
                         {selected === 'POINTS_CARD' && '✅ Optimal für Einzelhandel mit hoher Kauffrequenz'}
                         {selected === 'COUPON' && '✅ Für zeitlich begrenzte Aktionen und Rabatte'}
                         {selected === 'CUSTOM' && '✅ Volle Kontrolle über alle Felder und das Design'}
                     </p>
+                </div>
+            )}
+
+            {/* COUPON specific options */}
+            {selected === 'COUPON' && (
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 animate-in fade-in slide-in-from-bottom-2 space-y-4">
+                    <h3 className="font-semibold text-red-400 flex items-center gap-2">
+                        <Tag className="w-4 h-4" />
+                        Gutschein-Optionen
+                    </h3>
+
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            checked={data.config?.singleUse || false}
+                            onChange={(e) => update({
+                                config: {
+                                    ...data.config,
+                                    singleUse: e.target.checked
+                                }
+                            })}
+                            className="w-5 h-5 rounded border-2 border-red-500/50 bg-transparent checked:bg-red-500 checked:border-red-500 cursor-pointer"
+                        />
+                        <div>
+                            <span className="font-medium group-hover:text-red-400 transition-colors">
+                                Einmalig einlösbar
+                            </span>
+                            <p className="text-xs text-muted-foreground">
+                                Gutschein wird nach dem ersten Scan entwertet
+                            </p>
+                        </div>
+                    </label>
                 </div>
             )}
         </div>

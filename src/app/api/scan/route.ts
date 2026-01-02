@@ -97,6 +97,33 @@ export async function POST(req: NextRequest) {
             } else {
                 newState.tier = 'bronze'
             }
+        } else if (concept === 'COUPON') {
+            // Gutschein / Voucher handling
+            const campaignConfig = pass.campaign?.config || {}
+
+            if (campaignConfig.singleUse) {
+                // Single-use voucher - check if already redeemed
+                if (currentState.redeemed) {
+                    return NextResponse.json({
+                        error: "Gutschein bereits eingelöst",
+                        redeemed_at: currentState.redeemed_at
+                    }, { status: 400 })
+                }
+
+                // Mark as redeemed
+                newState.redeemed = true
+                newState.redeemed_at = new Date().toISOString()
+                actionType = 'REDEEM_VOUCHER'
+                deltaValue = 1
+
+                console.log(`[SCAN] Voucher ${passId} redeemed (single-use)`)
+            } else {
+                // Multi-use voucher - just track uses
+                newState.uses = (currentState.uses || 0) + 1
+                newState.last_used_at = new Date().toISOString()
+                actionType = 'USE_VOUCHER'
+                deltaValue = 1
+            }
         } else {
             // Generic check-in
             newState.last_check_in = new Date().toISOString()
@@ -213,6 +240,11 @@ export async function POST(req: NextRequest) {
                     await googleService.updatePoints(googleObjectId, newState.points)
                     pushStatus.sent = 1
                     console.log(`[GOOGLE ✅] Updated points for pass ${googleObjectId}`)
+                } else if (newState.redeemed === true) {
+                    // Single-use voucher was redeemed - void it
+                    await googleService.voidVoucher(googleObjectId, newState.redeemed_at)
+                    pushStatus.sent = 1
+                    console.log(`[GOOGLE ✅] Voided voucher ${googleObjectId}`)
                 }
             } else {
                 // Apple Wallet: Send APNs push notification

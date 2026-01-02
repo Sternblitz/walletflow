@@ -627,6 +627,34 @@ export class GoogleWalletService implements WalletService {
     }
 
     /**
+     * Void a voucher (mark as redeemed) in Google Wallet
+     * Shows "EINGELÖST" status on the pass
+     */
+    async voidVoucher(objectId: string, redeemedAt?: string): Promise<void> {
+        const redeemDate = redeemedAt
+            ? new Date(redeemedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            : new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
+        await this.updateObject(objectId, {
+            state: 'COMPLETED',  // Google Wallet state for completed/used passes
+            textModulesData: [
+                {
+                    id: 'status',
+                    header: 'STATUS',
+                    body: '✅ EINGELÖST'
+                },
+                {
+                    id: 'redeemed_date',
+                    header: 'Eingelöst am',
+                    body: redeemDate
+                }
+            ]
+        })
+
+        console.log(`[GOOGLE] Voucher ${objectId} marked as COMPLETED/EINGELÖST`)
+    }
+
+    /**
      * Legacy interface implementation (for WalletBroker compatibility)
      * Returns the "Save to Google Wallet" link as a Buffer
      */
