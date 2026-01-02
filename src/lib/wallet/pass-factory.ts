@@ -175,8 +175,36 @@ export class PassFactory {
                 textAlignment: 'PKTextAlignmentRight'
             })
         }
-        processFields(draft.fields.primaryFields).forEach(f => pkPass.primaryFields.push(f))
-        processFields(draft.fields.secondaryFields).forEach(f => pkPass.secondaryFields.push(f))
+
+        // Check if this is a redeemed single-use voucher
+        if (state.redeemed === true) {
+            // Override primary field to show EINGELÖST
+            pkPass.primaryFields.push({
+                key: 'status',
+                label: 'STATUS',
+                value: '✅ EINGELÖST',
+                changeMessage: 'Gutschein wurde eingelöst!'
+            })
+
+            // Add redemption info to secondary fields
+            const redeemDate = state.redeemed_at
+                ? new Date(state.redeemed_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                : 'Heute'
+            pkPass.secondaryFields.push({
+                key: 'redeemed_date',
+                label: 'Eingelöst am',
+                value: redeemDate
+            })
+            pkPass.secondaryFields.push({
+                key: 'voucher_status',
+                label: 'GUTSCHEIN',
+                value: 'Wurde erfolgreich eingelöst'
+            })
+        } else {
+            // Normal field processing
+            processFields(draft.fields.primaryFields).forEach(f => pkPass.primaryFields.push(f))
+            processFields(draft.fields.secondaryFields).forEach(f => pkPass.secondaryFields.push(f))
+        }
         processFields(draft.fields.auxiliaryFields).forEach(f => pkPass.auxiliaryFields.push(f))
         processFields(draft.fields.backFields).forEach(f => pkPass.backFields.push(f))
 
