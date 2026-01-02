@@ -74,6 +74,15 @@ export async function GET(req: NextRequest) {
                     // Build text fields from design assets (same as new pass creation)
                     const textFields: Array<{ header: string; body: string }> = []
 
+                    // For COUPON: Add primary field first (the main voucher info)
+                    if (campaign.concept === 'COUPON') {
+                        designAssets.fields?.primaryFields?.forEach((field: any) => {
+                            if (field.label && field.value) {
+                                textFields.push({ header: String(field.label), body: String(field.value) })
+                            }
+                        })
+                    }
+
                     // Add secondary fields from design
                     designAssets.fields?.secondaryFields?.forEach((field: any) => {
                         if (field.label && field.value) {
@@ -402,6 +411,15 @@ async function generateGooglePass(
 
         // Build text fields from draft
         const textFields: Array<{ header: string; body: string }> = []
+
+        // For COUPON: Add primary field first (the main voucher info like "20% Rabatt")
+        if (campaign.concept === 'COUPON') {
+            draft.fields?.primaryFields?.forEach(field => {
+                if (field.label && field.value) {
+                    textFields.push({ header: String(field.label), body: String(field.value) })
+                }
+            })
+        }
 
         // Add secondary fields
         draft.fields?.secondaryFields?.forEach(field => {
