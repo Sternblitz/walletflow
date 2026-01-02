@@ -342,37 +342,12 @@ async function generateGooglePass(
             // Continue anyway - the class might already exist
         }
 
-        // REMOVED: Auto-verification was causing phantom customers!
-        // Creating the object on Google's servers doesn't mean user saved it.
-        // Verification now ONLY happens via:
-        // 1. Google callback (if configured)
-        // 2. First scan at POS (most reliable)
-
-        // We still create the object for a smoother UX, but don't mark as verified
+        // Object ID for Google Wallet (no dashes allowed)
         const objectId = (passRecord?.id || initialState.customer_number).replace(/-/g, '_')
-        try {
-            await googleService.createObject({
-                classId,
-                objectId,
-                customerName: personalization.customerName || 'Stammkunde',
-                customerId: initialState.customer_number,
-                barcodeValue: passRecord?.id || initialState.customer_number,
-                stamps: initialState.stamps !== undefined ? {
-                    current: initialState.stamps,
-                    max: initialState.max_stamps || 10
-                } : undefined,
-                points: initialState.points,
-                textFields: []
-            })
-            console.log(`[GOOGLE] Object created on Google servers (pending user save)`)
-        } catch (objError: any) {
-            // Object might already exist (409) - that's fine
-            if (objError.message?.includes('409') || objError.message?.includes('already exists')) {
-                console.log(`[GOOGLE] Object already exists on Google servers`)
-            } else {
-                console.warn("[GOOGLE] Object creation failed:", objError)
-            }
-        }
+
+        // Note: We DON'T call createObject here anymore!
+        // The generateSaveLink JWT will create the object with complete data when user saves.
+        // Premature createObject was causing incomplete passes (missing stamps, fields).
 
         // Determine stamps/points from initial state
         const stamps = initialState.stamps !== undefined
