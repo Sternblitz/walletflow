@@ -315,6 +315,52 @@ async function generateGooglePass(
             // Continue anyway - the class might already exist
         }
 
+        // NEW: Create the object via API BEFORE generating save link
+        // This ensures we can verify the pass exists even without callbacks
+        const objectId = (passRecord?.id || initialState.customer_number).replace(/-/g, '_')
+        try {
+            await googleService.createObject({
+                classId,
+                objectId,
+                customerName: personalization.customerName || 'Stammkunde',
+                customerId: initialState.customer_number,
+                barcodeValue: passRecord?.id || initialState.customer_number,
+                stamps: initialState.stamps !== undefined ? {
+                    current: initialState.stamps,
+                    max: initialState.max_stamps || 10
+                } : undefined,
+                points: initialState.points,
+                textFields: []
+            })
+
+            // If object creation succeeded, mark as verified immediately!
+            console.log(`[GOOGLE] ✅ Object created via API - marking pass as verified`)
+            await supabase
+                .from('passes')
+                .update({
+                    is_installed_on_android: true,
+                    verification_status: 'verified'
+                })
+                .eq('id', passRecord.id)
+
+        } catch (objError: any) {
+            // Object might already exist (409) or other error
+            // 409 = already exists = user already has it = verified!
+            if (objError.message?.includes('409') || objError.message?.includes('already exists')) {
+                console.log(`[GOOGLE] Object already exists - user has pass, marking verified`)
+                await supabase
+                    .from('passes')
+                    .update({
+                        is_installed_on_android: true,
+                        verification_status: 'verified'
+                    })
+                    .eq('id', passRecord.id)
+            } else {
+                console.warn("[GOOGLE] Object creation failed:", objError)
+                // Continue anyway - JWT save link will still work
+            }
+        }
+
         // Determine stamps/points from initial state
         const stamps = initialState.stamps !== undefined
             ? { current: initialState.stamps, max: initialState.max_stamps || 10 }
@@ -339,7 +385,7 @@ async function generateGooglePass(
 
         // Generate save link with class configuration
         // Note: Google Wallet IDs can only contain alphanumeric + underscores, no dashes!
-        const objectId = (passRecord?.id || initialState.customer_number).replace(/-/g, '_')
+        // objectId already declared above when creating the object via API
 
         const saveLink = googleService.generateSaveLink({
             classId,
