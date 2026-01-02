@@ -24,25 +24,52 @@ export async function GET(req: NextRequest) {
     // Check if user already has a pass for this campaign (cookie-based deduplication)
     const existingPassId = req.cookies.get(`pass_${campaignId}`)?.value
     if (existingPassId) {
-        // User already has a pass - redirect to existing pass download
+        // User already has a pass - reuse it
         console.log(`[PASS ISSUE] Reusing existing pass ${existingPassId} for campaign ${campaignId}`)
 
         const { data: existingPass } = await supabase
             .from('passes')
-            .select('id, serial_number')
+            .select('id, serial_number, wallet_type')
             .eq('id', existingPassId)
             .single()
 
         if (existingPass) {
             // For Apple, redirect to the pass download
-            if (platform !== 'android') {
+            if (platform !== 'android' && existingPass.wallet_type !== 'google') {
                 const passTypeIdentifier = process.env.APPLE_PASS_TYPE_IDENTIFIER || 'pass.com.passify.wallet'
                 return NextResponse.redirect(
                     new URL(`/api/v1/passes/${passTypeIdentifier}/${existingPass.serial_number}`, req.url)
                 )
             }
-            // For Android, we already have a pass - but can't easily regenerate the Google link
-            // Just let them create a new one (Google handles duplicates)
+
+            // For Google Wallet: Generate new save link but DON'T create new pass record
+            // The existing pass will be used, just redirect to Google save URL
+            if (platform === 'android' || existingPass.wallet_type === 'google') {
+                console.log(`[PASS ISSUE] Generating new Google link for existing pass ${existingPassId}`)
+                // Fetch the campaign to generate the link
+                const { data: campaign } = await supabase
+                    .from('campaigns')
+                    .select('*, client:clients(name)')
+                    .eq('id', campaignId)
+                    .single()
+
+                if (campaign) {
+                    const googleService = new GoogleWalletService()
+                    const objectId = existingPass.id.replace(/-/g, '_')
+                    const classId = `campaign_${campaign.id.replace(/-/g, '_')}`
+
+                    // Generate save link (object already exists on Google)
+                    const saveLink = googleService.generateSaveLink({
+                        classId,
+                        objectId,
+                        customerId: existingPass.serial_number.slice(0, 8),
+                        barcodeValue: existingPass.id,
+                        textFields: []
+                    })
+
+                    return NextResponse.redirect(saveLink.url)
+                }
+            }
         }
     }
 
