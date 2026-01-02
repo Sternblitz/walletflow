@@ -102,6 +102,13 @@ export async function GET(req: NextRequest) {
                         textFields.push({ header: 'Prämie', body: campaignConfig.reward })
                     }
 
+                    // For COUPON: Get the main voucher value to display prominently
+                    let voucherValue: string | undefined
+                    if (campaign.concept === 'COUPON' && designAssets.fields?.primaryFields?.length > 0) {
+                        const primaryField = designAssets.fields.primaryFields[0]
+                        voucherValue = primaryField.value ? String(primaryField.value) : undefined
+                    }
+
                     // Generate save link with COMPLETE data
                     const saveLink = googleService.generateSaveLink({
                         classId,
@@ -109,6 +116,7 @@ export async function GET(req: NextRequest) {
                         customerId: currentState.customer_number || fullPass.serial_number.slice(0, 8),
                         barcodeValue: fullPass.id,
                         stamps,
+                        voucherValue,  // For COUPON: shows prominently on card
                         stampEmoji: campaignConfig.stampEmoji || designAssets.stampConfig?.icon || '☕',
                         textFields,
                         classConfig: {
@@ -438,6 +446,13 @@ async function generateGooglePass(
         // Note: Google Wallet IDs can only contain alphanumeric + underscores, no dashes!
         // objectId already declared above when creating the object via API
 
+        // For COUPON: Get the main voucher value to display prominently
+        let voucherValue: string | undefined
+        if (campaign.concept === 'COUPON' && draft.fields?.primaryFields?.length > 0) {
+            const primaryField = draft.fields.primaryFields[0]
+            voucherValue = primaryField.value ? String(primaryField.value) : undefined
+        }
+
         const saveLink = googleService.generateSaveLink({
             classId,
             objectId,
@@ -445,6 +460,7 @@ async function generateGooglePass(
             customerId: initialState.customer_number,
             stamps,
             points,
+            voucherValue,  // For COUPON: shows prominently on card
             barcodeValue: passRecord?.id || initialState.customer_number, // Keep original for QR
             textFields,
             stampEmoji: campaignConfig.stampEmoji || '☕',  // Use campaign-configured emoji

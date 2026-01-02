@@ -426,6 +426,7 @@ export class GoogleWalletService implements WalletService {
         customerId: string
         stamps?: { current: number; max: number }
         points?: number
+        voucherValue?: string  // For COUPON: the main value like "20% Rabatt"
         barcodeValue: string
         textFields?: Array<{ header: string; body: string }>
         stampEmoji?: string  // Custom emoji for stamps
@@ -516,6 +517,15 @@ export class GoogleWalletService implements WalletService {
                 loyaltyPoints: {
                     label: 'Punkte',
                     balance: { int: objectConfig.points },
+                },
+            }),
+            // For COUPON: Show voucher value prominently
+            ...(objectConfig.voucherValue && !objectConfig.stamps && objectConfig.points === undefined && {
+                loyaltyPoints: {
+                    label: 'GUTSCHEIN',
+                    balance: {
+                        string: objectConfig.voucherValue
+                    },
                 },
             }),
             textModulesData: [
