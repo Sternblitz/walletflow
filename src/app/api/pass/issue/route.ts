@@ -342,8 +342,13 @@ async function generateGooglePass(
             // Continue anyway - the class might already exist
         }
 
-        // NEW: Create the object via API BEFORE generating save link
-        // This ensures we can verify the pass exists even without callbacks
+        // REMOVED: Auto-verification was causing phantom customers!
+        // Creating the object on Google's servers doesn't mean user saved it.
+        // Verification now ONLY happens via:
+        // 1. Google callback (if configured)
+        // 2. First scan at POS (most reliable)
+
+        // We still create the object for a smoother UX, but don't mark as verified
         const objectId = (passRecord?.id || initialState.customer_number).replace(/-/g, '_')
         try {
             await googleService.createObject({
@@ -359,32 +364,13 @@ async function generateGooglePass(
                 points: initialState.points,
                 textFields: []
             })
-
-            // If object creation succeeded, mark as verified immediately!
-            console.log(`[GOOGLE] ✅ Object created via API - marking pass as verified`)
-            await supabase
-                .from('passes')
-                .update({
-                    is_installed_on_android: true,
-                    verification_status: 'verified'
-                })
-                .eq('id', passRecord.id)
-
+            console.log(`[GOOGLE] Object created on Google servers (pending user save)`)
         } catch (objError: any) {
-            // Object might already exist (409) or other error
-            // 409 = already exists = user already has it = verified!
+            // Object might already exist (409) - that's fine
             if (objError.message?.includes('409') || objError.message?.includes('already exists')) {
-                console.log(`[GOOGLE] Object already exists - user has pass, marking verified`)
-                await supabase
-                    .from('passes')
-                    .update({
-                        is_installed_on_android: true,
-                        verification_status: 'verified'
-                    })
-                    .eq('id', passRecord.id)
+                console.log(`[GOOGLE] Object already exists on Google servers`)
             } else {
                 console.warn("[GOOGLE] Object creation failed:", objError)
-                // Continue anyway - JWT save link will still work
             }
         }
 
