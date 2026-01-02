@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
                         stampEmoji: campaignConfig.stampEmoji || designAssets.stampConfig?.icon || '☕',
                         textFields,
                         classConfig: {
-                            programName: campaign.name || 'Loyalty Card',
+                            programName: campaign.client?.name || campaign.name || 'Loyalty Card',
                             issuerName: campaign.client?.name || 'Passify',
                             logoUrl: designAssets.images?.logo?.url,
                             heroImageUrl: designAssets.images?.strip?.url,
@@ -466,7 +466,7 @@ async function generateGooglePass(
             stampEmoji: campaignConfig.stampEmoji || '☕',  // Use campaign-configured emoji
             // Include class config so JWT creates both class + object
             classConfig: {
-                programName: campaign.name || 'Loyalty Card',
+                programName: campaign.client?.name || campaign.name || 'Loyalty Card',
                 issuerName: campaign.client?.name || 'Passify',
                 logoUrl: draft.images?.logo?.url,
                 heroImageUrl: draft.images?.strip?.url,
