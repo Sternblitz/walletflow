@@ -303,8 +303,8 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                                     <tr key={pass.id} className="hover:bg-white/5 transition-colors">
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-2">
-                                                {/* Platform Icon */}
-                                                {pass.wallet_type === 'google' ? (
+                                                {/* Platform Icon - check wallet_type or is_installed flags */}
+                                                {(pass.wallet_type === 'google' || (pass.is_installed_on_android && !pass.is_installed_on_ios)) ? (
                                                     <span title="Google Wallet" className="text-lg">🤖</span>
                                                 ) : (
                                                     <span title="Apple Wallet" className="text-lg">🍎</span>

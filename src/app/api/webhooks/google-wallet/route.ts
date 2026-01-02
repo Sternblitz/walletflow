@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
                 const { error, data } = await supabase
                     .from('passes')
                     .update({
+                        wallet_type: 'google',  // Ensure wallet_type is correct
                         is_installed_on_android: true,
                         verification_status: 'verified',
                         last_updated_at: new Date().toISOString()
