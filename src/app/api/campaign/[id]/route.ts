@@ -29,9 +29,8 @@ export async function GET(
         return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
-    // Get only INSTALLED passes (where device actually added to wallet)
-    // Get ALL passes for this campaign (both pending and verified)
-    // We'll show them differently in the UI
+    // Get only VERIFIED passes (actually installed or scanned)
+    // We filter out 'pending' passes to avoid showing "ghost" customers
     const { data: passes } = await supabase
         .from('passes')
         .select(`
@@ -46,7 +45,7 @@ export async function GET(
             verification_status
         `)
         .eq('campaign_id', id)
-        .order('verification_status', { ascending: false }) // 'verified' comes before 'pending'
+        .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
         .order('created_at', { ascending: false })
 
     return NextResponse.json({

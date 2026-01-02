@@ -50,7 +50,7 @@ async function getCampaigns(): Promise<Campaign[]> {
                 .from('passes')
                 .select('id', { count: 'exact', head: true })
                 .eq('campaign_id', campaign.id)
-                .or('is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
+                .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
 
             return {
                 ...campaign,
