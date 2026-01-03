@@ -630,9 +630,8 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                 const img = new Image()
                 img.crossOrigin = 'anonymous'
                 img.onload = async () => {
-                    // Calculate size to fit and center (use 90% of canvas)
-                    const maxSize = EXPORT_SIZE * 0.9
-                    const scale = Math.min(maxSize / img.width, maxSize / img.height)
+                    // Calculate size to fit and center (use full canvas)
+                    const scale = Math.min(EXPORT_SIZE / img.width, EXPORT_SIZE / img.height)
                     const drawWidth = img.width * scale
                     const drawHeight = img.height * scale
                     const offsetX = (EXPORT_SIZE - drawWidth) / 2
