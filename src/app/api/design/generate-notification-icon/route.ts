@@ -75,7 +75,7 @@ Think Apple SF Symbols or premium fintech app icons.`
 
         try {
             const response = await ai.models.generateImages({
-                model: "imagen-3.0-generate-002",
+                model: "imagen-4.0-generate-001",  // Updated to Imagen 4 (GA since Aug 2025)
                 prompt: iconPrompt,
                 config: {
                     numberOfImages: 1,
