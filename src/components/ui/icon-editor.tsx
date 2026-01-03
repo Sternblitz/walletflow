@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { X, Upload, Sparkles, Palette, Check, Loader2, ZoomIn, ZoomOut, RotateCcw, Move, Search } from 'lucide-react'
+import { X, Upload, Sparkles, Check, Loader2, ZoomIn, ZoomOut, RotateCcw, Search, RotateCw, FlipHorizontal, FlipVertical } from 'lucide-react'
 import { Button } from './button'
 import * as LucideIcons from 'lucide-react'
 import { LucideIcon } from 'lucide-react'
@@ -41,7 +41,7 @@ const ICON_CATEGORIES: Record<string, { name: string; emoji: string; icons: stri
         icons: [
             'Dumbbell', 'Bike', 'Trophy', 'Medal', 'Target', 'Zap', 'Activity', 'Heart',
             'Timer', 'Flame', 'Mountain', 'Waves', 'Trees', 'PersonStanding', 'Footprints', 'Gauge',
-            'Timer', 'TrendingUp', 'HeartPulse', 'Volleyball', 'Dribbble', 'MapPin', 'Compass', 'Navigation'
+            'TrendingUp', 'HeartPulse', 'Volleyball', 'MapPin', 'Compass', 'Navigation', 'Flag', 'Award'
         ]
     },
     retail: {
@@ -57,7 +57,7 @@ const ICON_CATEGORIES: Record<string, { name: string; emoji: string; icons: stri
         name: 'Dienstleistungen',
         emoji: '🔧',
         icons: [
-            'Wrench', 'Settings', 'Tool', 'Hammer', 'Drill', 'Car', 'Key', 'Home',
+            'Wrench', 'Settings', 'Hammer', 'Car', 'Key', 'Home',
             'Building', 'Briefcase', 'FileText', 'ClipboardCheck', 'Calendar', 'Clock', 'Phone', 'Mail',
             'MessageCircle', 'Headphones', 'Monitor', 'Printer', 'Wifi', 'Shield', 'Lock', 'Umbrella'
         ]
@@ -67,8 +67,8 @@ const ICON_CATEGORIES: Record<string, { name: string; emoji: string; icons: stri
         emoji: '🎵',
         icons: [
             'Music', 'Music2', 'Mic', 'Mic2', 'Headphones', 'Radio', 'Tv', 'Film',
-            'Camera', 'Image', 'Video', 'Gamepad2', 'Dice1', 'Ticket', 'PartyPopper', 'Sparkles',
-            'Drama', 'Clapperboard', 'Projector', 'Theater', 'Piano', 'Guitar', 'Drum', 'Speaker'
+            'Camera', 'Image', 'Video', 'Gamepad2', 'Ticket', 'PartyPopper', 'Sparkles',
+            'Clapperboard', 'Speaker', 'Play', 'Disc', 'Podcast', 'Youtube', 'Twitch', 'Instagram'
         ]
     },
     health: {
@@ -76,7 +76,7 @@ const ICON_CATEGORIES: Record<string, { name: string; emoji: string; icons: stri
         emoji: '🏥',
         icons: [
             'Stethoscope', 'Pill', 'Syringe', 'Thermometer', 'HeartPulse', 'Activity', 'Cross', 'Plus',
-            'FirstAid', 'Bandage', 'Bone', 'Brain', 'Eye', 'Ear', 'Hand', 'Footprints',
+            'Bandage', 'Brain', 'Eye', 'Ear', 'Hand', 'Footprints',
             'Apple', 'Salad', 'Dumbbell', 'Bed', 'Clock', 'Sun', 'Moon', 'Cloud'
         ]
     },
@@ -91,57 +91,31 @@ const ICON_CATEGORIES: Record<string, { name: string; emoji: string; icons: stri
     }
 }
 
-// Extended Color Palette - Premium colors organized by mood
-const COLOR_PALETTES = {
-    neutral: {
-        name: 'Neutral',
-        colors: ['#000000', '#1A1A1A', '#2D2D2D', '#404040', '#525252', '#737373', '#A3A3A3', '#D4D4D4', '#E5E5E5', '#F5F5F5', '#FAFAFA', '#FFFFFF']
-    },
-    warm: {
-        name: 'Warm',
-        colors: ['#7C2D12', '#9A3412', '#C2410C', '#EA580C', '#F97316', '#FB923C', '#FDBA74', '#FED7AA', '#FFEDD5', '#FFF7ED']
-    },
-    red: {
-        name: 'Rot',
-        colors: ['#450A0A', '#7F1D1D', '#991B1B', '#B91C1C', '#DC2626', '#EF4444', '#F87171', '#FCA5A5', '#FECACA', '#FEE2E2']
-    },
-    pink: {
-        name: 'Pink',
-        colors: ['#500724', '#831843', '#9D174D', '#BE185D', '#DB2777', '#EC4899', '#F472B6', '#F9A8D4', '#FBCFE8', '#FCE7F3']
-    },
-    purple: {
-        name: 'Lila',
-        colors: ['#2E1065', '#4C1D95', '#5B21B6', '#6D28D9', '#7C3AED', '#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE', '#EDE9FE']
-    },
-    blue: {
-        name: 'Blau',
-        colors: ['#172554', '#1E3A8A', '#1E40AF', '#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#DBEAFE']
-    },
-    cyan: {
-        name: 'Cyan',
-        colors: ['#083344', '#155E75', '#0E7490', '#0891B2', '#06B6D4', '#22D3EE', '#67E8F9', '#A5F3FC', '#CFFAFE', '#ECFEFF']
-    },
-    green: {
-        name: 'Grün',
-        colors: ['#052E16', '#14532D', '#166534', '#15803D', '#16A34A', '#22C55E', '#4ADE80', '#86EFAC', '#BBF7D0', '#DCFCE7']
-    },
-    gold: {
-        name: 'Gold',
-        colors: ['#422006', '#713F12', '#854D0E', '#A16207', '#CA8A04', '#EAB308', '#FACC15', '#FDE047', '#FEF08A', '#FEF9C3']
-    }
-}
+// Quick color presets for fast selection
+const QUICK_COLORS = [
+    '#FFFFFF', '#000000', '#EF4444', '#F97316', '#EAB308', '#22C55E',
+    '#06B6D4', '#3B82F6', '#8B5CF6', '#EC4899', '#6B7280', '#D4AF37'
+]
 
 const EXPORT_SIZE = 512
-const PREVIEW_SIZE = 256
 
 export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000', businessType = '' }: IconEditorProps) {
     const [activeTab, setActiveTab] = useState<'icons' | 'logo' | 'ai'>('icons')
     const [selectedCategory, setSelectedCategory] = useState<keyof typeof ICON_CATEGORIES>('food')
     const [selectedIcon, setSelectedIcon] = useState<string | null>(null)
+    const [searchQuery, setSearchQuery] = useState('')
+
+    // Advanced customization controls
     const [iconColor, setIconColor] = useState('#FFFFFF')
     const [bgColor, setBgColor] = useState(backgroundColor)
-    const [searchQuery, setSearchQuery] = useState('')
-    const [selectedPalette, setSelectedPalette] = useState<keyof typeof COLOR_PALETTES>('neutral')
+    const [iconSize, setIconSize] = useState(60)  // Percentage of canvas
+    const [strokeWidth, setStrokeWidth] = useState(2)  // SVG stroke width
+    const [rotation, setRotation] = useState(0)  // Degrees
+    const [flipH, setFlipH] = useState(false)
+    const [flipV, setFlipV] = useState(false)
+
+    // Preview canvas
+    const previewCanvasRef = useRef<HTMLCanvasElement>(null)
 
     // Logo editor state
     const [logoImage, setLogoImage] = useState<string | null>(null)
@@ -150,7 +124,6 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
     const [logoPosition, setLogoPosition] = useState({ x: 0, y: 0 })
     const [isDragging, setIsDragging] = useState(false)
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-    const previewCanvasRef = useRef<HTMLCanvasElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     // AI state
@@ -172,75 +145,136 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         )
         : ICON_CATEGORIES[selectedCategory].icons
 
-    // Generate icon as PNG
-    const generateIconPng = useCallback(async () => {
-        if (!selectedIcon) return null
+    // Draw preview on canvas
+    const drawPreview = useCallback(() => {
+        const canvas = previewCanvasRef.current
+        if (!canvas || !selectedIcon) return
 
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+
+        const size = canvas.width
+
+        // Clear and draw background
+        ctx.fillStyle = bgColor
+        ctx.fillRect(0, 0, size, size)
+
+        // Create SVG for the icon
+        const iconSizePixels = (size * iconSize) / 100
+        const padding = (size - iconSizePixels) / 2
+
+        // Create an SVG element
+        const svgNS = "http://www.w3.org/2000/svg"
+        const svg = document.createElementNS(svgNS, "svg")
+        svg.setAttribute("width", String(iconSizePixels))
+        svg.setAttribute("height", String(iconSizePixels))
+        svg.setAttribute("viewBox", "0 0 24 24")
+        svg.setAttribute("fill", "none")
+        svg.setAttribute("stroke", iconColor)
+        svg.setAttribute("stroke-width", String(strokeWidth))
+        svg.setAttribute("stroke-linecap", "round")
+        svg.setAttribute("stroke-linejoin", "round")
+
+        // Get the icon's path from Lucide
         const IconComponent = getIconComponent(selectedIcon)
-        if (!IconComponent) return null
+        if (!IconComponent) return
 
-        // Create SVG string
-        const svgString = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="${EXPORT_SIZE}" height="${EXPORT_SIZE}" viewBox="0 0 ${EXPORT_SIZE} ${EXPORT_SIZE}">
-                <rect width="${EXPORT_SIZE}" height="${EXPORT_SIZE}" fill="${bgColor}"/>
-                <g transform="translate(${EXPORT_SIZE * 0.15}, ${EXPORT_SIZE * 0.15}) scale(${EXPORT_SIZE * 0.7 / 24})">
-                    <path d="${getIconPath(selectedIcon)}" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        // Render icon to get its path
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>`
+
+        // Use the icon's internal paths (simplified approach)
+        const iconSvgString = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                <rect width="${size}" height="${size}" fill="${bgColor}"/>
+                <g transform="translate(${padding}, ${padding}) rotate(${rotation}, ${iconSizePixels / 2}, ${iconSizePixels / 2}) scale(${flipH ? -1 : 1}, ${flipV ? -1 : 1}) ${flipH ? `translate(-${iconSizePixels}, 0)` : ''} ${flipV ? `translate(0, -${iconSizePixels})` : ''}">
+                    <svg viewBox="0 0 24 24" width="${iconSizePixels}" height="${iconSizePixels}" fill="none" stroke="${iconColor}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                    </svg>
                 </g>
             </svg>
         `
 
-        // Convert SVG to canvas
-        const canvas = document.createElement('canvas')
-        canvas.width = EXPORT_SIZE
-        canvas.height = EXPORT_SIZE
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return null
-
         // Draw background
+        ctx.save()
         ctx.fillStyle = bgColor
-        ctx.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE)
+        ctx.fillRect(0, 0, size, size)
 
-        // Draw icon using Image
-        const img = new Image()
-        const blob = new Blob([svgString], { type: 'image/svg+xml' })
-        const url = URL.createObjectURL(blob)
+        // Apply transformations
+        ctx.translate(size / 2, size / 2)
+        ctx.rotate((rotation * Math.PI) / 180)
+        ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1)
+        ctx.translate(-size / 2, -size / 2)
 
-        return new Promise<string>((resolve) => {
-            img.onload = () => {
-                ctx.drawImage(img, 0, 0)
-                URL.revokeObjectURL(url)
-                resolve(canvas.toDataURL('image/png'))
-            }
-            img.onerror = () => {
-                URL.revokeObjectURL(url)
-                // Fallback: draw directly on canvas
-                ctx.fillStyle = bgColor
-                ctx.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE)
-                ctx.strokeStyle = iconColor
-                ctx.lineWidth = EXPORT_SIZE / 24
-                ctx.lineCap = 'round'
-                ctx.lineJoin = 'round'
+        // Draw icon
+        ctx.strokeStyle = iconColor
+        ctx.lineWidth = strokeWidth * (iconSizePixels / 24)
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
 
-                // Simple fallback shape
-                const padding = EXPORT_SIZE * 0.2
-                const size = EXPORT_SIZE - padding * 2
-                ctx.beginPath()
-                ctx.arc(EXPORT_SIZE / 2, EXPORT_SIZE / 2, size / 3, 0, Math.PI * 2)
-                ctx.stroke()
+        // Draw a representative shape for the icon
+        const centerX = size / 2
+        const centerY = size / 2
+        const radius = iconSizePixels / 3
 
-                resolve(canvas.toDataURL('image/png'))
-            }
-            img.src = url
-        })
-    }, [selectedIcon, iconColor, bgColor, getIconComponent])
+        // Simple icon representation based on category
+        ctx.beginPath()
+        if (selectedCategory === 'food') {
+            // Cup shape
+            ctx.moveTo(centerX - radius, centerY - radius * 0.3)
+            ctx.lineTo(centerX - radius * 0.8, centerY + radius)
+            ctx.lineTo(centerX + radius * 0.8, centerY + radius)
+            ctx.lineTo(centerX + radius, centerY - radius * 0.3)
+            ctx.closePath()
+            ctx.moveTo(centerX + radius, centerY)
+            ctx.quadraticCurveTo(centerX + radius * 1.4, centerY + radius * 0.3, centerX + radius, centerY + radius * 0.6)
+        } else if (selectedCategory === 'beauty') {
+            // Scissors shape
+            ctx.arc(centerX - radius * 0.4, centerY + radius * 0.4, radius * 0.35, 0, Math.PI * 2)
+            ctx.moveTo(centerX + radius * 0.75, centerY + radius * 0.4)
+            ctx.arc(centerX + radius * 0.4, centerY + radius * 0.4, radius * 0.35, 0, Math.PI * 2)
+            ctx.moveTo(centerX - radius * 0.2, centerY + radius * 0.15)
+            ctx.lineTo(centerX + radius * 0.5, centerY - radius * 0.9)
+            ctx.moveTo(centerX + radius * 0.2, centerY + radius * 0.15)
+            ctx.lineTo(centerX - radius * 0.5, centerY - radius * 0.9)
+        } else if (selectedCategory === 'fitness') {
+            // Dumbbell shape
+            ctx.moveTo(centerX - radius * 1.1, centerY)
+            ctx.lineTo(centerX + radius * 1.1, centerY)
+            ctx.moveTo(centerX - radius, centerY - radius * 0.5)
+            ctx.lineTo(centerX - radius, centerY + radius * 0.5)
+            ctx.moveTo(centerX + radius, centerY - radius * 0.5)
+            ctx.lineTo(centerX + radius, centerY + radius * 0.5)
+        } else if (selectedCategory === 'retail') {
+            // Shopping bag shape
+            ctx.moveTo(centerX - radius * 0.7, centerY - radius * 0.3)
+            ctx.lineTo(centerX - radius * 0.9, centerY + radius)
+            ctx.lineTo(centerX + radius * 0.9, centerY + radius)
+            ctx.lineTo(centerX + radius * 0.7, centerY - radius * 0.3)
+            ctx.closePath()
+            ctx.moveTo(centerX - radius * 0.4, centerY - radius * 0.3)
+            ctx.quadraticCurveTo(centerX - radius * 0.4, centerY - radius, centerX, centerY - radius)
+            ctx.quadraticCurveTo(centerX + radius * 0.4, centerY - radius, centerX + radius * 0.4, centerY - radius * 0.3)
+        } else {
+            // Default: Circle with plus
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+            ctx.moveTo(centerX - radius * 0.5, centerY)
+            ctx.lineTo(centerX + radius * 0.5, centerY)
+            ctx.moveTo(centerX, centerY - radius * 0.5)
+            ctx.lineTo(centerX, centerY + radius * 0.5)
+        }
+        ctx.stroke()
+        ctx.restore()
 
-    // Get SVG path for icon (simplified)
-    const getIconPath = (iconName: string): string => {
-        // This is a simplified approach - we'll use the canvas method instead
-        return ''
-    }
+    }, [selectedIcon, bgColor, iconColor, iconSize, strokeWidth, rotation, flipH, flipV, selectedCategory, getIconComponent])
 
-    // Logo upload handler
+    // Redraw preview when settings change
+    useEffect(() => {
+        if (selectedIcon) {
+            drawPreview()
+        }
+    }, [selectedIcon, bgColor, iconColor, iconSize, strokeWidth, rotation, flipH, flipV, drawPreview])
+
+    // Logo handlers
     const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
@@ -258,39 +292,43 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         }
     }
 
-    // Draw preview canvas
-    const drawPreview = useCallback(() => {
+    // Draw logo preview
+    const drawLogoPreview = useCallback(() => {
         const canvas = previewCanvasRef.current
         if (!canvas || !logoImageEl) return
 
         const ctx = canvas.getContext('2d')
         if (!ctx) return
 
+        const size = canvas.width
+
         ctx.fillStyle = bgColor
-        ctx.fillRect(0, 0, PREVIEW_SIZE, PREVIEW_SIZE)
+        ctx.fillRect(0, 0, size, size)
 
         const imgAspect = logoImageEl.width / logoImageEl.height
         let drawWidth, drawHeight
 
         if (imgAspect > 1) {
-            drawWidth = PREVIEW_SIZE * logoScale
+            drawWidth = size * logoScale
             drawHeight = drawWidth / imgAspect
         } else {
-            drawHeight = PREVIEW_SIZE * logoScale
+            drawHeight = size * logoScale
             drawWidth = drawHeight * imgAspect
         }
 
-        const x = (PREVIEW_SIZE - drawWidth) / 2 + logoPosition.x
-        const y = (PREVIEW_SIZE - drawHeight) / 2 + logoPosition.y
+        const x = (size - drawWidth) / 2 + logoPosition.x
+        const y = (size - drawHeight) / 2 + logoPosition.y
 
         ctx.drawImage(logoImageEl, x, y, drawWidth, drawHeight)
     }, [logoImageEl, logoScale, logoPosition, bgColor])
 
     useEffect(() => {
-        if (logoImageEl) drawPreview()
-    }, [logoImageEl, logoScale, logoPosition, bgColor, drawPreview])
+        if (logoImageEl && activeTab === 'logo') {
+            drawLogoPreview()
+        }
+    }, [logoImageEl, logoScale, logoPosition, bgColor, activeTab, drawLogoPreview])
 
-    // Drag handlers
+    // Drag handlers for logo
     const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault()
         setIsDragging(true)
@@ -326,38 +364,101 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         }
     }, [isDragging, handleDragMove, handleDragEnd])
 
-    // Generate logo icon
-    const generateLogoIcon = useCallback(() => {
-        if (!logoImageEl) return null
-
+    // Generate final icon
+    const generateFinalIcon = useCallback(() => {
         const canvas = document.createElement('canvas')
         canvas.width = EXPORT_SIZE
         canvas.height = EXPORT_SIZE
         const ctx = canvas.getContext('2d')
         if (!ctx) return null
 
-        const scaleFactor = EXPORT_SIZE / PREVIEW_SIZE
-
+        // Draw background
         ctx.fillStyle = bgColor
         ctx.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE)
 
-        const imgAspect = logoImageEl.width / logoImageEl.height
-        let drawWidth, drawHeight
+        if (activeTab === 'logo' && logoImageEl) {
+            const scaleFactor = EXPORT_SIZE / 256
+            const imgAspect = logoImageEl.width / logoImageEl.height
+            let drawWidth, drawHeight
 
-        if (imgAspect > 1) {
-            drawWidth = EXPORT_SIZE * logoScale
-            drawHeight = drawWidth / imgAspect
-        } else {
-            drawHeight = EXPORT_SIZE * logoScale
-            drawWidth = drawHeight * imgAspect
+            if (imgAspect > 1) {
+                drawWidth = EXPORT_SIZE * logoScale
+                drawHeight = drawWidth / imgAspect
+            } else {
+                drawHeight = EXPORT_SIZE * logoScale
+                drawWidth = drawHeight * imgAspect
+            }
+
+            const x = (EXPORT_SIZE - drawWidth) / 2 + (logoPosition.x * scaleFactor)
+            const y = (EXPORT_SIZE - drawHeight) / 2 + (logoPosition.y * scaleFactor)
+
+            ctx.drawImage(logoImageEl, x, y, drawWidth, drawHeight)
+        } else if (activeTab === 'icons' && selectedIcon) {
+            // Apply transformations
+            ctx.save()
+            ctx.translate(EXPORT_SIZE / 2, EXPORT_SIZE / 2)
+            ctx.rotate((rotation * Math.PI) / 180)
+            ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1)
+            ctx.translate(-EXPORT_SIZE / 2, -EXPORT_SIZE / 2)
+
+            // Draw icon
+            const iconSizePixels = (EXPORT_SIZE * iconSize) / 100
+            ctx.strokeStyle = iconColor
+            ctx.lineWidth = strokeWidth * (iconSizePixels / 24)
+            ctx.lineCap = 'round'
+            ctx.lineJoin = 'round'
+
+            const centerX = EXPORT_SIZE / 2
+            const centerY = EXPORT_SIZE / 2
+            const radius = iconSizePixels / 3
+
+            // Draw shape based on category
+            ctx.beginPath()
+            if (selectedCategory === 'food') {
+                ctx.moveTo(centerX - radius, centerY - radius * 0.3)
+                ctx.lineTo(centerX - radius * 0.8, centerY + radius)
+                ctx.lineTo(centerX + radius * 0.8, centerY + radius)
+                ctx.lineTo(centerX + radius, centerY - radius * 0.3)
+                ctx.closePath()
+                ctx.moveTo(centerX + radius, centerY)
+                ctx.quadraticCurveTo(centerX + radius * 1.4, centerY + radius * 0.3, centerX + radius, centerY + radius * 0.6)
+            } else if (selectedCategory === 'beauty') {
+                ctx.arc(centerX - radius * 0.4, centerY + radius * 0.4, radius * 0.35, 0, Math.PI * 2)
+                ctx.moveTo(centerX + radius * 0.75, centerY + radius * 0.4)
+                ctx.arc(centerX + radius * 0.4, centerY + radius * 0.4, radius * 0.35, 0, Math.PI * 2)
+                ctx.moveTo(centerX - radius * 0.2, centerY + radius * 0.15)
+                ctx.lineTo(centerX + radius * 0.5, centerY - radius * 0.9)
+                ctx.moveTo(centerX + radius * 0.2, centerY + radius * 0.15)
+                ctx.lineTo(centerX - radius * 0.5, centerY - radius * 0.9)
+            } else if (selectedCategory === 'fitness') {
+                ctx.moveTo(centerX - radius * 1.1, centerY)
+                ctx.lineTo(centerX + radius * 1.1, centerY)
+                ctx.moveTo(centerX - radius, centerY - radius * 0.5)
+                ctx.lineTo(centerX - radius, centerY + radius * 0.5)
+                ctx.moveTo(centerX + radius, centerY - radius * 0.5)
+                ctx.lineTo(centerX + radius, centerY + radius * 0.5)
+            } else if (selectedCategory === 'retail') {
+                ctx.moveTo(centerX - radius * 0.7, centerY - radius * 0.3)
+                ctx.lineTo(centerX - radius * 0.9, centerY + radius)
+                ctx.lineTo(centerX + radius * 0.9, centerY + radius)
+                ctx.lineTo(centerX + radius * 0.7, centerY - radius * 0.3)
+                ctx.closePath()
+                ctx.moveTo(centerX - radius * 0.4, centerY - radius * 0.3)
+                ctx.quadraticCurveTo(centerX - radius * 0.4, centerY - radius, centerX, centerY - radius)
+                ctx.quadraticCurveTo(centerX + radius * 0.4, centerY - radius, centerX + radius * 0.4, centerY - radius * 0.3)
+            } else {
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+                ctx.moveTo(centerX - radius * 0.5, centerY)
+                ctx.lineTo(centerX + radius * 0.5, centerY)
+                ctx.moveTo(centerX, centerY - radius * 0.5)
+                ctx.lineTo(centerX, centerY + radius * 0.5)
+            }
+            ctx.stroke()
+            ctx.restore()
         }
 
-        const x = (EXPORT_SIZE - drawWidth) / 2 + (logoPosition.x * scaleFactor)
-        const y = (EXPORT_SIZE - drawHeight) / 2 + (logoPosition.y * scaleFactor)
-
-        ctx.drawImage(logoImageEl, x, y, drawWidth, drawHeight)
         return canvas.toDataURL('image/png')
-    }, [logoImageEl, logoScale, logoPosition, bgColor])
+    }, [activeTab, logoImageEl, logoScale, logoPosition, bgColor, selectedIcon, iconColor, iconSize, strokeWidth, rotation, flipH, flipV, selectedCategory])
 
     // AI generation
     const generateAiIcon = async () => {
@@ -397,84 +498,13 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
     const handleSave = async () => {
         let iconDataUrl: string | null = null
 
-        if (activeTab === 'icons' && selectedIcon) {
-            // For Lucide icons, we need to render to canvas differently
-            const canvas = document.createElement('canvas')
-            canvas.width = EXPORT_SIZE
-            canvas.height = EXPORT_SIZE
-            const ctx = canvas.getContext('2d')
-            if (!ctx) return
-
-            // Draw background
-            ctx.fillStyle = bgColor
-            ctx.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE)
-
-            // Create a temporary div to render the React icon
-            const tempDiv = document.createElement('div')
-            tempDiv.style.cssText = `position:fixed;top:-9999px;left:-9999px;width:${EXPORT_SIZE}px;height:${EXPORT_SIZE}px;`
-            document.body.appendChild(tempDiv)
-
-            // Use SVG directly
-            const padding = EXPORT_SIZE * 0.15
-            const iconSize = EXPORT_SIZE - padding * 2
-
-            const svgHtml = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="${EXPORT_SIZE}" height="${EXPORT_SIZE}" viewBox="0 0 ${EXPORT_SIZE} ${EXPORT_SIZE}">
-                    <rect width="${EXPORT_SIZE}" height="${EXPORT_SIZE}" fill="${bgColor}"/>
-                    <svg x="${padding}" y="${padding}" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    </svg>
-                </svg>
-            `
-
-            // For now, create a simple icon representation
-            ctx.strokeStyle = iconColor
-            ctx.lineWidth = EXPORT_SIZE / 32
-            ctx.lineCap = 'round'
-            ctx.lineJoin = 'round'
-
-            // Draw a placeholder icon shape based on category
-            const centerX = EXPORT_SIZE / 2
-            const centerY = EXPORT_SIZE / 2
-            const radius = EXPORT_SIZE * 0.25
-
-            ctx.beginPath()
-            if (selectedCategory === 'food') {
-                // Coffee cup shape
-                ctx.moveTo(centerX - radius, centerY - radius * 0.5)
-                ctx.lineTo(centerX - radius, centerY + radius)
-                ctx.quadraticCurveTo(centerX, centerY + radius * 1.3, centerX + radius, centerY + radius)
-                ctx.lineTo(centerX + radius, centerY - radius * 0.5)
-                ctx.moveTo(centerX + radius, centerY - radius * 0.2)
-                ctx.quadraticCurveTo(centerX + radius * 1.5, centerY, centerX + radius, centerY + radius * 0.3)
-            } else if (selectedCategory === 'beauty') {
-                // Scissors shape
-                ctx.arc(centerX - radius * 0.4, centerY + radius * 0.4, radius * 0.3, 0, Math.PI * 2)
-                ctx.moveTo(centerX + radius * 0.4, centerY + radius * 0.4)
-                ctx.arc(centerX + radius * 0.4, centerY + radius * 0.4, radius * 0.3, 0, Math.PI * 2)
-                ctx.moveTo(centerX - radius * 0.2, centerY + radius * 0.2)
-                ctx.lineTo(centerX + radius * 0.5, centerY - radius * 0.8)
-                ctx.moveTo(centerX + radius * 0.2, centerY + radius * 0.2)
-                ctx.lineTo(centerX - radius * 0.5, centerY - radius * 0.8)
-            } else {
-                // Default circle with plus
-                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-                ctx.moveTo(centerX - radius * 0.5, centerY)
-                ctx.lineTo(centerX + radius * 0.5, centerY)
-                ctx.moveTo(centerX, centerY - radius * 0.5)
-                ctx.lineTo(centerX, centerY + radius * 0.5)
-            }
-            ctx.stroke()
-
-            document.body.removeChild(tempDiv)
-            iconDataUrl = canvas.toDataURL('image/png')
-
-        } else if (activeTab === 'logo' && logoImageEl) {
-            iconDataUrl = generateLogoIcon()
-        } else if (activeTab === 'ai' && aiResult) {
+        if (activeTab === 'ai' && aiResult) {
             onSave(aiResult)
             onClose()
             return
         }
+
+        iconDataUrl = generateFinalIcon()
 
         if (iconDataUrl) {
             try {
@@ -497,14 +527,23 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         }
     }
 
+    // Reset to defaults
+    const resetSettings = () => {
+        setIconSize(60)
+        setStrokeWidth(2)
+        setRotation(0)
+        setFlipH(false)
+        setFlipV(false)
+    }
+
     if (!isOpen) return null
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-            <div className="bg-zinc-900 rounded-2xl w-full max-w-4xl mx-4 overflow-hidden border border-white/10 shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="bg-zinc-900 rounded-2xl w-full max-w-5xl mx-4 overflow-hidden border border-white/10 shadow-2xl max-h-[95vh] flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10 shrink-0">
-                    <h2 className="text-lg font-semibold text-white">🎨 Icon Editor</h2>
+                    <h2 className="text-lg font-semibold text-white">🎨 Icon Editor Pro</h2>
                     <button onClick={onClose} className="p-1 text-zinc-400 hover:text-white">
                         <X size={20} />
                     </button>
@@ -514,24 +553,21 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                 <div className="flex border-b border-white/10 shrink-0">
                     <button
                         onClick={() => setActiveTab('icons')}
-                        className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'icons' ? 'text-white bg-white/5 border-b-2 border-green-500' : 'text-zinc-400 hover:text-white'}`}
+                        className={`flex-1 py-3 text-sm font-medium ${activeTab === 'icons' ? 'text-white bg-white/5 border-b-2 border-green-500' : 'text-zinc-400 hover:text-white'}`}
                     >
-                        <Palette size={16} />
-                        Icon Bibliothek ({Object.values(ICON_CATEGORIES).flatMap(c => c.icons).length}+)
+                        🎯 Icon Bibliothek
                     </button>
                     <button
                         onClick={() => setActiveTab('logo')}
-                        className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'logo' ? 'text-white bg-white/5 border-b-2 border-green-500' : 'text-zinc-400 hover:text-white'}`}
+                        className={`flex-1 py-3 text-sm font-medium ${activeTab === 'logo' ? 'text-white bg-white/5 border-b-2 border-green-500' : 'text-zinc-400 hover:text-white'}`}
                     >
-                        <Upload size={16} />
-                        Logo hochladen
+                        📤 Logo hochladen
                     </button>
                     <button
                         onClick={() => setActiveTab('ai')}
-                        className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'ai' ? 'text-white bg-white/5 border-b-2 border-green-500' : 'text-zinc-400 hover:text-white'}`}
+                        className={`flex-1 py-3 text-sm font-medium ${activeTab === 'ai' ? 'text-white bg-white/5 border-b-2 border-green-500' : 'text-zinc-400 hover:text-white'}`}
                     >
-                        <Sparkles size={16} />
-                        AI generieren
+                        🤖 AI generieren
                     </button>
                 </div>
 
@@ -539,9 +575,9 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                 <div className="flex-1 overflow-hidden flex">
                     {/* Icons Tab */}
                     {activeTab === 'icons' && (
-                        <div className="flex flex-1 overflow-hidden">
+                        <>
                             {/* Left: Categories */}
-                            <div className="w-48 border-r border-white/10 p-3 overflow-y-auto shrink-0">
+                            <div className="w-44 border-r border-white/10 p-3 overflow-y-auto shrink-0">
                                 <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Kategorien</p>
                                 {Object.entries(ICON_CATEGORIES).map(([key, cat]) => (
                                     <button
@@ -557,7 +593,6 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                     >
                                         <span className="mr-2">{cat.emoji}</span>
                                         {cat.name}
-                                        <span className="text-[10px] text-zinc-500 ml-1">({cat.icons.length})</span>
                                     </button>
                                 ))}
                             </div>
@@ -577,7 +612,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                 </div>
 
                                 {/* Icon Grid */}
-                                <div className="grid grid-cols-8 gap-2">
+                                <div className="grid grid-cols-6 gap-2">
                                     {filteredIcons.map((iconName) => {
                                         const IconComponent = getIconComponent(iconName)
                                         if (!IconComponent) return null
@@ -588,15 +623,14 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                                 onClick={() => setSelectedIcon(iconName)}
                                                 className={`aspect-square rounded-xl flex items-center justify-center transition-all ${selectedIcon === iconName
                                                     ? 'bg-green-500/20 ring-2 ring-green-500 scale-105'
-                                                    : 'bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20'
+                                                    : 'bg-white/5 hover:bg-white/10 border border-white/10'
                                                     }`}
                                                 title={iconName}
-                                                style={{ backgroundColor: selectedIcon === iconName ? undefined : bgColor }}
                                             >
                                                 <IconComponent
-                                                    size={24}
+                                                    size={28}
                                                     className="transition-colors"
-                                                    style={{ color: selectedIcon === iconName ? '#22C55E' : iconColor }}
+                                                    style={{ color: selectedIcon === iconName ? '#22C55E' : '#A1A1AA' }}
                                                 />
                                             </button>
                                         )
@@ -604,30 +638,47 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                 </div>
                             </div>
 
-                            {/* Right: Color Picker */}
-                            <div className="w-64 border-l border-white/10 p-4 overflow-y-auto shrink-0">
+                            {/* Right: Controls & Preview */}
+                            <div className="w-80 border-l border-white/10 p-4 overflow-y-auto shrink-0 space-y-5">
                                 {/* Preview */}
-                                {selectedIcon && (
-                                    <div className="mb-4">
-                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Vorschau</p>
-                                        <div
-                                            className="w-full aspect-square rounded-xl flex items-center justify-center border border-white/20"
+                                <div>
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Live-Vorschau</p>
+                                    <div className="flex justify-center">
+                                        <canvas
+                                            ref={previewCanvasRef}
+                                            width={200}
+                                            height={200}
+                                            className="rounded-xl border-2 border-white/20"
                                             style={{ backgroundColor: bgColor }}
-                                        >
-                                            {(() => {
-                                                const IconComponent = getIconComponent(selectedIcon)
-                                                return IconComponent ? <IconComponent size={80} style={{ color: iconColor }} /> : null
-                                            })()}
-                                        </div>
-                                        <p className="text-xs text-zinc-400 text-center mt-2">{selectedIcon}</p>
+                                        />
                                     </div>
-                                )}
+                                    {selectedIcon && (
+                                        <p className="text-xs text-zinc-400 text-center mt-2">{selectedIcon}</p>
+                                    )}
+                                </div>
 
-                                {/* Icon Color */}
-                                <div className="mb-4">
+                                {/* Icon Color with Full Picker */}
+                                <div>
                                     <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Icon-Farbe</p>
-                                    <div className="flex gap-1 flex-wrap">
-                                        {COLOR_PALETTES[selectedPalette].colors.map((color) => (
+                                    <div className="flex gap-2 items-center">
+                                        <div className="relative w-12 h-12 rounded-lg overflow-hidden border-2 border-white/20 shrink-0">
+                                            <input
+                                                type="color"
+                                                value={iconColor}
+                                                onChange={(e) => setIconColor(e.target.value)}
+                                                className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                                            />
+                                            <div className="w-full h-full" style={{ backgroundColor: iconColor }} />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={iconColor}
+                                            onChange={(e) => setIconColor(e.target.value)}
+                                            className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-mono"
+                                        />
+                                    </div>
+                                    <div className="flex gap-1 mt-2 flex-wrap">
+                                        {QUICK_COLORS.map((color) => (
                                             <button
                                                 key={color}
                                                 onClick={() => setIconColor(color)}
@@ -636,24 +687,30 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                             />
                                         ))}
                                     </div>
-                                    <div className="flex gap-1 mt-2 flex-wrap">
-                                        {Object.entries(COLOR_PALETTES).map(([key, pal]) => (
-                                            <button
-                                                key={key}
-                                                onClick={() => setSelectedPalette(key as keyof typeof COLOR_PALETTES)}
-                                                className={`text-[9px] px-2 py-1 rounded ${selectedPalette === key ? 'bg-white/20 text-white' : 'text-zinc-500 hover:text-white'}`}
-                                            >
-                                                {pal.name}
-                                            </button>
-                                        ))}
-                                    </div>
                                 </div>
 
-                                {/* Background Color */}
+                                {/* Background Color with Full Picker */}
                                 <div>
                                     <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Hintergrund</p>
-                                    <div className="flex gap-1 flex-wrap">
-                                        {COLOR_PALETTES[selectedPalette].colors.map((color) => (
+                                    <div className="flex gap-2 items-center">
+                                        <div className="relative w-12 h-12 rounded-lg overflow-hidden border-2 border-white/20 shrink-0">
+                                            <input
+                                                type="color"
+                                                value={bgColor}
+                                                onChange={(e) => setBgColor(e.target.value)}
+                                                className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                                            />
+                                            <div className="w-full h-full" style={{ backgroundColor: bgColor }} />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={bgColor}
+                                            onChange={(e) => setBgColor(e.target.value)}
+                                            className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-mono"
+                                        />
+                                    </div>
+                                    <div className="flex gap-1 mt-2 flex-wrap">
+                                        {QUICK_COLORS.map((color) => (
                                             <button
                                                 key={color}
                                                 onClick={() => setBgColor(color)}
@@ -663,14 +720,99 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* Icon Size Slider */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Icon-Größe</p>
+                                        <span className="text-xs text-white font-mono">{iconSize}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="20"
+                                        max="90"
+                                        value={iconSize}
+                                        onChange={(e) => setIconSize(parseInt(e.target.value))}
+                                        className="w-full accent-green-500"
+                                    />
+                                </div>
+
+                                {/* Stroke Width Slider */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Linienstärke</p>
+                                        <span className="text-xs text-white font-mono">{strokeWidth}px</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="4"
+                                        step="0.5"
+                                        value={strokeWidth}
+                                        onChange={(e) => setStrokeWidth(parseFloat(e.target.value))}
+                                        className="w-full accent-green-500"
+                                    />
+                                </div>
+
+                                {/* Rotation */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Rotation</p>
+                                        <span className="text-xs text-white font-mono">{rotation}°</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="360"
+                                            value={rotation}
+                                            onChange={(e) => setRotation(parseInt(e.target.value))}
+                                            className="flex-1 accent-green-500"
+                                        />
+                                        <button
+                                            onClick={() => setRotation((r) => (r + 90) % 360)}
+                                            className="p-2 bg-white/10 rounded-lg hover:bg-white/20"
+                                            title="90° drehen"
+                                        >
+                                            <RotateCw size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Flip Controls */}
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setFlipH(!flipH)}
+                                        className={`flex-1 py-2 px-3 rounded-lg text-sm flex items-center justify-center gap-2 ${flipH ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-white/5 text-zinc-400 border border-white/10'}`}
+                                    >
+                                        <FlipHorizontal size={16} />
+                                        Horizontal
+                                    </button>
+                                    <button
+                                        onClick={() => setFlipV(!flipV)}
+                                        className={`flex-1 py-2 px-3 rounded-lg text-sm flex items-center justify-center gap-2 ${flipV ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-white/5 text-zinc-400 border border-white/10'}`}
+                                    >
+                                        <FlipVertical size={16} />
+                                        Vertikal
+                                    </button>
+                                </div>
+
+                                {/* Reset */}
+                                <button
+                                    onClick={resetSettings}
+                                    className="w-full py-2 text-xs text-zinc-500 hover:text-white flex items-center justify-center gap-1"
+                                >
+                                    <RotateCcw size={12} />
+                                    Zurücksetzen
+                                </button>
                             </div>
-                        </div>
+                        </>
                     )}
 
                     {/* Logo Tab */}
                     {activeTab === 'logo' && (
                         <div className="flex-1 p-6 overflow-y-auto">
-                            <div className="max-w-md mx-auto space-y-4">
+                            <div className="max-w-lg mx-auto space-y-4">
                                 {!logoImage ? (
                                     <div
                                         onClick={() => fileInputRef.current?.click()}
@@ -685,8 +827,8 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                         <div className="flex justify-center">
                                             <canvas
                                                 ref={previewCanvasRef}
-                                                width={PREVIEW_SIZE}
-                                                height={PREVIEW_SIZE}
+                                                width={256}
+                                                height={256}
                                                 className="rounded-xl cursor-move border-2 border-white/20"
                                                 onMouseDown={handleDragStart}
                                                 onTouchStart={handleDragStart}
@@ -704,7 +846,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                                 max="200"
                                                 value={logoScale * 100}
                                                 onChange={(e) => setLogoScale(parseInt(e.target.value) / 100)}
-                                                className="w-32 accent-green-500"
+                                                className="w-40 accent-green-500"
                                             />
                                             <button onClick={() => setLogoScale(s => Math.min(2, s + 0.1))} className="p-2 bg-white/10 rounded-lg hover:bg-white/20">
                                                 <ZoomIn size={18} />
@@ -714,17 +856,25 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                             </button>
                                         </div>
 
+                                        {/* Background Color */}
                                         <div>
                                             <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Hintergrund</p>
-                                            <div className="flex gap-1 flex-wrap">
-                                                {COLOR_PALETTES.neutral.colors.map((color) => (
-                                                    <button
-                                                        key={color}
-                                                        onClick={() => setBgColor(color)}
-                                                        className={`w-6 h-6 rounded-md border-2 ${bgColor === color ? 'border-green-500' : 'border-transparent'}`}
-                                                        style={{ backgroundColor: color }}
+                                            <div className="flex gap-2 items-center">
+                                                <div className="relative w-10 h-10 rounded-lg overflow-hidden border-2 border-white/20 shrink-0">
+                                                    <input
+                                                        type="color"
+                                                        value={bgColor}
+                                                        onChange={(e) => setBgColor(e.target.value)}
+                                                        className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
                                                     />
-                                                ))}
+                                                    <div className="w-full h-full" style={{ backgroundColor: bgColor }} />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={bgColor}
+                                                    onChange={(e) => setBgColor(e.target.value)}
+                                                    className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-mono"
+                                                />
                                             </div>
                                         </div>
 
