@@ -542,6 +542,49 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         let iconDataUrl: string | null = null
 
         if (activeTab === 'ai' && aiResult) {
+            // Composite AI image over user's background color
+            const canvas = document.createElement('canvas')
+            canvas.width = EXPORT_SIZE
+            canvas.height = EXPORT_SIZE
+            const ctx = canvas.getContext('2d')
+            if (ctx) {
+                // Draw background
+                ctx.fillStyle = bgColor
+                ctx.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE)
+
+                // Load and draw AI image on top
+                const img = new Image()
+                img.crossOrigin = 'anonymous'
+                img.onload = async () => {
+                    ctx.drawImage(img, 0, 0, EXPORT_SIZE, EXPORT_SIZE)
+                    const composited = canvas.toDataURL('image/png')
+
+                    // Upload composited image
+                    try {
+                        const response = await fetch('/api/design/generate-icon', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ imageData: composited, uploadOnly: true })
+                        })
+                        const data = await response.json()
+                        if (data.iconUrl) {
+                            onSave(data.iconUrl)
+                        } else {
+                            onSave(composited)
+                        }
+                    } catch {
+                        onSave(composited)
+                    }
+                    onClose()
+                }
+                img.onerror = () => {
+                    // Fallback: just save original
+                    onSave(aiResult)
+                    onClose()
+                }
+                img.src = aiResult
+                return
+            }
             onSave(aiResult)
             onClose()
             return
@@ -996,14 +1039,54 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                 </Button>
 
                                 {aiResult && (
-                                    <div className="flex items-center gap-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-                                        <img src={aiResult} alt="Generated Icon" className="w-20 h-20 rounded-lg object-cover bg-black" />
+                                    <div className="space-y-4">
+                                        {/* Preview with background removal */}
+                                        <div className="p-4 bg-zinc-800/50 border border-white/10 rounded-xl">
+                                            <p className="text-xs text-zinc-400 mb-3">Vorschau (mit deiner Hintergrundfarbe):</p>
+                                            <div className="flex justify-center">
+                                                <div
+                                                    className="w-32 h-32 rounded-xl flex items-center justify-center overflow-hidden border-2 border-white/20"
+                                                    style={{ backgroundColor: bgColor }}
+                                                >
+                                                    <img
+                                                        src={aiResult}
+                                                        alt="Generated Icon"
+                                                        className="w-full h-full object-contain"
+                                                        style={{ mixBlendMode: 'normal' }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Background Color Picker for AI */}
                                         <div>
-                                            <p className="text-sm text-white font-medium flex items-center gap-2">
-                                                <Check className="w-4 h-4 text-green-500" />
-                                                Icon generiert!
-                                            </p>
-                                            <p className="text-xs text-zinc-400">Klicke "Speichern" um es zu verwenden</p>
+                                            <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Hintergrundfarbe wählen</p>
+                                            <div className="flex gap-2 items-center">
+                                                <div className="relative w-10 h-10 rounded-lg overflow-hidden border-2 border-white/20 shrink-0">
+                                                    <input
+                                                        type="color"
+                                                        value={bgColor}
+                                                        onChange={(e) => setBgColor(e.target.value)}
+                                                        className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                                                    />
+                                                    <div className="w-full h-full" style={{ backgroundColor: bgColor }} />
+                                                </div>
+                                                <div className="flex gap-1 flex-wrap flex-1">
+                                                    {QUICK_COLORS.slice(0, 8).map((color) => (
+                                                        <button
+                                                            key={color}
+                                                            onClick={() => setBgColor(color)}
+                                                            className={`w-6 h-6 rounded-md border-2 transition-transform hover:scale-110 ${bgColor === color ? 'border-green-500 scale-110' : 'border-transparent'}`}
+                                                            style={{ backgroundColor: color }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                                            <Check className="w-4 h-4 text-green-500 shrink-0" />
+                                            <p className="text-sm text-white">Icon generiert! Wähle deine Farbe und klicke "Speichern"</p>
                                         </div>
                                     </div>
                                 )}
