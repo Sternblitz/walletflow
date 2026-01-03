@@ -76,14 +76,26 @@ const TEMPLATE_ICONS = {
     ],
 }
 
-// Color presets
+// Extended Color Palette - 48 colors organized by shade
 const COLOR_PRESETS = [
-    '#000000', '#FFFFFF', '#EF4444', '#F97316', '#F59E0B', '#EAB308',
-    '#22C55E', '#10B981', '#14B8A6', '#06B6D4', '#3B82F6', '#6366F1',
-    '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F43F5E', '#78716C',
+    // Neutrals
+    '#000000', '#1A1A1A', '#333333', '#4D4D4D', '#666666', '#808080',
+    '#999999', '#B3B3B3', '#CCCCCC', '#E6E6E6', '#F5F5F5', '#FFFFFF',
+    // Reds
+    '#FEE2E2', '#FECACA', '#F87171', '#EF4444', '#DC2626', '#991B1B',
+    // Oranges & Ambers
+    '#FFEDD5', '#FED7AA', '#FB923C', '#F97316', '#EA580C', '#9A3412',
+    // Yellows & Greens
+    '#FEF9C3', '#FDE047', '#FACC15', '#22C55E', '#16A34A', '#166534',
+    // Blues & Cyans
+    '#E0F2FE', '#7DD3FC', '#38BDF8', '#0EA5E9', '#0284C7', '#0369A1',
+    // Purples & Pinks
+    '#F3E8FF', '#D8B4FE', '#A855F7', '#9333EA', '#7C3AED', '#6D28D9',
+    '#FCE7F3', '#F9A8D4', '#EC4899', '#DB2777', '#BE185D', '#9D174D',
 ]
 
-const PREVIEW_SIZE = 176
+const PREVIEW_SIZE = 256  // Larger preview
+const EXPORT_SIZE = 512   // High-res export
 
 export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000', businessType = '' }: IconEditorProps) {
     const [activeTab, setActiveTab] = useState<'logo' | 'ai' | 'templates'>('templates')
@@ -226,12 +238,12 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         }
     }, [isDragging, handleDragMove, handleDragEnd])
 
-    // Generate final icon (2x resolution for retina)
+    // Generate final icon at high resolution
     const generateLogoIcon = useCallback(() => {
         if (!logoImageEl) return null
 
         const canvas = document.createElement('canvas')
-        const size = 174 // 2x for retina (87 * 2)
+        const size = EXPORT_SIZE  // High-res export
         canvas.width = size
         canvas.height = size
         const ctx = canvas.getContext('2d')
@@ -264,12 +276,12 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         return canvas.toDataURL('image/png')
     }, [logoImageEl, logoScale, logoPosition, logoBgColor])
 
-    // Generate template icon
+    // Generate template icon at high resolution
     const generateTemplateIcon = useCallback(() => {
         if (!selectedTemplate) return null
 
         const canvas = document.createElement('canvas')
-        const size = 174
+        const size = EXPORT_SIZE  // Use high-res export size
         canvas.width = size
         canvas.height = size
         const ctx = canvas.getContext('2d')
@@ -283,11 +295,14 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
 
         if (icon) {
             ctx.strokeStyle = templateColor
-            ctx.lineWidth = 6
+            ctx.lineWidth = 16  // Thicker lines for 512px
             ctx.lineCap = 'round'
             ctx.lineJoin = 'round'
-            ctx.translate(size / 2 - 72, size / 2 - 72)
-            ctx.scale(6, 6)
+            // Center the 24x24 viewBox icon in 512x512 canvas
+            const scaleFactor = size / 24  // 24 is the viewBox size
+            const padding = size * 0.15     // 15% padding
+            ctx.translate(padding, padding)
+            ctx.scale(scaleFactor * 0.7, scaleFactor * 0.7)  // 70% to account for padding
             const path = new Path2D(icon.path)
             ctx.stroke(path)
         }
