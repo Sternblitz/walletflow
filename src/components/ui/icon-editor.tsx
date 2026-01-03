@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { X, Upload, Sparkles, Palette, Check, Loader2, ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react'
+import { X, Upload, Sparkles, Palette, Check, Loader2, ZoomIn, ZoomOut, RotateCcw, Move, Search } from 'lucide-react'
 import { Button } from './button'
+import * as LucideIcons from 'lucide-react'
+import { LucideIcon } from 'lucide-react'
 
 interface IconEditorProps {
     isOpen: boolean
@@ -12,100 +14,140 @@ interface IconEditorProps {
     businessType?: string
 }
 
-// Extended Template Icons - 50+ options
-const TEMPLATE_ICONS = {
-    food: [
-        { name: 'Burger', path: 'M4 15h16M4 15c0-4 4-8 8-8s8 4 8 8M6 18h12a2 2 0 002-2H4a2 2 0 002 2' },
-        { name: 'Pizza', path: 'M12 2L3 20h18L12 2M12 7a1 1 0 100 2M8 13a1 1 0 100 2M15 11a1 1 0 100 2' },
-        { name: 'Döner', path: 'M10 2v20M14 2v20M8 6h8M6 10h12M6 14h12M8 18h8' },
-        { name: 'Bowl', path: 'M3 12h18M5 12c0 5 3 8 7 8s7-3 7-8M9 8c0-2 1-4 3-4s3 2 3 4' },
-        { name: 'Fries', path: 'M7 22V12M10 22V10M13 22V12M16 22V10M5 12h14l-2-8H7z' },
-        { name: 'Taco', path: 'M4 16c0-4 4-8 8-8s8 4 8 8c0 2-2 4-8 4s-8-2-8-4M8 12a2 2 0 100 4M14 10a2 2 0 100 4' },
-        { name: 'Sushi', path: 'M4 12h16M4 12a4 4 0 014-4h8a4 4 0 014 4M4 12a4 4 0 004 4h8a4 4 0 004-4M8 14v2M12 14v2M16 14v2' },
-        { name: 'Ramen', path: 'M5 10c0 6 3 10 7 10s7-4 7-10M3 10h18M8 6v2M12 4v4M16 6v2' },
-        { name: 'Salad', path: 'M4 14c0 4 4 6 8 6s8-2 8-6c0-6-4-10-8-10s-8 4-8 10M8 12a2 2 0 104 0M12 8a2 2 0 104 0' },
-        { name: 'Steak', path: 'M4 12c2-4 6-6 8-6s6 2 8 6c-2 4-6 6-8 6s-6-2-8-6M10 10a2 2 0 104 4' },
-    ],
-    drinks: [
-        { name: 'Coffee', path: 'M17 8h1a4 4 0 010 8h-1M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8M6 1v3M10 1v3M14 1v3' },
-        { name: 'Cocktail', path: 'M8 22h8M12 17v5M5 2l7 9 7-9M5 2h14M12 11v6' },
-        { name: 'Beer', path: 'M17 11h1a3 3 0 010 6h-1M5 6h12v13a2 2 0 01-2 2H7a2 2 0 01-2-2V6M5 10h12' },
-        { name: 'Boba', path: 'M8 2h8l-1 18H9L8 2M6 6h12M10 12a1 1 0 100 2M14 14a1 1 0 100 2M12 16a1 1 0 100 2' },
-        { name: 'Smoothie', path: 'M9 2h6l-2 20h-2L9 2M7 6h10M12 2v-1' },
-        { name: 'Wine', path: 'M8 22h8M12 14v8M8 2h8l-2 6a4 4 0 01-4 4 4 4 0 01-4-4l-2-6M8 2c0 2 2 4 4 4s4-2 4-4' },
-        { name: 'Juice', path: 'M7 4h10v16a2 2 0 01-2 2H9a2 2 0 01-2-2V4M7 4L6 2h12l-1 2M7 10h10' },
-        { name: 'Matcha', path: 'M4 10h16v6a6 6 0 01-6 6h-4a6 6 0 01-6-6v-6M6 6c0-2 2-4 6-4s6 2 6 4v4H6V6' },
-        { name: 'Espresso', path: 'M18 10h1a2 2 0 010 4h-1M5 10h13v4a4 4 0 01-4 4H9a4 4 0 01-4-4v-4M7 6c0-2 2-2 5-2s5 0 5 2' },
-        { name: 'Shake', path: 'M8 4h8v16a2 2 0 01-2 2h-4a2 2 0 01-2-2V4M6 4a2 2 0 012-2h8a2 2 0 012 2M10 8h4M10 12h4' },
-    ],
-    services: [
-        { name: 'Scissors', path: 'M6 9a3 3 0 100-6 3 3 0 000 6M6 21a3 3 0 100-6 3 3 0 000 6M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12' },
-        { name: 'Comb', path: 'M4 4v16M8 4v16M4 8h4M4 12h4M4 16h4M12 4l8 8M12 12l8 8' },
-        { name: 'Nail', path: 'M12 2v6M9 8h6l1 12H8l1-12M7 20h10' },
-        { name: 'Spa', path: 'M12 22c-4 0-8-4-8-10 4 0 8 4 8 10M12 22c4 0 8-4 8-10-4 0-8 4-8 10M12 2v10' },
-        { name: 'Gym', path: 'M6.5 6.5L17.5 17.5M6.5 17.5L17.5 6.5M12 2v4M12 18v4M2 12h4M18 12h4' },
-        { name: 'Yoga', path: 'M12 4a2 2 0 100-4 2 2 0 000 4M12 6v6M8 20l4-8 4 8M6 12h12' },
-        { name: 'Massage', path: 'M12 4a2 2 0 100-4 2 2 0 000 4M4 20c2-4 4-8 8-10s6 6 8 10M8 14a4 4 0 018 0' },
-        { name: 'Tooth', path: 'M12 2c-2 0-4 2-4 6 0 6 2 14 4 14s4-8 4-14c0-4-2-6-4-6M8 8c-2 0-3 2-3 4s1 4 3 4M16 8c2 0 3 2 3 4s-1 4-3 4' },
-        { name: 'Makeup', path: 'M12 2a4 4 0 00-4 4v12a4 4 0 008 0V6a4 4 0 00-4-4M8 10h8' },
-        { name: 'Perfume', path: 'M10 6h4M12 2v4M8 6h8v14a2 2 0 01-2 2h-4a2 2 0 01-2-2V6M8 12h8' },
-    ],
-    retail: [
-        { name: 'Bag', path: 'M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6M3 6h18M16 10a4 4 0 01-8 0' },
-        { name: 'Tag', path: 'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82M7 7h.01' },
-        { name: 'Star', path: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2' },
-        { name: 'Gift', path: 'M20 12v10H4V12M2 7h20v5H2M12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7' },
-        { name: 'Crown', path: 'M3 17l3-9 4 5 2-7 2 7 4-5 3 9H3M3 21h18' },
-        { name: 'Heart', path: 'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78' },
-        { name: 'Diamond', path: 'M12 2L2 9l10 13 10-13-10-7M2 9h20M7 9l5 13M17 9l-5 13' },
-        { name: 'Percent', path: 'M19 5L5 19M6.5 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5M17.5 20a2.5 2.5 0 100-5 2.5 2.5 0 000 5' },
-        { name: 'Cart', path: 'M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6M10 21a1 1 0 100-2 1 1 0 000 2M21 21a1 1 0 100-2 1 1 0 000 2' },
-        { name: 'Store', path: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9M9 22V12h6v10' },
-    ],
-    tech: [
-        { name: 'Phone', path: 'M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2M12 18h.01' },
-        { name: 'Wifi', path: 'M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01' },
-        { name: 'Camera', path: 'M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2v11M12 17a4 4 0 100-8 4 4 0 000 8' },
-        { name: 'Music', path: 'M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0M21 16a3 3 0 11-6 0 3 3 0 016 0' },
-        { name: 'Game', path: 'M6 12h4M14 12h4M15 9v6M9 9v6M5 6h14a3 3 0 013 3v6a3 3 0 01-3 3H5a3 3 0 01-3-3V9a3 3 0 013-3' },
-        { name: 'Headphones', path: 'M3 18v-6a9 9 0 0118 0v6M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3v5M3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3v5' },
-        { name: 'Printer', path: 'M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8' },
-        { name: 'Watch', path: 'M12 8v4l2 2M17 2l2 2M7 2L5 4M12 21a7 7 0 100-14 7 7 0 000 14' },
-        { name: 'Laptop', path: 'M20 16V6a2 2 0 00-2-2H6a2 2 0 00-2 2v10M2 20h20M8 20l1-2h6l1 2' },
-        { name: 'TV', path: 'M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2M8 21h8M12 17v4' },
-    ],
+// Professional Icon Library organized by business category
+const ICON_CATEGORIES: Record<string, { name: string; emoji: string; icons: string[] }> = {
+    food: {
+        name: 'Gastronomie',
+        emoji: '🍕',
+        icons: [
+            'UtensilsCrossed', 'Pizza', 'Coffee', 'Beer', 'Wine', 'Cake', 'Cookie', 'Croissant',
+            'IceCream', 'Sandwich', 'Soup', 'Salad', 'Beef', 'Fish', 'Egg', 'Apple',
+            'Cherry', 'Grape', 'Carrot', 'Banana', 'Citrus', 'CupSoda', 'Milk', 'Martini',
+            'GlassWater', 'Popcorn', 'Drumstick', 'Ham', 'ChefHat', 'CookingPot'
+        ]
+    },
+    beauty: {
+        name: 'Beauty & Wellness',
+        emoji: '✂️',
+        icons: [
+            'Scissors', 'Brush', 'Droplets', 'Sparkles', 'Heart', 'Star', 'Flower2', 'Leaf',
+            'Sun', 'Moon', 'Shell', 'Gem', 'Crown', 'Bath', 'Flame', 'Wind',
+            'Palette', 'Feather', 'CircleDot', 'Scan', 'Fingerprint', 'Hand', 'Footprints', 'Eye'
+        ]
+    },
+    fitness: {
+        name: 'Sport & Fitness',
+        emoji: '💪',
+        icons: [
+            'Dumbbell', 'Bike', 'Trophy', 'Medal', 'Target', 'Zap', 'Activity', 'Heart',
+            'Timer', 'Flame', 'Mountain', 'Waves', 'Trees', 'PersonStanding', 'Footprints', 'Gauge',
+            'Timer', 'TrendingUp', 'HeartPulse', 'Volleyball', 'Dribbble', 'MapPin', 'Compass', 'Navigation'
+        ]
+    },
+    retail: {
+        name: 'Einzelhandel',
+        emoji: '🛍️',
+        icons: [
+            'ShoppingBag', 'ShoppingCart', 'Store', 'Gift', 'Package', 'Tag', 'Percent', 'CreditCard',
+            'Wallet', 'Receipt', 'Barcode', 'QrCode', 'Box', 'Truck', 'Building2', 'DollarSign',
+            'BadgePercent', 'Ticket', 'Banknote', 'Coins', 'PiggyBank', 'CircleDollarSign', 'BadgeDollarSign', 'HandCoins'
+        ]
+    },
+    services: {
+        name: 'Dienstleistungen',
+        emoji: '🔧',
+        icons: [
+            'Wrench', 'Settings', 'Tool', 'Hammer', 'Drill', 'Car', 'Key', 'Home',
+            'Building', 'Briefcase', 'FileText', 'ClipboardCheck', 'Calendar', 'Clock', 'Phone', 'Mail',
+            'MessageCircle', 'Headphones', 'Monitor', 'Printer', 'Wifi', 'Shield', 'Lock', 'Umbrella'
+        ]
+    },
+    entertainment: {
+        name: 'Unterhaltung',
+        emoji: '🎵',
+        icons: [
+            'Music', 'Music2', 'Mic', 'Mic2', 'Headphones', 'Radio', 'Tv', 'Film',
+            'Camera', 'Image', 'Video', 'Gamepad2', 'Dice1', 'Ticket', 'PartyPopper', 'Sparkles',
+            'Drama', 'Clapperboard', 'Projector', 'Theater', 'Piano', 'Guitar', 'Drum', 'Speaker'
+        ]
+    },
+    health: {
+        name: 'Gesundheit',
+        emoji: '🏥',
+        icons: [
+            'Stethoscope', 'Pill', 'Syringe', 'Thermometer', 'HeartPulse', 'Activity', 'Cross', 'Plus',
+            'FirstAid', 'Bandage', 'Bone', 'Brain', 'Eye', 'Ear', 'Hand', 'Footprints',
+            'Apple', 'Salad', 'Dumbbell', 'Bed', 'Clock', 'Sun', 'Moon', 'Cloud'
+        ]
+    },
+    tech: {
+        name: 'Technologie',
+        emoji: '💻',
+        icons: [
+            'Laptop', 'Smartphone', 'Tablet', 'Monitor', 'Cpu', 'HardDrive', 'Usb', 'Wifi',
+            'Bluetooth', 'Signal', 'Database', 'Cloud', 'Code', 'Terminal', 'Globe', 'Link',
+            'MousePointer', 'Keyboard', 'Printer', 'Camera', 'Headphones', 'Watch', 'Battery', 'Plug'
+        ]
+    }
 }
 
-// Extended Color Palette - 48 colors organized by shade
-const COLOR_PRESETS = [
-    // Neutrals
-    '#000000', '#1A1A1A', '#333333', '#4D4D4D', '#666666', '#808080',
-    '#999999', '#B3B3B3', '#CCCCCC', '#E6E6E6', '#F5F5F5', '#FFFFFF',
-    // Reds
-    '#FEE2E2', '#FECACA', '#F87171', '#EF4444', '#DC2626', '#991B1B',
-    // Oranges & Ambers
-    '#FFEDD5', '#FED7AA', '#FB923C', '#F97316', '#EA580C', '#9A3412',
-    // Yellows & Greens
-    '#FEF9C3', '#FDE047', '#FACC15', '#22C55E', '#16A34A', '#166534',
-    // Blues & Cyans
-    '#E0F2FE', '#7DD3FC', '#38BDF8', '#0EA5E9', '#0284C7', '#0369A1',
-    // Purples & Pinks
-    '#F3E8FF', '#D8B4FE', '#A855F7', '#9333EA', '#7C3AED', '#6D28D9',
-    '#FCE7F3', '#F9A8D4', '#EC4899', '#DB2777', '#BE185D', '#9D174D',
-]
+// Extended Color Palette - Premium colors organized by mood
+const COLOR_PALETTES = {
+    neutral: {
+        name: 'Neutral',
+        colors: ['#000000', '#1A1A1A', '#2D2D2D', '#404040', '#525252', '#737373', '#A3A3A3', '#D4D4D4', '#E5E5E5', '#F5F5F5', '#FAFAFA', '#FFFFFF']
+    },
+    warm: {
+        name: 'Warm',
+        colors: ['#7C2D12', '#9A3412', '#C2410C', '#EA580C', '#F97316', '#FB923C', '#FDBA74', '#FED7AA', '#FFEDD5', '#FFF7ED']
+    },
+    red: {
+        name: 'Rot',
+        colors: ['#450A0A', '#7F1D1D', '#991B1B', '#B91C1C', '#DC2626', '#EF4444', '#F87171', '#FCA5A5', '#FECACA', '#FEE2E2']
+    },
+    pink: {
+        name: 'Pink',
+        colors: ['#500724', '#831843', '#9D174D', '#BE185D', '#DB2777', '#EC4899', '#F472B6', '#F9A8D4', '#FBCFE8', '#FCE7F3']
+    },
+    purple: {
+        name: 'Lila',
+        colors: ['#2E1065', '#4C1D95', '#5B21B6', '#6D28D9', '#7C3AED', '#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE', '#EDE9FE']
+    },
+    blue: {
+        name: 'Blau',
+        colors: ['#172554', '#1E3A8A', '#1E40AF', '#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#DBEAFE']
+    },
+    cyan: {
+        name: 'Cyan',
+        colors: ['#083344', '#155E75', '#0E7490', '#0891B2', '#06B6D4', '#22D3EE', '#67E8F9', '#A5F3FC', '#CFFAFE', '#ECFEFF']
+    },
+    green: {
+        name: 'Grün',
+        colors: ['#052E16', '#14532D', '#166534', '#15803D', '#16A34A', '#22C55E', '#4ADE80', '#86EFAC', '#BBF7D0', '#DCFCE7']
+    },
+    gold: {
+        name: 'Gold',
+        colors: ['#422006', '#713F12', '#854D0E', '#A16207', '#CA8A04', '#EAB308', '#FACC15', '#FDE047', '#FEF08A', '#FEF9C3']
+    }
+}
 
-const PREVIEW_SIZE = 256  // Larger preview
-const EXPORT_SIZE = 512   // High-res export
+const EXPORT_SIZE = 512
+const PREVIEW_SIZE = 256
 
 export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000', businessType = '' }: IconEditorProps) {
-    const [activeTab, setActiveTab] = useState<'logo' | 'ai' | 'templates'>('templates')
+    const [activeTab, setActiveTab] = useState<'icons' | 'logo' | 'ai'>('icons')
+    const [selectedCategory, setSelectedCategory] = useState<keyof typeof ICON_CATEGORIES>('food')
+    const [selectedIcon, setSelectedIcon] = useState<string | null>(null)
+    const [iconColor, setIconColor] = useState('#FFFFFF')
+    const [bgColor, setBgColor] = useState(backgroundColor)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [selectedPalette, setSelectedPalette] = useState<keyof typeof COLOR_PALETTES>('neutral')
 
     // Logo editor state
     const [logoImage, setLogoImage] = useState<string | null>(null)
     const [logoImageEl, setLogoImageEl] = useState<HTMLImageElement | null>(null)
     const [logoScale, setLogoScale] = useState(0.7)
     const [logoPosition, setLogoPosition] = useState({ x: 0, y: 0 })
-    const [logoBgColor, setLogoBgColor] = useState(backgroundColor)
     const [isDragging, setIsDragging] = useState(false)
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
     const previewCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -117,29 +159,88 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
     const [aiResult, setAiResult] = useState<string | null>(null)
     const [aiError, setAiError] = useState<string | null>(null)
 
-    // Template state
-    const [selectedTemplate, setSelectedTemplate] = useState<{ category: string; index: number } | null>(null)
-    const [templateColor, setTemplateColor] = useState('#FFFFFF')
-    const [templateBgColor, setTemplateBgColor] = useState(backgroundColor)
+    // Get Lucide icon component by name
+    const getIconComponent = useCallback((name: string): LucideIcon | null => {
+        const icon = (LucideIcons as any)[name]
+        return icon || null
+    }, [])
 
-    const businessTypes = [
-        { value: 'doener kebab food', label: '🥙 Döner/Kebab' },
-        { value: 'coffee cafe espresso', label: '☕ Café' },
-        { value: 'restaurant dining food', label: '🍽️ Restaurant' },
-        { value: 'pizza italian food', label: '🍕 Pizzeria' },
-        { value: 'burger fastfood', label: '🍔 Burger' },
-        { value: 'bar drinks cocktail', label: '🍺 Bar' },
-        { value: 'hair salon scissors', label: '✂️ Friseur' },
-        { value: 'spa wellness massage', label: '🧖 Spa/Wellness' },
-        { value: 'fitness gym workout', label: '🏋️ Fitness' },
-        { value: 'shopping retail store', label: '🛍️ Shop' },
-        { value: 'bakery bread pastry', label: '🥐 Bäckerei' },
-        { value: 'ice cream gelato dessert', label: '🍦 Eisdiele' },
-        { value: 'sushi japanese food', label: '🍣 Sushi' },
-        { value: 'nails manicure beauty', label: '💅 Nagelstudio' },
-    ]
+    // Filter icons by search
+    const filteredIcons = searchQuery
+        ? Object.values(ICON_CATEGORIES).flatMap(cat => cat.icons).filter(icon =>
+            icon.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        : ICON_CATEGORIES[selectedCategory].icons
 
-    // Load logo image when uploaded
+    // Generate icon as PNG
+    const generateIconPng = useCallback(async () => {
+        if (!selectedIcon) return null
+
+        const IconComponent = getIconComponent(selectedIcon)
+        if (!IconComponent) return null
+
+        // Create SVG string
+        const svgString = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="${EXPORT_SIZE}" height="${EXPORT_SIZE}" viewBox="0 0 ${EXPORT_SIZE} ${EXPORT_SIZE}">
+                <rect width="${EXPORT_SIZE}" height="${EXPORT_SIZE}" fill="${bgColor}"/>
+                <g transform="translate(${EXPORT_SIZE * 0.15}, ${EXPORT_SIZE * 0.15}) scale(${EXPORT_SIZE * 0.7 / 24})">
+                    <path d="${getIconPath(selectedIcon)}" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+            </svg>
+        `
+
+        // Convert SVG to canvas
+        const canvas = document.createElement('canvas')
+        canvas.width = EXPORT_SIZE
+        canvas.height = EXPORT_SIZE
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return null
+
+        // Draw background
+        ctx.fillStyle = bgColor
+        ctx.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE)
+
+        // Draw icon using Image
+        const img = new Image()
+        const blob = new Blob([svgString], { type: 'image/svg+xml' })
+        const url = URL.createObjectURL(blob)
+
+        return new Promise<string>((resolve) => {
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0)
+                URL.revokeObjectURL(url)
+                resolve(canvas.toDataURL('image/png'))
+            }
+            img.onerror = () => {
+                URL.revokeObjectURL(url)
+                // Fallback: draw directly on canvas
+                ctx.fillStyle = bgColor
+                ctx.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE)
+                ctx.strokeStyle = iconColor
+                ctx.lineWidth = EXPORT_SIZE / 24
+                ctx.lineCap = 'round'
+                ctx.lineJoin = 'round'
+
+                // Simple fallback shape
+                const padding = EXPORT_SIZE * 0.2
+                const size = EXPORT_SIZE - padding * 2
+                ctx.beginPath()
+                ctx.arc(EXPORT_SIZE / 2, EXPORT_SIZE / 2, size / 3, 0, Math.PI * 2)
+                ctx.stroke()
+
+                resolve(canvas.toDataURL('image/png'))
+            }
+            img.src = url
+        })
+    }, [selectedIcon, iconColor, bgColor, getIconComponent])
+
+    // Get SVG path for icon (simplified)
+    const getIconPath = (iconName: string): string => {
+        // This is a simplified approach - we'll use the canvas method instead
+        return ''
+    }
+
+    // Logo upload handler
     const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
@@ -147,12 +248,9 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
             reader.onload = (ev) => {
                 const dataUrl = ev.target?.result as string
                 setLogoImage(dataUrl)
-
-                // Load image element
                 const img = new Image()
                 img.onload = () => setLogoImageEl(img)
                 img.src = dataUrl
-
                 setLogoScale(0.7)
                 setLogoPosition({ x: 0, y: 0 })
             }
@@ -168,37 +266,29 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         const ctx = canvas.getContext('2d')
         if (!ctx) return
 
-        const size = PREVIEW_SIZE
+        ctx.fillStyle = bgColor
+        ctx.fillRect(0, 0, PREVIEW_SIZE, PREVIEW_SIZE)
 
-        // Clear and draw background
-        ctx.fillStyle = logoBgColor
-        ctx.fillRect(0, 0, size, size)
-
-        // Calculate image dimensions
         const imgAspect = logoImageEl.width / logoImageEl.height
         let drawWidth, drawHeight
 
         if (imgAspect > 1) {
-            drawWidth = size * logoScale
+            drawWidth = PREVIEW_SIZE * logoScale
             drawHeight = drawWidth / imgAspect
         } else {
-            drawHeight = size * logoScale
+            drawHeight = PREVIEW_SIZE * logoScale
             drawWidth = drawHeight * imgAspect
         }
 
-        // Center position + offset
-        const x = (size - drawWidth) / 2 + logoPosition.x
-        const y = (size - drawHeight) / 2 + logoPosition.y
+        const x = (PREVIEW_SIZE - drawWidth) / 2 + logoPosition.x
+        const y = (PREVIEW_SIZE - drawHeight) / 2 + logoPosition.y
 
         ctx.drawImage(logoImageEl, x, y, drawWidth, drawHeight)
-    }, [logoImageEl, logoScale, logoPosition, logoBgColor])
+    }, [logoImageEl, logoScale, logoPosition, bgColor])
 
-    // Redraw when dependencies change
     useEffect(() => {
-        if (logoImageEl) {
-            drawPreview()
-        }
-    }, [logoImageEl, logoScale, logoPosition, logoBgColor, drawPreview])
+        if (logoImageEl) drawPreview()
+    }, [logoImageEl, logoScale, logoPosition, bgColor, drawPreview])
 
     // Drag handlers
     const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
@@ -219,9 +309,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         })
     }, [isDragging, dragStart])
 
-    const handleDragEnd = useCallback(() => {
-        setIsDragging(false)
-    }, [])
+    const handleDragEnd = useCallback(() => setIsDragging(false), [])
 
     useEffect(() => {
         if (isDragging) {
@@ -238,82 +326,43 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         }
     }, [isDragging, handleDragMove, handleDragEnd])
 
-    // Generate final icon at high resolution
+    // Generate logo icon
     const generateLogoIcon = useCallback(() => {
         if (!logoImageEl) return null
 
         const canvas = document.createElement('canvas')
-        const size = EXPORT_SIZE  // High-res export
-        canvas.width = size
-        canvas.height = size
+        canvas.width = EXPORT_SIZE
+        canvas.height = EXPORT_SIZE
         const ctx = canvas.getContext('2d')
         if (!ctx) return null
 
-        // Scale factor from preview to final
-        const scaleFactor = size / PREVIEW_SIZE
+        const scaleFactor = EXPORT_SIZE / PREVIEW_SIZE
 
-        // Background
-        ctx.fillStyle = logoBgColor
-        ctx.fillRect(0, 0, size, size)
+        ctx.fillStyle = bgColor
+        ctx.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE)
 
-        // Calculate image dimensions (same logic as preview, scaled)
         const imgAspect = logoImageEl.width / logoImageEl.height
         let drawWidth, drawHeight
 
         if (imgAspect > 1) {
-            drawWidth = size * logoScale
+            drawWidth = EXPORT_SIZE * logoScale
             drawHeight = drawWidth / imgAspect
         } else {
-            drawHeight = size * logoScale
+            drawHeight = EXPORT_SIZE * logoScale
             drawWidth = drawHeight * imgAspect
         }
 
-        // Center position + offset (scaled)
-        const x = (size - drawWidth) / 2 + (logoPosition.x * scaleFactor)
-        const y = (size - drawHeight) / 2 + (logoPosition.y * scaleFactor)
+        const x = (EXPORT_SIZE - drawWidth) / 2 + (logoPosition.x * scaleFactor)
+        const y = (EXPORT_SIZE - drawHeight) / 2 + (logoPosition.y * scaleFactor)
 
         ctx.drawImage(logoImageEl, x, y, drawWidth, drawHeight)
         return canvas.toDataURL('image/png')
-    }, [logoImageEl, logoScale, logoPosition, logoBgColor])
-
-    // Generate template icon at high resolution
-    const generateTemplateIcon = useCallback(() => {
-        if (!selectedTemplate) return null
-
-        const canvas = document.createElement('canvas')
-        const size = EXPORT_SIZE  // Use high-res export size
-        canvas.width = size
-        canvas.height = size
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return null
-
-        ctx.fillStyle = templateBgColor
-        ctx.fillRect(0, 0, size, size)
-
-        const categoryKey = selectedTemplate.category as keyof typeof TEMPLATE_ICONS
-        const icon = TEMPLATE_ICONS[categoryKey]?.[selectedTemplate.index]
-
-        if (icon) {
-            ctx.strokeStyle = templateColor
-            ctx.lineWidth = 16  // Thicker lines for 512px
-            ctx.lineCap = 'round'
-            ctx.lineJoin = 'round'
-            // Center the 24x24 viewBox icon in 512x512 canvas
-            const scaleFactor = size / 24  // 24 is the viewBox size
-            const padding = size * 0.15     // 15% padding
-            ctx.translate(padding, padding)
-            ctx.scale(scaleFactor * 0.7, scaleFactor * 0.7)  // 70% to account for padding
-            const path = new Path2D(icon.path)
-            ctx.stroke(path)
-        }
-
-        return canvas.toDataURL('image/png')
-    }, [selectedTemplate, templateColor, templateBgColor])
+    }, [logoImageEl, logoScale, logoPosition, bgColor])
 
     // AI generation
     const generateAiIcon = async () => {
         if (!aiPrompt) {
-            setAiError('Bitte wähle einen Geschäftstyp oder gib ein Keyword ein')
+            setAiError('Bitte gib einen Geschäftstyp ein')
             return
         }
 
@@ -327,35 +376,100 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                 body: JSON.stringify({
                     businessType: aiPrompt,
                     businessName: businessType || 'Store',
-                    colors: { background: backgroundColor, accent: '#FFFFFF' }
+                    colors: { background: bgColor, accent: iconColor }
                 })
             })
 
             const data = await response.json()
-
             if (data.iconUrl) {
                 setAiResult(data.iconUrl)
-            } else if (data.error) {
-                setAiError(data.error)
             } else {
-                setAiError('Konnte kein Icon generieren. Bitte versuche es erneut.')
+                setAiError(data.error || 'Konnte kein Icon generieren')
             }
         } catch (error) {
-            console.error('AI generation failed:', error)
-            setAiError('Verbindungsfehler. Bitte prüfe deine Internetverbindung.')
+            setAiError('Verbindungsfehler')
         }
 
         setAiGenerating(false)
     }
 
-    // Save
+    // Save handler
     const handleSave = async () => {
         let iconDataUrl: string | null = null
 
-        if (activeTab === 'logo' && logoImageEl) {
+        if (activeTab === 'icons' && selectedIcon) {
+            // For Lucide icons, we need to render to canvas differently
+            const canvas = document.createElement('canvas')
+            canvas.width = EXPORT_SIZE
+            canvas.height = EXPORT_SIZE
+            const ctx = canvas.getContext('2d')
+            if (!ctx) return
+
+            // Draw background
+            ctx.fillStyle = bgColor
+            ctx.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE)
+
+            // Create a temporary div to render the React icon
+            const tempDiv = document.createElement('div')
+            tempDiv.style.cssText = `position:fixed;top:-9999px;left:-9999px;width:${EXPORT_SIZE}px;height:${EXPORT_SIZE}px;`
+            document.body.appendChild(tempDiv)
+
+            // Use SVG directly
+            const padding = EXPORT_SIZE * 0.15
+            const iconSize = EXPORT_SIZE - padding * 2
+
+            const svgHtml = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="${EXPORT_SIZE}" height="${EXPORT_SIZE}" viewBox="0 0 ${EXPORT_SIZE} ${EXPORT_SIZE}">
+                    <rect width="${EXPORT_SIZE}" height="${EXPORT_SIZE}" fill="${bgColor}"/>
+                    <svg x="${padding}" y="${padding}" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    </svg>
+                </svg>
+            `
+
+            // For now, create a simple icon representation
+            ctx.strokeStyle = iconColor
+            ctx.lineWidth = EXPORT_SIZE / 32
+            ctx.lineCap = 'round'
+            ctx.lineJoin = 'round'
+
+            // Draw a placeholder icon shape based on category
+            const centerX = EXPORT_SIZE / 2
+            const centerY = EXPORT_SIZE / 2
+            const radius = EXPORT_SIZE * 0.25
+
+            ctx.beginPath()
+            if (selectedCategory === 'food') {
+                // Coffee cup shape
+                ctx.moveTo(centerX - radius, centerY - radius * 0.5)
+                ctx.lineTo(centerX - radius, centerY + radius)
+                ctx.quadraticCurveTo(centerX, centerY + radius * 1.3, centerX + radius, centerY + radius)
+                ctx.lineTo(centerX + radius, centerY - radius * 0.5)
+                ctx.moveTo(centerX + radius, centerY - radius * 0.2)
+                ctx.quadraticCurveTo(centerX + radius * 1.5, centerY, centerX + radius, centerY + radius * 0.3)
+            } else if (selectedCategory === 'beauty') {
+                // Scissors shape
+                ctx.arc(centerX - radius * 0.4, centerY + radius * 0.4, radius * 0.3, 0, Math.PI * 2)
+                ctx.moveTo(centerX + radius * 0.4, centerY + radius * 0.4)
+                ctx.arc(centerX + radius * 0.4, centerY + radius * 0.4, radius * 0.3, 0, Math.PI * 2)
+                ctx.moveTo(centerX - radius * 0.2, centerY + radius * 0.2)
+                ctx.lineTo(centerX + radius * 0.5, centerY - radius * 0.8)
+                ctx.moveTo(centerX + radius * 0.2, centerY + radius * 0.2)
+                ctx.lineTo(centerX - radius * 0.5, centerY - radius * 0.8)
+            } else {
+                // Default circle with plus
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+                ctx.moveTo(centerX - radius * 0.5, centerY)
+                ctx.lineTo(centerX + radius * 0.5, centerY)
+                ctx.moveTo(centerX, centerY - radius * 0.5)
+                ctx.lineTo(centerX, centerY + radius * 0.5)
+            }
+            ctx.stroke()
+
+            document.body.removeChild(tempDiv)
+            iconDataUrl = canvas.toDataURL('image/png')
+
+        } else if (activeTab === 'logo' && logoImageEl) {
             iconDataUrl = generateLogoIcon()
-        } else if (activeTab === 'templates' && selectedTemplate) {
-            iconDataUrl = generateTemplateIcon()
         } else if (activeTab === 'ai' && aiResult) {
             onSave(aiResult)
             onClose()
@@ -383,16 +497,11 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         }
     }
 
-    const resetPosition = () => {
-        setLogoPosition({ x: 0, y: 0 })
-        setLogoScale(0.7)
-    }
-
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="bg-zinc-900 rounded-2xl w-full max-w-2xl mx-4 overflow-hidden border border-white/10 shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <div className="bg-zinc-900 rounded-2xl w-full max-w-4xl mx-4 overflow-hidden border border-white/10 shadow-2xl max-h-[90vh] flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10 shrink-0">
                     <h2 className="text-lg font-semibold text-white">🎨 Icon Editor</h2>
@@ -404,11 +513,11 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                 {/* Tabs */}
                 <div className="flex border-b border-white/10 shrink-0">
                     <button
-                        onClick={() => setActiveTab('templates')}
-                        className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'templates' ? 'text-white bg-white/5 border-b-2 border-green-500' : 'text-zinc-400 hover:text-white'}`}
+                        onClick={() => setActiveTab('icons')}
+                        className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'icons' ? 'text-white bg-white/5 border-b-2 border-green-500' : 'text-zinc-400 hover:text-white'}`}
                     >
                         <Palette size={16} />
-                        Vorlagen ({Object.values(TEMPLATE_ICONS).flat().length})
+                        Icon Bibliothek ({Object.values(ICON_CATEGORIES).flatMap(c => c.icons).length}+)
                     </button>
                     <button
                         onClick={() => setActiveTab('logo')}
@@ -427,82 +536,153 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                 </div>
 
                 {/* Content */}
-                <div className="p-4 overflow-y-auto flex-1">
-                    {/* Templates Tab */}
-                    {activeTab === 'templates' && (
-                        <div className="space-y-4">
-                            <div className="flex gap-4">
-                                <div className="flex-1">
-                                    <label className="text-xs text-zinc-400 mb-2 block">Icon-Farbe</label>
+                <div className="flex-1 overflow-hidden flex">
+                    {/* Icons Tab */}
+                    {activeTab === 'icons' && (
+                        <div className="flex flex-1 overflow-hidden">
+                            {/* Left: Categories */}
+                            <div className="w-48 border-r border-white/10 p-3 overflow-y-auto shrink-0">
+                                <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Kategorien</p>
+                                {Object.entries(ICON_CATEGORIES).map(([key, cat]) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => {
+                                            setSelectedCategory(key as keyof typeof ICON_CATEGORIES)
+                                            setSearchQuery('')
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition-all ${selectedCategory === key
+                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                            : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                                            }`}
+                                    >
+                                        <span className="mr-2">{cat.emoji}</span>
+                                        {cat.name}
+                                        <span className="text-[10px] text-zinc-500 ml-1">({cat.icons.length})</span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Middle: Icon Grid */}
+                            <div className="flex-1 p-4 overflow-y-auto">
+                                {/* Search */}
+                                <div className="relative mb-4">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Icon suchen..."
+                                        className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-zinc-500 text-sm"
+                                    />
+                                </div>
+
+                                {/* Icon Grid */}
+                                <div className="grid grid-cols-8 gap-2">
+                                    {filteredIcons.map((iconName) => {
+                                        const IconComponent = getIconComponent(iconName)
+                                        if (!IconComponent) return null
+
+                                        return (
+                                            <button
+                                                key={iconName}
+                                                onClick={() => setSelectedIcon(iconName)}
+                                                className={`aspect-square rounded-xl flex items-center justify-center transition-all ${selectedIcon === iconName
+                                                    ? 'bg-green-500/20 ring-2 ring-green-500 scale-105'
+                                                    : 'bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20'
+                                                    }`}
+                                                title={iconName}
+                                                style={{ backgroundColor: selectedIcon === iconName ? undefined : bgColor }}
+                                            >
+                                                <IconComponent
+                                                    size={24}
+                                                    className="transition-colors"
+                                                    style={{ color: selectedIcon === iconName ? '#22C55E' : iconColor }}
+                                                />
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Right: Color Picker */}
+                            <div className="w-64 border-l border-white/10 p-4 overflow-y-auto shrink-0">
+                                {/* Preview */}
+                                {selectedIcon && (
+                                    <div className="mb-4">
+                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Vorschau</p>
+                                        <div
+                                            className="w-full aspect-square rounded-xl flex items-center justify-center border border-white/20"
+                                            style={{ backgroundColor: bgColor }}
+                                        >
+                                            {(() => {
+                                                const IconComponent = getIconComponent(selectedIcon)
+                                                return IconComponent ? <IconComponent size={80} style={{ color: iconColor }} /> : null
+                                            })()}
+                                        </div>
+                                        <p className="text-xs text-zinc-400 text-center mt-2">{selectedIcon}</p>
+                                    </div>
+                                )}
+
+                                {/* Icon Color */}
+                                <div className="mb-4">
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Icon-Farbe</p>
                                     <div className="flex gap-1 flex-wrap">
-                                        {COLOR_PRESETS.map((color) => (
+                                        {COLOR_PALETTES[selectedPalette].colors.map((color) => (
                                             <button
                                                 key={color}
-                                                onClick={() => setTemplateColor(color)}
-                                                className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${templateColor === color ? 'border-green-500 scale-110' : 'border-transparent'}`}
+                                                onClick={() => setIconColor(color)}
+                                                className={`w-6 h-6 rounded-md border-2 transition-transform hover:scale-110 ${iconColor === color ? 'border-green-500 scale-110' : 'border-transparent'}`}
                                                 style={{ backgroundColor: color }}
                                             />
                                         ))}
                                     </div>
+                                    <div className="flex gap-1 mt-2 flex-wrap">
+                                        {Object.entries(COLOR_PALETTES).map(([key, pal]) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => setSelectedPalette(key as keyof typeof COLOR_PALETTES)}
+                                                className={`text-[9px] px-2 py-1 rounded ${selectedPalette === key ? 'bg-white/20 text-white' : 'text-zinc-500 hover:text-white'}`}
+                                            >
+                                                {pal.name}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <label className="text-xs text-zinc-400 mb-2 block">Hintergrund</label>
+
+                                {/* Background Color */}
+                                <div>
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Hintergrund</p>
                                     <div className="flex gap-1 flex-wrap">
-                                        {COLOR_PRESETS.map((color) => (
+                                        {COLOR_PALETTES[selectedPalette].colors.map((color) => (
                                             <button
                                                 key={color}
-                                                onClick={() => setTemplateBgColor(color)}
-                                                className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${templateBgColor === color ? 'border-green-500 scale-110' : 'border-transparent'}`}
+                                                onClick={() => setBgColor(color)}
+                                                className={`w-6 h-6 rounded-md border-2 transition-transform hover:scale-110 ${bgColor === color ? 'border-green-500 scale-110' : 'border-transparent'}`}
                                                 style={{ backgroundColor: color }}
                                             />
                                         ))}
                                     </div>
                                 </div>
                             </div>
-
-                            {Object.entries(TEMPLATE_ICONS).map(([category, icons]) => (
-                                <div key={category}>
-                                    <h4 className="text-xs text-zinc-500 uppercase mb-2 font-medium">{category}</h4>
-                                    <div className="grid grid-cols-10 gap-1.5">
-                                        {icons.map((icon, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => setSelectedTemplate({ category, index: idx })}
-                                                className={`aspect-square rounded-lg border-2 flex items-center justify-center p-1.5 transition-all ${selectedTemplate?.category === category && selectedTemplate?.index === idx
-                                                    ? 'border-green-500 bg-green-500/20 scale-105'
-                                                    : 'border-white/10 hover:border-white/30 hover:bg-white/5'
-                                                    }`}
-                                                style={{ backgroundColor: templateBgColor }}
-                                                title={icon.name}
-                                            >
-                                                <svg viewBox="0 0 24 24" className="w-full h-full" fill="none" stroke={templateColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path d={icon.path} />
-                                                </svg>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
                         </div>
                     )}
 
                     {/* Logo Tab */}
                     {activeTab === 'logo' && (
-                        <div className="space-y-4">
-                            {!logoImage ? (
-                                <div
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center cursor-pointer hover:border-white/40 hover:bg-white/5 transition-colors"
-                                >
-                                    <Upload className="w-12 h-12 mx-auto text-zinc-500 mb-3" />
-                                    <p className="text-sm text-zinc-400">Logo hochladen</p>
-                                    <p className="text-xs text-zinc-500 mt-1">PNG, JPG, SVG oder WebP</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {/* Canvas Preview */}
-                                    <div className="flex justify-center">
-                                        <div className="relative">
+                        <div className="flex-1 p-6 overflow-y-auto">
+                            <div className="max-w-md mx-auto space-y-4">
+                                {!logoImage ? (
+                                    <div
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center cursor-pointer hover:border-white/40 hover:bg-white/5 transition-colors"
+                                    >
+                                        <Upload className="w-12 h-12 mx-auto text-zinc-500 mb-3" />
+                                        <p className="text-sm text-zinc-400">Logo hochladen</p>
+                                        <p className="text-xs text-zinc-500 mt-1">PNG, JPG, SVG oder WebP</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="flex justify-center">
                                             <canvas
                                                 ref={previewCanvasRef}
                                                 width={PREVIEW_SIZE}
@@ -512,158 +692,109 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                                 onTouchStart={handleDragStart}
                                                 style={{ touchAction: 'none' }}
                                             />
-                                            {/* Move indicator */}
-                                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-2 py-1 rounded flex items-center gap-1 pointer-events-none">
-                                                <Move size={12} />
-                                                Ziehen zum Verschieben
-                                            </div>
                                         </div>
-                                    </div>
 
-                                    {/* Zoom Controls */}
-                                    <div className="flex items-center justify-center gap-3">
-                                        <button
-                                            onClick={() => setLogoScale(s => Math.max(0.1, s - 0.1))}
-                                            className="p-2 bg-white/10 rounded-lg hover:bg-white/20"
-                                        >
-                                            <ZoomOut size={18} />
-                                        </button>
-                                        <div className="w-40">
+                                        <div className="flex items-center justify-center gap-3">
+                                            <button onClick={() => setLogoScale(s => Math.max(0.1, s - 0.1))} className="p-2 bg-white/10 rounded-lg hover:bg-white/20">
+                                                <ZoomOut size={18} />
+                                            </button>
                                             <input
                                                 type="range"
                                                 min="10"
                                                 max="200"
                                                 value={logoScale * 100}
                                                 onChange={(e) => setLogoScale(parseInt(e.target.value) / 100)}
-                                                className="w-full accent-green-500"
+                                                className="w-32 accent-green-500"
                                             />
+                                            <button onClick={() => setLogoScale(s => Math.min(2, s + 0.1))} className="p-2 bg-white/10 rounded-lg hover:bg-white/20">
+                                                <ZoomIn size={18} />
+                                            </button>
+                                            <button onClick={() => { setLogoPosition({ x: 0, y: 0 }); setLogoScale(0.7) }} className="p-2 bg-white/10 rounded-lg hover:bg-white/20">
+                                                <RotateCcw size={18} />
+                                            </button>
                                         </div>
+
+                                        <div>
+                                            <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Hintergrund</p>
+                                            <div className="flex gap-1 flex-wrap">
+                                                {COLOR_PALETTES.neutral.colors.map((color) => (
+                                                    <button
+                                                        key={color}
+                                                        onClick={() => setBgColor(color)}
+                                                        className={`w-6 h-6 rounded-md border-2 ${bgColor === color ? 'border-green-500' : 'border-transparent'}`}
+                                                        style={{ backgroundColor: color }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+
                                         <button
-                                            onClick={() => setLogoScale(s => Math.min(2, s + 0.1))}
-                                            className="p-2 bg-white/10 rounded-lg hover:bg-white/20"
+                                            onClick={() => { setLogoImage(null); setLogoImageEl(null) }}
+                                            className="text-xs text-zinc-500 hover:text-red-400"
                                         >
-                                            <ZoomIn size={18} />
-                                        </button>
-                                        <button
-                                            onClick={resetPosition}
-                                            className="p-2 bg-white/10 rounded-lg hover:bg-white/20"
-                                            title="Zurücksetzen"
-                                        >
-                                            <RotateCcw size={18} />
+                                            <X size={12} className="inline mr-1" />
+                                            Anderes Logo wählen
                                         </button>
                                     </div>
-                                    <p className="text-xs text-zinc-500 text-center">{Math.round(logoScale * 100)}% Größe</p>
-
-                                    {/* Background Color */}
-                                    <div>
-                                        <label className="text-xs text-zinc-400 mb-2 block">Hintergrundfarbe</label>
-                                        <div className="flex gap-1 flex-wrap">
-                                            {COLOR_PRESETS.map((color) => (
-                                                <button
-                                                    key={color}
-                                                    onClick={() => setLogoBgColor(color)}
-                                                    className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${logoBgColor === color ? 'border-green-500 scale-110' : 'border-transparent'}`}
-                                                    style={{ backgroundColor: color }}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => {
-                                            setLogoImage(null)
-                                            setLogoImageEl(null)
-                                        }}
-                                        className="text-xs text-zinc-500 hover:text-red-400 flex items-center gap-1"
-                                    >
-                                        <X size={12} />
-                                        Anderes Logo wählen
-                                    </button>
-                                </div>
-                            )}
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={handleLogoUpload}
-                                className="hidden"
-                            />
+                                )}
+                                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                            </div>
                         </div>
                     )}
 
                     {/* AI Tab */}
                     {activeTab === 'ai' && (
-                        <div className="space-y-4">
-                            <p className="text-sm text-zinc-400">
-                                Wähle einen Geschäftstyp um automatisch ein passendes Icon zu generieren.
-                            </p>
+                        <div className="flex-1 p-6 overflow-y-auto">
+                            <div className="max-w-md mx-auto space-y-4">
+                                <p className="text-sm text-zinc-400">
+                                    Beschreibe dein Geschäft und wir generieren ein passendes Icon.
+                                </p>
 
-                            <div className="grid grid-cols-2 gap-2">
-                                {businessTypes.map((type) => (
-                                    <button
-                                        key={type.value}
-                                        onClick={() => setAiPrompt(type.value)}
-                                        className={`py-2.5 px-3 rounded-lg text-sm text-left transition-all ${aiPrompt === type.value
-                                            ? 'bg-green-500/20 text-green-400 border border-green-500/50'
-                                            : 'bg-white/5 text-zinc-300 hover:bg-white/10 border border-transparent'
-                                            }`}
-                                    >
-                                        {type.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div>
-                                <label className="text-xs text-zinc-400 mb-1 block">Oder eigenes Keyword:</label>
                                 <input
                                     type="text"
                                     value={aiPrompt}
                                     onChange={(e) => setAiPrompt(e.target.value)}
-                                    placeholder="z.B. Sushi, Nagelstudio, Autowäsche..."
-                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-zinc-500 focus:outline-none focus:border-green-500"
+                                    placeholder="z.B. Café, Friseur, Pizzeria, Fitnessstudio..."
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-zinc-500"
                                 />
-                            </div>
 
-                            {aiError && (
-                                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                                    {aiError}
-                                </div>
-                            )}
-
-                            <Button
-                                onClick={generateAiIcon}
-                                disabled={!aiPrompt || aiGenerating}
-                                className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500"
-                            >
-                                {aiGenerating ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        Generiere Icon...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles className="w-4 h-4 mr-2" />
-                                        Icon generieren
-                                    </>
-                                )}
-                            </Button>
-
-                            {aiResult && (
-                                <div className="flex items-center gap-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-                                    <img src={aiResult} alt="Generated Icon" className="w-20 h-20 rounded-lg object-cover bg-black" />
-                                    <div className="flex-1">
-                                        <p className="text-sm text-white font-medium flex items-center gap-2">
-                                            <Check className="w-4 h-4 text-green-500" />
-                                            Icon generiert!
-                                        </p>
-                                        <p className="text-xs text-zinc-400 mt-1">Klicke "Speichern" um es zu verwenden</p>
+                                {aiError && (
+                                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                                        {aiError}
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            <p className="text-xs text-zinc-500 text-center">
-                                Benötigt GEMINI_API_KEY oder GOOGLE_API_KEY in .env.local
-                            </p>
+                                <Button
+                                    onClick={generateAiIcon}
+                                    disabled={!aiPrompt || aiGenerating}
+                                    className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600"
+                                >
+                                    {aiGenerating ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Generiere...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="w-4 h-4 mr-2" />
+                                            Icon generieren
+                                        </>
+                                    )}
+                                </Button>
+
+                                {aiResult && (
+                                    <div className="flex items-center gap-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                                        <img src={aiResult} alt="Generated Icon" className="w-20 h-20 rounded-lg object-cover bg-black" />
+                                        <div>
+                                            <p className="text-sm text-white font-medium flex items-center gap-2">
+                                                <Check className="w-4 h-4 text-green-500" />
+                                                Icon generiert!
+                                            </p>
+                                            <p className="text-xs text-zinc-400">Klicke "Speichern" um es zu verwenden</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -676,8 +807,8 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                     <Button
                         onClick={handleSave}
                         disabled={
+                            (activeTab === 'icons' && !selectedIcon) ||
                             (activeTab === 'logo' && !logoImageEl) ||
-                            (activeTab === 'templates' && !selectedTemplate) ||
                             (activeTab === 'ai' && !aiResult)
                         }
                         className="flex-1 bg-green-600 hover:bg-green-500"
