@@ -73,9 +73,9 @@ Think Apple SF Symbols or premium fintech app icons.`
         console.log("🎨 Generating notification icon for:", businessName, "| Hint:", iconHint)
 
         try {
-            // Use Gemini with image generation capability
+            // Use Gemini 3 Pro Image (Nano Banana Pro) for high-quality icon generation
             const response = await ai.models.generateContent({
-                model: "gemini-2.0-flash-exp",  // Gemini model with image generation
+                model: "gemini-3-pro-image-preview",  // Nano Banana Pro - studio quality
                 contents: iconPrompt,
                 config: {
                     responseModalities: ["image", "text"],
