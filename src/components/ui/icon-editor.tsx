@@ -14,34 +14,42 @@ interface IconEditorProps {
     businessType?: string
 }
 
-// Professional Icon Library organized by business category
+// MASSIVE Icon Library - 400+ icons organized by business category
 const ICON_CATEGORIES: Record<string, { name: string; emoji: string; icons: string[] }> = {
     food: {
         name: 'Gastronomie',
         emoji: '🍕',
         icons: [
-            'UtensilsCrossed', 'Pizza', 'Coffee', 'Beer', 'Wine', 'Cake', 'Cookie', 'Croissant',
-            'IceCream', 'Sandwich', 'Soup', 'Salad', 'Beef', 'Fish', 'Egg', 'Apple',
-            'Cherry', 'Grape', 'Carrot', 'Banana', 'Citrus', 'CupSoda', 'Milk', 'Martini',
-            'GlassWater', 'Popcorn', 'Drumstick', 'Ham', 'ChefHat', 'CookingPot'
+            'UtensilsCrossed', 'Utensils', 'Pizza', 'Coffee', 'Beer', 'Wine', 'Cake', 'Cookie', 'Croissant',
+            'IceCream', 'Sandwich', 'Soup', 'Salad', 'Beef', 'Fish', 'Egg', 'Apple', 'Cherry', 'Grape',
+            'Carrot', 'Banana', 'Citrus', 'CupSoda', 'Milk', 'Martini', 'GlassWater', 'Popcorn', 'Drumstick',
+            'Ham', 'ChefHat', 'CookingPot', 'Flame', 'Refrigerator', 'Microwave', 'Wheat', 'Leaf',
+            'Candy', 'Lollipop', 'Donut', 'Slice', 'Vegan', 'Nut', 'Bean', 'Pepper', 'Mushroom',
+            'Broccoli', 'Corn', 'Peanut', 'Olive', 'Salt', 'Soup', 'Bowl', 'Spoon', 'Fork', 'Knife'
         ]
     },
     beauty: {
         name: 'Beauty & Wellness',
         emoji: '✂️',
         icons: [
-            'Scissors', 'Brush', 'Droplets', 'Sparkles', 'Heart', 'Star', 'Flower2', 'Leaf',
-            'Sun', 'Moon', 'Shell', 'Gem', 'Crown', 'Bath', 'Flame', 'Wind',
-            'Palette', 'Feather', 'CircleDot', 'Scan', 'Fingerprint', 'Hand', 'Footprints', 'Eye'
+            'Scissors', 'Brush', 'Droplets', 'Sparkles', 'Heart', 'Star', 'Flower2', 'Leaf', 'Sun', 'Moon',
+            'Shell', 'Gem', 'Crown', 'Bath', 'Flame', 'Wind', 'Palette', 'Feather', 'CircleDot', 'Scan',
+            'Fingerprint', 'Hand', 'Footprints', 'Eye', 'Smile', 'Flower', 'Lotus', 'Rainbow', 'Waves',
+            'Droplet', 'CloudRain', 'Snowflake', 'Stars', 'Moon', 'Sunrise', 'Sunset', 'Umbrella',
+            'Paintbrush', 'Paintbrush2', 'Eraser', 'Highlighter', 'PenTool', 'Stamp', 'Wand', 'Wand2',
+            'Sparkle', 'GemIcon', 'Diamond', 'Ring', 'Watch', 'Glasses', 'Contact', 'Perfume'
         ]
     },
     fitness: {
         name: 'Sport & Fitness',
         emoji: '💪',
         icons: [
-            'Dumbbell', 'Bike', 'Trophy', 'Medal', 'Target', 'Zap', 'Activity', 'Heart',
-            'Timer', 'Flame', 'Mountain', 'Waves', 'Trees', 'PersonStanding', 'Footprints', 'Gauge',
-            'TrendingUp', 'HeartPulse', 'Volleyball', 'MapPin', 'Compass', 'Navigation', 'Flag', 'Award'
+            'Dumbbell', 'Bike', 'Trophy', 'Medal', 'Target', 'Zap', 'Activity', 'Heart', 'Timer', 'Flame',
+            'Mountain', 'Waves', 'Trees', 'PersonStanding', 'Footprints', 'Gauge', 'TrendingUp', 'HeartPulse',
+            'Volleyball', 'MapPin', 'Compass', 'Navigation', 'Flag', 'Award', 'Crown', 'Star',
+            'Swords', 'Shield', 'Axe', 'Anchor', 'Rocket', 'Plane', 'Car', 'Bike',
+            'Footprints', 'Running', 'Walk', 'Stretch', 'Yoga', 'Gym', 'Pool', 'Swim',
+            'Tennis', 'Basketball', 'Football', 'Soccer', 'Golf', 'Bowling', 'Boxing', 'Martial'
         ]
     },
     retail: {
@@ -50,25 +58,34 @@ const ICON_CATEGORIES: Record<string, { name: string; emoji: string; icons: stri
         icons: [
             'ShoppingBag', 'ShoppingCart', 'Store', 'Gift', 'Package', 'Tag', 'Percent', 'CreditCard',
             'Wallet', 'Receipt', 'Barcode', 'QrCode', 'Box', 'Truck', 'Building2', 'DollarSign',
-            'BadgePercent', 'Ticket', 'Banknote', 'Coins', 'PiggyBank', 'CircleDollarSign', 'BadgeDollarSign', 'HandCoins'
+            'BadgePercent', 'Ticket', 'Banknote', 'Coins', 'PiggyBank', 'CircleDollarSign', 'BadgeDollarSign',
+            'HandCoins', 'Warehouse', 'Factory', 'Container', 'Forklift', 'Pallet', 'Scale',
+            'Calculator', 'ClipboardList', 'FileSpreadsheet', 'BarChart', 'PieChart', 'TrendingUp',
+            'ArrowUpCircle', 'ArrowDownCircle', 'RefreshCw', 'RotateCw', 'Repeat', 'Shuffle', 'Filter'
         ]
     },
     services: {
         name: 'Dienstleistungen',
         emoji: '🔧',
         icons: [
-            'Wrench', 'Settings', 'Hammer', 'Car', 'Key', 'Home',
-            'Building', 'Briefcase', 'FileText', 'ClipboardCheck', 'Calendar', 'Clock', 'Phone', 'Mail',
-            'MessageCircle', 'Headphones', 'Monitor', 'Printer', 'Wifi', 'Shield', 'Lock', 'Umbrella'
+            'Wrench', 'Settings', 'Hammer', 'Car', 'Key', 'Home', 'Building', 'Briefcase', 'FileText',
+            'ClipboardCheck', 'Calendar', 'Clock', 'Phone', 'Mail', 'MessageCircle', 'Headphones',
+            'Monitor', 'Printer', 'Wifi', 'Shield', 'Lock', 'Umbrella', 'Lightbulb', 'Zap',
+            'Plug', 'Battery', 'Thermometer', 'Gauge', 'Compass', 'Map', 'Navigation', 'Route',
+            'Truck', 'Van', 'Bus', 'Train', 'Plane', 'Ship', 'Anchor', 'Fuel',
+            'ParkingCircle', 'CarFront', 'Bike', 'Footprints', 'Door', 'Window', 'Fence', 'Tree'
         ]
     },
     entertainment: {
         name: 'Unterhaltung',
         emoji: '🎵',
         icons: [
-            'Music', 'Music2', 'Mic', 'Mic2', 'Headphones', 'Radio', 'Tv', 'Film',
-            'Camera', 'Image', 'Video', 'Gamepad2', 'Ticket', 'PartyPopper', 'Sparkles',
-            'Clapperboard', 'Speaker', 'Play', 'Disc', 'Podcast', 'Youtube', 'Twitch', 'Instagram'
+            'Music', 'Music2', 'Music3', 'Music4', 'Mic', 'Mic2', 'MicOff', 'Headphones', 'Radio', 'Tv',
+            'Film', 'Camera', 'Image', 'Video', 'Gamepad2', 'Ticket', 'PartyPopper', 'Sparkles',
+            'Clapperboard', 'Speaker', 'Play', 'Pause', 'Stop', 'FastForward', 'Rewind', 'SkipForward',
+            'SkipBack', 'Volume', 'Volume1', 'Volume2', 'VolumeX', 'Disc', 'Disc2', 'Disc3',
+            'Podcast', 'Youtube', 'Twitch', 'Instagram', 'Facebook', 'Twitter', 'Linkedin', 'Github',
+            'Chrome', 'Globe', 'Wifi', 'Cast', 'Airplay', 'Bluetooth', 'Nfc', 'Usb'
         ]
     },
     health: {
@@ -76,17 +93,67 @@ const ICON_CATEGORIES: Record<string, { name: string; emoji: string; icons: stri
         emoji: '🏥',
         icons: [
             'Stethoscope', 'Pill', 'Syringe', 'Thermometer', 'HeartPulse', 'Activity', 'Cross', 'Plus',
-            'Bandage', 'Brain', 'Eye', 'Ear', 'Hand', 'Footprints',
-            'Apple', 'Salad', 'Dumbbell', 'Bed', 'Clock', 'Sun', 'Moon', 'Cloud'
+            'Bandage', 'Brain', 'Eye', 'EyeOff', 'Ear', 'EarOff', 'Hand', 'Footprints',
+            'Apple', 'Salad', 'Dumbbell', 'Bed', 'Clock', 'Sun', 'Moon', 'Cloud', 'Smile', 'Frown',
+            'Meh', 'Heart', 'HeartOff', 'Heartbeat', 'Lungs', 'Bone', 'Kidney', 'Liver',
+            'Ambulance', 'Hospital', 'Clinic', 'Pharmacy', 'Lab', 'Microscope', 'TestTube', 'Flask',
+            'Dna', 'Virus', 'Bacteria', 'Mask', 'Sanitizer', 'Soap', 'WashingHands', 'Shield'
         ]
     },
     tech: {
         name: 'Technologie',
         emoji: '💻',
         icons: [
-            'Laptop', 'Smartphone', 'Tablet', 'Monitor', 'Cpu', 'HardDrive', 'Usb', 'Wifi',
-            'Bluetooth', 'Signal', 'Database', 'Cloud', 'Code', 'Terminal', 'Globe', 'Link',
-            'MousePointer', 'Keyboard', 'Printer', 'Camera', 'Headphones', 'Watch', 'Battery', 'Plug'
+            'Laptop', 'Smartphone', 'Tablet', 'Monitor', 'Cpu', 'HardDrive', 'Usb', 'Wifi', 'Bluetooth',
+            'Signal', 'Database', 'Cloud', 'CloudUpload', 'CloudDownload', 'Code', 'Code2', 'Terminal',
+            'Globe', 'Link', 'Link2', 'ExternalLink', 'MousePointer', 'MousePointer2', 'Keyboard',
+            'Printer', 'Camera', 'Webcam', 'Headphones', 'Watch', 'Smartwatch', 'Battery', 'BatteryCharging',
+            'Plug', 'Power', 'PowerOff', 'Settings', 'Settings2', 'Sliders', 'SlidersHorizontal',
+            'Layers', 'Layout', 'Grid', 'Grid2', 'Grid3', 'Table', 'Table2', 'Columns', 'Rows'
+        ]
+    },
+    animals: {
+        name: 'Tiere & Natur',
+        emoji: '🐾',
+        icons: [
+            'Dog', 'Cat', 'Bird', 'Fish', 'Bug', 'Butterfly', 'Snail', 'Turtle', 'Rabbit', 'Squirrel',
+            'Paw', 'Bone', 'Feather', 'Egg', 'Leaf', 'Flower', 'Flower2', 'TreeDeciduous', 'TreePine',
+            'Trees', 'Mountain', 'Waves', 'Sun', 'Moon', 'Star', 'Stars', 'Cloud', 'CloudRain',
+            'CloudSnow', 'CloudLightning', 'Rainbow', 'Sunrise', 'Sunset', 'Wind', 'Tornado',
+            'Droplet', 'Droplets', 'Snowflake', 'Thermometer', 'Globe', 'Earth', 'Map', 'Compass'
+        ]
+    },
+    travel: {
+        name: 'Reise & Transport',
+        emoji: '✈️',
+        icons: [
+            'Plane', 'PlaneTakeoff', 'PlaneLanding', 'Car', 'CarFront', 'Bus', 'Train', 'Ship', 'Anchor',
+            'Bike', 'Rocket', 'Fuel', 'ParkingCircle', 'Map', 'MapPin', 'MapPinned', 'Navigation',
+            'Navigation2', 'Compass', 'Route', 'Signpost', 'Milestone', 'Flag', 'Globe', 'Globe2',
+            'Earth', 'Palmtree', 'Mountain', 'MountainSnow', 'Tent', 'Campfire', 'Backpack',
+            'Luggage', 'Briefcase', 'Ticket', 'TicketCheck', 'Passport', 'Hotel', 'Building', 'Building2'
+        ]
+    },
+    education: {
+        name: 'Bildung & Wissen',
+        emoji: '📚',
+        icons: [
+            'Book', 'BookOpen', 'BookMarked', 'BookCopy', 'Library', 'GraduationCap', 'School', 'Apple',
+            'Pencil', 'Pen', 'PenTool', 'Highlighter', 'Eraser', 'Ruler', 'Triangle', 'Compass',
+            'Calculator', 'Sigma', 'PlusSquare', 'MinusSquare', 'DivideSquare', 'PercentSquare',
+            'Brain', 'Lightbulb', 'Sparkles', 'Target', 'Goal', 'Trophy', 'Medal', 'Award',
+            'Star', 'Stars', 'Crown', 'Flame', 'Rocket', 'Telescope', 'Microscope', 'Flask', 'TestTube'
+        ]
+    },
+    social: {
+        name: 'Sozial & Kommunity',
+        emoji: '👥',
+        icons: [
+            'Users', 'Users2', 'UserPlus', 'UserMinus', 'UserCheck', 'UserX', 'User', 'UserCircle',
+            'UserCog', 'UserSquare', 'Contact', 'Contact2', 'Handshake', 'HeartHandshake', 'Heart',
+            'MessageCircle', 'MessageSquare', 'MessagesSquare', 'Mail', 'MailOpen', 'Inbox', 'Send',
+            'Share', 'Share2', 'Forward', 'Reply', 'ReplyAll', 'AtSign', 'Hash', 'Link',
+            'Globe', 'Globe2', 'Earth', 'Smile', 'Laugh', 'Frown', 'Meh', 'ThumbsUp', 'ThumbsDown'
         ]
     }
 }
@@ -108,6 +175,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
     // Advanced customization controls
     const [iconColor, setIconColor] = useState('#FFFFFF')
     const [bgColor, setBgColor] = useState(backgroundColor)
+    const [bgOpacity, setBgOpacity] = useState(100)  // 0-100 for transparency
     const [iconSize, setIconSize] = useState(60)  // Percentage of canvas
     const [strokeWidth, setStrokeWidth] = useState(2)  // SVG stroke width
     const [rotation, setRotation] = useState(0)  // Degrees
@@ -693,6 +761,26 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                                 style={{ backgroundColor: color }}
                                             />
                                         ))}
+                                    </div>
+                                </div>
+
+                                {/* Background Opacity Slider */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Transparenz</p>
+                                        <span className="text-xs text-white font-mono">{bgOpacity}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={bgOpacity}
+                                        onChange={(e) => setBgOpacity(parseInt(e.target.value))}
+                                        className="w-full accent-green-500"
+                                    />
+                                    <div className="flex justify-between text-[9px] text-zinc-600 mt-1">
+                                        <span>Transparent</span>
+                                        <span>Solid</span>
                                     </div>
                                 </div>
 
