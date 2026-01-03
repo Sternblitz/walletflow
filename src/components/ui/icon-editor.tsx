@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { X, Upload, Sparkles, Check, Loader2, ZoomIn, ZoomOut, RotateCcw, Search, RotateCw, FlipHorizontal, FlipVertical } from 'lucide-react'
+import { X, Upload, Sparkles, Check, Loader2, ZoomIn, ZoomOut, RotateCcw, Search, RotateCw, FlipHorizontal, FlipVertical, Scissors } from 'lucide-react'
 import { Button } from './button'
 import * as LucideIcons from 'lucide-react'
 import { LucideIcon } from 'lucide-react'
@@ -198,6 +198,9 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
     const [aiPrompt, setAiPrompt] = useState('')
     const [aiGenerating, setAiGenerating] = useState(false)
     const [aiResult, setAiResult] = useState<string | null>(null)
+    const [aiProcessed, setAiProcessed] = useState<string | null>(null)  // Background removed version
+    const [bgRemovalTolerance, setBgRemovalTolerance] = useState(30)  // Color tolerance for bg removal
+    const [isRemovingBg, setIsRemovingBg] = useState(false)
     const [aiError, setAiError] = useState<string | null>(null)
 
     // Get Lucide icon component by name
@@ -537,12 +540,83 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         setAiGenerating(false)
     }
 
+    // Remove background from AI-generated image
+    const removeBackground = useCallback(async () => {
+        if (!aiResult) return
+
+        setIsRemovingBg(true)
+
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+
+        img.onload = () => {
+            const canvas = document.createElement('canvas')
+            canvas.width = img.width
+            canvas.height = img.height
+            const ctx = canvas.getContext('2d')
+            if (!ctx) {
+                setIsRemovingBg(false)
+                return
+            }
+
+            // Draw image
+            ctx.drawImage(img, 0, 0)
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+            const data = imageData.data
+
+            // Sample corners to detect background color
+            const samplePositions = [
+                0, // top-left
+                (canvas.width - 1) * 4, // top-right
+                (canvas.height - 1) * canvas.width * 4, // bottom-left
+                ((canvas.height - 1) * canvas.width + canvas.width - 1) * 4, // bottom-right
+            ]
+
+            // Get average corner color
+            let r = 0, g = 0, b = 0
+            samplePositions.forEach(pos => {
+                r += data[pos]
+                g += data[pos + 1]
+                b += data[pos + 2]
+            })
+            r = Math.round(r / 4)
+            g = Math.round(g / 4)
+            b = Math.round(b / 4)
+
+            // Remove pixels matching background color within tolerance
+            const tolerance = bgRemovalTolerance * 2.55 // Convert 0-100 to 0-255 range
+
+            for (let i = 0; i < data.length; i += 4) {
+                const dr = Math.abs(data[i] - r)
+                const dg = Math.abs(data[i + 1] - g)
+                const db = Math.abs(data[i + 2] - b)
+
+                // If pixel is close to background color, make it transparent
+                if (dr < tolerance && dg < tolerance && db < tolerance) {
+                    data[i + 3] = 0 // Set alpha to 0
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0)
+            setAiProcessed(canvas.toDataURL('image/png'))
+            setIsRemovingBg(false)
+        }
+
+        img.onerror = () => {
+            setAiError('Bild konnte nicht geladen werden')
+            setIsRemovingBg(false)
+        }
+
+        img.src = aiResult
+    }, [aiResult, bgRemovalTolerance])
+
     // Save handler
     const handleSave = async () => {
         let iconDataUrl: string | null = null
 
-        if (activeTab === 'ai' && aiResult) {
-            // Composite AI image over user's background color
+        if (activeTab === 'ai' && (aiProcessed || aiResult)) {
+            const sourceImage = aiProcessed || aiResult
+            // Composite AI image over user's background color with proper centering
             const canvas = document.createElement('canvas')
             canvas.width = EXPORT_SIZE
             canvas.height = EXPORT_SIZE
@@ -552,11 +626,19 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                 ctx.fillStyle = bgColor
                 ctx.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE)
 
-                // Load and draw AI image on top
+                // Load and draw AI image on top (centered, preserving aspect ratio)
                 const img = new Image()
                 img.crossOrigin = 'anonymous'
                 img.onload = async () => {
-                    ctx.drawImage(img, 0, 0, EXPORT_SIZE, EXPORT_SIZE)
+                    // Calculate size to fit and center (use 90% of canvas)
+                    const maxSize = EXPORT_SIZE * 0.9
+                    const scale = Math.min(maxSize / img.width, maxSize / img.height)
+                    const drawWidth = img.width * scale
+                    const drawHeight = img.height * scale
+                    const offsetX = (EXPORT_SIZE - drawWidth) / 2
+                    const offsetY = (EXPORT_SIZE - drawHeight) / 2
+
+                    ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight)
                     const composited = canvas.toDataURL('image/png')
 
                     // Upload composited image
@@ -579,13 +661,13 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                 }
                 img.onerror = () => {
                     // Fallback: just save original
-                    onSave(aiResult)
+                    onSave(aiResult!)
                     onClose()
                 }
-                img.src = aiResult
+                img.src = sourceImage!
                 return
             }
-            onSave(aiResult)
+            onSave(aiResult!)
             onClose()
             return
         }
@@ -1040,25 +1122,78 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
 
                                 {aiResult && (
                                     <div className="space-y-4">
-                                        {/* Preview with background removal */}
+                                        {/* Preview - show processed or original */}
                                         <div className="p-4 bg-zinc-800/50 border border-white/10 rounded-xl">
-                                            <p className="text-xs text-zinc-400 mb-3">Vorschau (mit deiner Hintergrundfarbe):</p>
-                                            <div className="flex justify-center">
+                                            <p className="text-xs text-zinc-400 mb-3">
+                                                {aiProcessed ? 'Hintergrund entfernt:' : 'Original:'}
+                                            </p>
+                                            <div className="flex justify-center gap-4">
+                                                {/* Preview with user's background color */}
                                                 <div
                                                     className="w-32 h-32 rounded-xl flex items-center justify-center overflow-hidden border-2 border-white/20"
                                                     style={{ backgroundColor: bgColor }}
                                                 >
                                                     <img
-                                                        src={aiResult}
-                                                        alt="Generated Icon"
-                                                        className="w-full h-full object-contain"
-                                                        style={{ mixBlendMode: 'normal' }}
+                                                        src={aiProcessed || aiResult}
+                                                        alt="Icon"
+                                                        className="max-w-[90%] max-h-[90%] object-contain"
                                                     />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Background Color Picker for AI */}
+                                        {/* Background Removal Controls */}
+                                        <div className="p-4 bg-zinc-800/50 border border-white/10 rounded-xl space-y-3">
+                                            <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Hintergrund entfernen</p>
+
+                                            {/* Tolerance Slider */}
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-xs text-zinc-400">Toleranz</span>
+                                                    <span className="text-xs text-white font-mono">{bgRemovalTolerance}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="5"
+                                                    max="80"
+                                                    value={bgRemovalTolerance}
+                                                    onChange={(e) => setBgRemovalTolerance(parseInt(e.target.value))}
+                                                    className="w-full accent-orange-500"
+                                                />
+                                                <p className="text-[9px] text-zinc-600 mt-1">Höher = mehr wird entfernt</p>
+                                            </div>
+
+                                            {/* Remove Button */}
+                                            <Button
+                                                onClick={removeBackground}
+                                                disabled={isRemovingBg}
+                                                variant="outline"
+                                                className="w-full border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
+                                            >
+                                                {isRemovingBg ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                        Entferne...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Scissors className="w-4 h-4 mr-2" />
+                                                        Hintergrund entfernen
+                                                    </>
+                                                )}
+                                            </Button>
+
+                                            {aiProcessed && (
+                                                <button
+                                                    onClick={() => setAiProcessed(null)}
+                                                    className="text-xs text-zinc-500 hover:text-zinc-300"
+                                                >
+                                                    ↩ Zurück zum Original
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Background Color Picker */}
                                         <div>
                                             <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Hintergrundfarbe wählen</p>
                                             <div className="flex gap-2 items-center">
@@ -1086,7 +1221,12 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
 
                                         <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
                                             <Check className="w-4 h-4 text-green-500 shrink-0" />
-                                            <p className="text-sm text-white">Icon generiert! Wähle deine Farbe und klicke "Speichern"</p>
+                                            <p className="text-sm text-white">
+                                                {aiProcessed
+                                                    ? 'Hintergrund entfernt! Klicke "Speichern"'
+                                                    : 'Icon generiert! Entferne den Hintergrund oder speichere direkt'
+                                                }
+                                            </p>
                                         </div>
                                     </div>
                                 )}
