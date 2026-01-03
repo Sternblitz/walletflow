@@ -145,7 +145,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         )
         : ICON_CATEGORIES[selectedCategory].icons
 
-    // Draw preview on canvas
+    // Draw preview on canvas - renders actual Lucide icons
     const drawPreview = useCallback(() => {
         const canvas = previewCanvasRef.current
         if (!canvas || !selectedIcon) return
@@ -154,118 +154,93 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         if (!ctx) return
 
         const size = canvas.width
-
-        // Clear and draw background
-        ctx.fillStyle = bgColor
-        ctx.fillRect(0, 0, size, size)
-
-        // Create SVG for the icon
         const iconSizePixels = (size * iconSize) / 100
         const padding = (size - iconSizePixels) / 2
 
-        // Create an SVG element
-        const svgNS = "http://www.w3.org/2000/svg"
-        const svg = document.createElementNS(svgNS, "svg")
-        svg.setAttribute("width", String(iconSizePixels))
-        svg.setAttribute("height", String(iconSizePixels))
-        svg.setAttribute("viewBox", "0 0 24 24")
-        svg.setAttribute("fill", "none")
-        svg.setAttribute("stroke", iconColor)
-        svg.setAttribute("stroke-width", String(strokeWidth))
-        svg.setAttribute("stroke-linecap", "round")
-        svg.setAttribute("stroke-linejoin", "round")
-
-        // Get the icon's path from Lucide
-        const IconComponent = getIconComponent(selectedIcon)
-        if (!IconComponent) return
-
-        // Render icon to get its path
-        const tempDiv = document.createElement('div')
-        tempDiv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>`
-
-        // Use the icon's internal paths (simplified approach)
-        const iconSvgString = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-                <rect width="${size}" height="${size}" fill="${bgColor}"/>
-                <g transform="translate(${padding}, ${padding}) rotate(${rotation}, ${iconSizePixels / 2}, ${iconSizePixels / 2}) scale(${flipH ? -1 : 1}, ${flipV ? -1 : 1}) ${flipH ? `translate(-${iconSizePixels}, 0)` : ''} ${flipV ? `translate(0, -${iconSizePixels})` : ''}">
-                    <svg viewBox="0 0 24 24" width="${iconSizePixels}" height="${iconSizePixels}" fill="none" stroke="${iconColor}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                    </svg>
-                </g>
-            </svg>
-        `
-
         // Draw background
-        ctx.save()
         ctx.fillStyle = bgColor
         ctx.fillRect(0, 0, size, size)
 
-        // Apply transformations
-        ctx.translate(size / 2, size / 2)
-        ctx.rotate((rotation * Math.PI) / 180)
-        ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1)
-        ctx.translate(-size / 2, -size / 2)
+        // Create a temporary container to render the React icon
+        const tempContainer = document.createElement('div')
+        tempContainer.style.cssText = 'position:absolute;top:-9999px;left:-9999px;'
+        document.body.appendChild(tempContainer)
 
-        // Draw icon
-        ctx.strokeStyle = iconColor
-        ctx.lineWidth = strokeWidth * (iconSizePixels / 24)
-        ctx.lineCap = 'round'
-        ctx.lineJoin = 'round'
+        // Import ReactDOMServer dynamically and render icon
+        import('react-dom/client').then(({ createRoot }) => {
+            import('react').then((React) => {
+                const IconComponent = getIconComponent(selectedIcon)
+                if (!IconComponent) {
+                    document.body.removeChild(tempContainer)
+                    return
+                }
 
-        // Draw a representative shape for the icon
-        const centerX = size / 2
-        const centerY = size / 2
-        const radius = iconSizePixels / 3
+                // Create the icon element
+                const iconElement = React.createElement(IconComponent, {
+                    size: 24,
+                    color: iconColor,
+                    strokeWidth: strokeWidth
+                })
 
-        // Simple icon representation based on category
-        ctx.beginPath()
-        if (selectedCategory === 'food') {
-            // Cup shape
-            ctx.moveTo(centerX - radius, centerY - radius * 0.3)
-            ctx.lineTo(centerX - radius * 0.8, centerY + radius)
-            ctx.lineTo(centerX + radius * 0.8, centerY + radius)
-            ctx.lineTo(centerX + radius, centerY - radius * 0.3)
-            ctx.closePath()
-            ctx.moveTo(centerX + radius, centerY)
-            ctx.quadraticCurveTo(centerX + radius * 1.4, centerY + radius * 0.3, centerX + radius, centerY + radius * 0.6)
-        } else if (selectedCategory === 'beauty') {
-            // Scissors shape
-            ctx.arc(centerX - radius * 0.4, centerY + radius * 0.4, radius * 0.35, 0, Math.PI * 2)
-            ctx.moveTo(centerX + radius * 0.75, centerY + radius * 0.4)
-            ctx.arc(centerX + radius * 0.4, centerY + radius * 0.4, radius * 0.35, 0, Math.PI * 2)
-            ctx.moveTo(centerX - radius * 0.2, centerY + radius * 0.15)
-            ctx.lineTo(centerX + radius * 0.5, centerY - radius * 0.9)
-            ctx.moveTo(centerX + radius * 0.2, centerY + radius * 0.15)
-            ctx.lineTo(centerX - radius * 0.5, centerY - radius * 0.9)
-        } else if (selectedCategory === 'fitness') {
-            // Dumbbell shape
-            ctx.moveTo(centerX - radius * 1.1, centerY)
-            ctx.lineTo(centerX + radius * 1.1, centerY)
-            ctx.moveTo(centerX - radius, centerY - radius * 0.5)
-            ctx.lineTo(centerX - radius, centerY + radius * 0.5)
-            ctx.moveTo(centerX + radius, centerY - radius * 0.5)
-            ctx.lineTo(centerX + radius, centerY + radius * 0.5)
-        } else if (selectedCategory === 'retail') {
-            // Shopping bag shape
-            ctx.moveTo(centerX - radius * 0.7, centerY - radius * 0.3)
-            ctx.lineTo(centerX - radius * 0.9, centerY + radius)
-            ctx.lineTo(centerX + radius * 0.9, centerY + radius)
-            ctx.lineTo(centerX + radius * 0.7, centerY - radius * 0.3)
-            ctx.closePath()
-            ctx.moveTo(centerX - radius * 0.4, centerY - radius * 0.3)
-            ctx.quadraticCurveTo(centerX - radius * 0.4, centerY - radius, centerX, centerY - radius)
-            ctx.quadraticCurveTo(centerX + radius * 0.4, centerY - radius, centerX + radius * 0.4, centerY - radius * 0.3)
-        } else {
-            // Default: Circle with plus
-            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-            ctx.moveTo(centerX - radius * 0.5, centerY)
-            ctx.lineTo(centerX + radius * 0.5, centerY)
-            ctx.moveTo(centerX, centerY - radius * 0.5)
-            ctx.lineTo(centerX, centerY + radius * 0.5)
-        }
-        ctx.stroke()
-        ctx.restore()
+                // Render to get SVG
+                const root = createRoot(tempContainer)
+                root.render(iconElement)
 
-    }, [selectedIcon, bgColor, iconColor, iconSize, strokeWidth, rotation, flipH, flipV, selectedCategory, getIconComponent])
+                // Wait for render then extract SVG
+                setTimeout(() => {
+                    const svgElement = tempContainer.querySelector('svg')
+                    if (svgElement) {
+                        // Clone and modify the SVG
+                        const svgClone = svgElement.cloneNode(true) as SVGElement
+                        svgClone.setAttribute('width', String(iconSizePixels))
+                        svgClone.setAttribute('height', String(iconSizePixels))
+                        svgClone.setAttribute('stroke', iconColor)
+                        svgClone.setAttribute('stroke-width', String(strokeWidth))
+
+                        // Convert SVG to data URL
+                        const svgString = new XMLSerializer().serializeToString(svgClone)
+                        const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+                        const url = URL.createObjectURL(svgBlob)
+
+                        const img = new Image()
+                        img.onload = () => {
+                            // Clear and redraw background
+                            ctx.fillStyle = bgColor
+                            ctx.fillRect(0, 0, size, size)
+
+                            // Apply transformations
+                            ctx.save()
+                            ctx.translate(size / 2, size / 2)
+                            ctx.rotate((rotation * Math.PI) / 180)
+                            ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1)
+                            ctx.translate(-size / 2, -size / 2)
+
+                            // Draw the icon
+                            ctx.drawImage(img, padding, padding, iconSizePixels, iconSizePixels)
+
+                            ctx.restore()
+                            URL.revokeObjectURL(url)
+                        }
+                        img.onerror = () => {
+                            URL.revokeObjectURL(url)
+                            // Fallback: draw a simple placeholder
+                            ctx.strokeStyle = iconColor
+                            ctx.lineWidth = strokeWidth * (iconSizePixels / 24)
+                            ctx.beginPath()
+                            ctx.arc(size / 2, size / 2, iconSizePixels / 3, 0, Math.PI * 2)
+                            ctx.stroke()
+                        }
+                        img.src = url
+                    }
+
+                    // Cleanup
+                    root.unmount()
+                    document.body.removeChild(tempContainer)
+                }, 10)
+            })
+        })
+
+    }, [selectedIcon, bgColor, iconColor, iconSize, strokeWidth, rotation, flipH, flipV, getIconComponent])
 
     // Redraw preview when settings change
     useEffect(() => {
