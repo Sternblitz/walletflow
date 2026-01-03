@@ -54,7 +54,6 @@ export async function POST(req: NextRequest) {
         }
 
         const backgroundColor = colors?.background || "#1A1A2E"
-        const accentColor = colors?.accent || "#FFFFFF"
 
         const iconPrompt = `Create a minimalist app icon for "${businessName}".
 
@@ -74,26 +73,34 @@ Think Apple SF Symbols or premium fintech app icons.`
         console.log("🎨 Generating notification icon for:", businessName, "| Hint:", iconHint)
 
         try {
-            const response = await ai.models.generateImages({
-                model: "imagen-4.0-generate-001",  // Updated to Imagen 4 (GA since Aug 2025)
-                prompt: iconPrompt,
+            // Use Gemini with image generation capability
+            const response = await ai.models.generateContent({
+                model: "gemini-2.0-flash-exp",  // Gemini model with image generation
+                contents: iconPrompt,
                 config: {
-                    numberOfImages: 1,
-                    aspectRatio: "1:1",
+                    responseModalities: ["image", "text"],
                 }
             })
 
-            const generatedImage = response.generatedImages?.[0]
+            // Extract image from response
+            const parts = response.candidates?.[0]?.content?.parts || []
+            let imageData: string | undefined = undefined
 
-            if (generatedImage?.image?.imageBytes) {
+            for (const part of parts) {
+                if (part.inlineData?.mimeType?.startsWith("image/")) {
+                    imageData = part.inlineData.data
+                    break
+                }
+            }
+
+            if (imageData) {
                 const supabase = await createClient()
-                const imageBuffer = Buffer.from(generatedImage.image.imageBytes, 'base64')
+                const imageBuffer = Buffer.from(imageData, 'base64')
 
                 const timestamp = Date.now()
                 const randomId = Math.random().toString(36).slice(2, 8)
                 const fileName = `notification-icons/${timestamp}-${randomId}.png`
 
-                // Upload original - Apple Wallet will handle resizing
                 const { error: uploadError } = await supabase.storage
                     .from('pass-assets')
                     .upload(fileName, imageBuffer, {
@@ -106,13 +113,13 @@ Think Apple SF Symbols or premium fintech app icons.`
                         .from('pass-assets')
                         .getPublicUrl(fileName)
 
-                    console.log("✅ Notification icon generated:", publicUrl)
+                    console.log("✅ Notification icon generated with Gemini:", publicUrl)
 
                     return NextResponse.json({
                         iconUrl: publicUrl,
-                        icon2xUrl: publicUrl,  // Same URL, will be resized by pass generator
+                        icon2xUrl: publicUrl,
                         icon3xUrl: publicUrl,
-                        source: "ai"
+                        source: "gemini"
                     })
                 } else {
                     console.error("Upload error:", uploadError)
@@ -122,31 +129,30 @@ Think Apple SF Symbols or premium fintech app icons.`
                     })
                 }
             } else {
-                console.error("No image bytes in response:", JSON.stringify(response).slice(0, 200))
+                console.error("No image in Gemini response, parts:", parts.length)
                 return NextResponse.json({
-                    error: "Imagen API hat kein Bild zurückgegeben. Prüfe API-Quota oder Modell-Zugang.",
+                    error: "Gemini hat kein Bild generiert. Versuche es erneut.",
                     iconUrl: null
                 })
             }
-        } catch (imgError: any) {
-            console.error("Imagen generation failed:", imgError?.message, imgError?.code)
+        } catch (genError: any) {
+            console.error("Gemini image generation failed:", genError?.message, genError?.code)
 
-            // Return specific error messages
             let errorMessage = "Bildgenerierung fehlgeschlagen"
-            if (imgError?.message?.includes("quota")) {
+            if (genError?.message?.includes("quota")) {
                 errorMessage = "API-Quota erschöpft. Bitte später erneut versuchen."
-            } else if (imgError?.message?.includes("permission") || imgError?.message?.includes("403")) {
-                errorMessage = "Imagen API nicht aktiviert. Aktiviere sie in der Google Cloud Console."
-            } else if (imgError?.message?.includes("model")) {
-                errorMessage = "Imagen Modell nicht verfügbar. Prüfe das Modell: imagen-3.0-generate-002"
-            } else if (imgError?.message) {
-                errorMessage = imgError.message
+            } else if (genError?.message?.includes("permission") || genError?.message?.includes("403")) {
+                errorMessage = "API-Zugang fehlt. Prüfe den API-Key."
+            } else if (genError?.message?.includes("not supported") || genError?.message?.includes("modality")) {
+                errorMessage = "Bild-Generierung für dieses Modell nicht verfügbar."
+            } else if (genError?.message) {
+                errorMessage = genError.message
             }
 
             return NextResponse.json({
                 error: errorMessage,
                 iconUrl: null,
-                source: "imagen_error"
+                source: "gemini_error"
             })
         }
 
