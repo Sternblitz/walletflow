@@ -116,18 +116,39 @@ Think Apple SF Symbols or premium fintech app icons.`
                     })
                 } else {
                     console.error("Upload error:", uploadError)
+                    return NextResponse.json({
+                        error: "Upload fehlgeschlagen: " + uploadError.message,
+                        iconUrl: null
+                    })
                 }
+            } else {
+                console.error("No image bytes in response:", JSON.stringify(response).slice(0, 200))
+                return NextResponse.json({
+                    error: "Imagen API hat kein Bild zurückgegeben. Prüfe API-Quota oder Modell-Zugang.",
+                    iconUrl: null
+                })
             }
         } catch (imgError: any) {
-            console.error("Imagen generation failed:", imgError?.message)
-        }
+            console.error("Imagen generation failed:", imgError?.message, imgError?.code)
 
-        // Fallback
-        return NextResponse.json({
-            iconUrl: null,
-            source: "fallback",
-            message: "Image generation unavailable"
-        })
+            // Return specific error messages
+            let errorMessage = "Bildgenerierung fehlgeschlagen"
+            if (imgError?.message?.includes("quota")) {
+                errorMessage = "API-Quota erschöpft. Bitte später erneut versuchen."
+            } else if (imgError?.message?.includes("permission") || imgError?.message?.includes("403")) {
+                errorMessage = "Imagen API nicht aktiviert. Aktiviere sie in der Google Cloud Console."
+            } else if (imgError?.message?.includes("model")) {
+                errorMessage = "Imagen Modell nicht verfügbar. Prüfe das Modell: imagen-3.0-generate-002"
+            } else if (imgError?.message) {
+                errorMessage = imgError.message
+            }
+
+            return NextResponse.json({
+                error: errorMessage,
+                iconUrl: null,
+                source: "imagen_error"
+            })
+        }
 
     } catch (error: any) {
         console.error("Notification icon generation error:", error)
