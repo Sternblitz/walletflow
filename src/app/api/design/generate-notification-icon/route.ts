@@ -22,29 +22,50 @@ export async function POST(req: NextRequest) {
 
         const ai = new GoogleGenAI({ apiKey })
 
-        // Determine icon style based on business type
+        // Determine icon style based on business type - more specific visual descriptions
         const businessHints: Record<string, string> = {
-            cafe: "coffee cup with steam",
-            coffee: "coffee cup with steam",
-            kaffee: "coffee cup with steam",
-            restaurant: "fork and knife crossed",
-            sushi: "chopsticks",
-            pizza: "pizza slice",
-            barber: "scissors",
-            friseur: "scissors",
-            hair: "scissors",
-            gym: "dumbbell",
-            fitness: "dumbbell",
-            spa: "lotus flower",
-            wellness: "lotus flower",
-            bakery: "croissant or bread",
-            bäckerei: "croissant or bread",
-            retail: "shopping bag",
-            shop: "shopping bag"
+            // Food & Drinks
+            döner: "delicious döner kebab wrap with meat, salad, and sauce",
+            kebab: "tasty kebab sandwich with grilled meat",
+            pizza: "cheesy pizza slice with toppings",
+            burger: "juicy hamburger with lettuce and cheese",
+            sushi: "fresh sushi rolls with salmon and rice",
+            restaurant: "elegant dinner plate with gourmet food",
+            cafe: "steaming coffee cup with latte art",
+            coffee: "aromatic coffee cup with steam rising",
+            kaffee: "beautiful coffee cup with foam art",
+            bar: "stylish cocktail glass with colorful drink",
+            bakery: "fresh baked croissant with golden crust",
+            bäckerei: "artisan bread loaf with crusty texture",
+            eis: "colorful ice cream cone with multiple scoops",
+            icecream: "delicious ice cream sundae",
+
+            // Beauty & Wellness
+            barber: "vintage barber scissors with comb",
+            friseur: "professional hairdresser scissors",
+            hair: "elegant hair styling scissors",
+            spa: "serene lotus flower on water",
+            wellness: "peaceful zen stones with bamboo",
+            nail: "beautiful manicured nails with polish",
+            beauty: "luxurious makeup brush set",
+
+            // Fitness & Sports
+            gym: "powerful dumbbell weights",
+            fitness: "athletic running shoes",
+            yoga: "peaceful yoga pose silhouette",
+            sport: "dynamic sports equipment",
+
+            // Retail & Services
+            retail: "trendy shopping bag with logo",
+            shop: "elegant store front design",
+            auto: "sleek modern car silhouette",
+            car: "shiny automobile",
+            taxi: "yellow taxi cab",
+            hotel: "luxury hotel building"
         }
 
         // Find matching hint
-        let iconHint = "star or badge"
+        let iconHint = "premium business logo with elegant design"
         const lowerType = (businessType || businessName || "").toLowerCase()
         for (const [key, hint] of Object.entries(businessHints)) {
             if (lowerType.includes(key)) {
@@ -55,20 +76,25 @@ export async function POST(req: NextRequest) {
 
         const backgroundColor = colors?.background || "#1A1A2E"
 
-        const iconPrompt = `Create a minimalist app icon for "${businessName}".
+        const iconPrompt = `Generate a stunning, high-quality app icon for a "${businessName}" business.
 
-STRICT REQUIREMENTS:
-- Icon represents: ${iconHint}
-- Style: Premium, modern, minimalist like iOS app icons
-- Colors: White (#FFFFFF) symbol on solid ${backgroundColor} background
-- Simple, bold shape that's recognizable at 29x29 pixels
+VISUAL REQUIREMENTS:
+- Main subject: ${iconHint}
+- Style: Modern, vibrant, photorealistic 3D render
+- Lighting: Professional studio lighting with soft shadows
+- Colors: Rich, saturated colors that pop
+- Background: Solid ${backgroundColor} or subtle gradient
+- Composition: Centered, filling 80% of the frame
+- Quality: Ultra HD, crisp details, visually striking
+
+IMPORTANT:
+- Make it look like a premium iOS/Android app icon
+- Should be eye-catching and appetizing (if food)
 - NO text, NO letters, NO words
-- NO gradients, NO shadows, NO 3D effects
-- Clean geometric lines, flat design
-- Single centered symbol
-- Square format with slightly rounded corners
+- Square format with rounded corners
+- Should look professional and modern
 
-Think Apple SF Symbols or premium fintech app icons.`
+Think: Uber Eats, Deliveroo, or premium brand app icons.`
 
         console.log("🎨 Generating notification icon for:", businessName, "| Hint:", iconHint)
 
