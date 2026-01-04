@@ -5,6 +5,9 @@ import { X, Upload, Sparkles, Check, Loader2, ZoomIn, ZoomOut, RotateCcw, Search
 import { Button } from './button'
 import * as LucideIcons from 'lucide-react'
 import { LucideIcon } from 'lucide-react'
+import * as PhosphorIcons from '@phosphor-icons/react'
+
+type IconSource = 'lucide' | 'phosphor'
 
 interface IconEditorProps {
     isOpen: boolean
@@ -158,6 +161,108 @@ const ICON_CATEGORIES: Record<string, { name: string; emoji: string; icons: stri
     }
 }
 
+// Phosphor Icons - 500+ curated business icons
+const PHOSPHOR_CATEGORIES: Record<string, { name: string; emoji: string; icons: string[] }> = {
+    food: {
+        name: 'Gastronomie',
+        emoji: '🍕',
+        icons: [
+            'Pizza', 'Hamburger', 'ForkKnife', 'CookingPot', 'Coffee', 'Beer', 'Wine', 'Martini',
+            'Cake', 'Cookie', 'IceCream', 'Bread', 'Egg', 'Fish', 'FishSimple', 'Carrot',
+            'Apple', 'Orange', 'Lemon', 'Grains', 'Leaf', 'Plant', 'FlowerLotus', 'Shrimp',
+            'BowlFood', 'CoffeePot', 'TeaBag', 'Brandy', 'SodaCan', 'Champagne', 'BabyCarrot',
+            'Cheese', 'BreadLoaf', 'Popcorn', 'Steak', 'SaltShaker', 'Pepper', 'ChefHat', 'Oven'
+        ]
+    },
+    beauty: {
+        name: 'Beauty & Wellness',
+        emoji: '✂️',
+        icons: [
+            'Scissors', 'Comb', 'HairDryer', 'MagicWand', 'Sparkle', 'Star', 'Heart', 'Diamond',
+            'Crown', 'Flower', 'FlowerLotus', 'FlowerTulip', 'Leaf', 'Sun', 'Moon', 'Rainbow',
+            'Drop', 'Droplet', 'Wave', 'Waves', 'Wind', 'Cloud', 'Feather', 'Butterfly',
+            'SmileyWink', 'Smiley', 'HandSoap', 'Bathtub', 'HandPalm', 'Fingerprint', 'EyeClosed',
+            'Palette', 'PaintBrush', 'PaintBrushBroad', 'PaintRoller', 'Eyedropper', 'SprayBottle'
+        ]
+    },
+    fitness: {
+        name: 'Sport & Fitness',
+        emoji: '💪',
+        icons: [
+            'Barbell', 'Dumbbell', 'PersonSimpleRun', 'PersonSimpleWalk', 'PersonSimpleBike',
+            'Bicycle', 'Football', 'SoccerBall', 'Basketball', 'TennisBall', 'BaseballCap',
+            'Medal', 'Trophy', 'Target', 'Flame', 'Lightning', 'Heartbeat', 'HeartHalf',
+            'Timer', 'Stopwatch', 'Clock', 'Mountains', 'Tree', 'TreeEvergreen', 'Campfire',
+            'Sneaker', 'TShirt', 'Hoodie', 'Pants', 'Shorts', 'SwimmingPool', 'Waves', 'Anchor'
+        ]
+    },
+    retail: {
+        name: 'Einzelhandel',
+        emoji: '🛍️',
+        icons: [
+            'ShoppingBag', 'ShoppingBagOpen', 'ShoppingCart', 'ShoppingCartSimple', 'Storefront',
+            'Handbag', 'Tote', 'Backpack', 'Briefcase', 'Suitcase', 'Package', 'Gift', 'Tag',
+            'Barcode', 'QrCode', 'CreditCard', 'Wallet', 'Money', 'CurrencyDollar', 'CurrencyEur',
+            'Receipt', 'Calculator', 'PiggyBank', 'Bank', 'Coins', 'Ticket', 'Percent',
+            'Scales', 'Scan', 'PencilSimple', 'Notebook', 'ClipboardText', 'FileText', 'Files'
+        ]
+    },
+    services: {
+        name: 'Dienstleistungen',
+        emoji: '🔧',
+        icons: [
+            'Wrench', 'Hammer', 'Screwdriver', 'Toolbox', 'Gear', 'GearSix', 'FadersHorizontal',
+            'Car', 'CarSimple', 'Taxi', 'Bus', 'Truck', 'Van', 'Motorcycle', 'Scooter',
+            'Key', 'KeyReturn', 'Lock', 'LockOpen', 'Door', 'DoorOpen', 'House', 'HouseSimple',
+            'Buildings', 'BuildingOffice', 'Warehouse', 'Factory', 'Garage', 'Plug', 'Lightbulb',
+            'Phone', 'PhoneCall', 'Envelope', 'At', 'ChatCircle', 'WhatsappLogo', 'TelegramLogo'
+        ]
+    },
+    food_detailed: {
+        name: 'Detailliert Essen',
+        emoji: '🥘',
+        icons: [
+            'Bowl', 'BowlFood', 'BowlSteam', 'Plate', 'Pan', 'Pot', 'Spoon', 'Knife',
+            'Steak', 'Hamburger', 'Pizza', 'HotDog', 'Taco', 'Burrito', 'Sushi', 'Ramen',
+            'Noodles', 'Rice', 'Salad', 'Soup', 'Sandwich', 'Croissant', 'Baguette', 'Pretzel',
+            'Donut', 'Cupcake', 'PieFilled', 'Waffle', 'Pancake', 'IceCreamCone', 'Popsicle',
+            'ChocolateBar', 'Candy', 'Lollipop', 'CandyCane', 'Gingerbread', 'CakeSlice', 'BirthdayCake'
+        ]
+    },
+    drinks: {
+        name: 'Getränke',
+        emoji: '🍺',
+        icons: [
+            'Coffee', 'CoffeePot', 'Mug', 'CupHot', 'TeaBag', 'Teapot', 'SodaCan', 'Bottle',
+            'Wine', 'WineGlass', 'Beer', 'BeerStein', 'Martini', 'Cocktail', 'Champagne', 'Brandy',
+            'Whiskey', 'Glass', 'GlassWater', 'Juice', 'Smoothie', 'Milkshake', 'Lemonade',
+            'Cola', 'EnergyDrink', 'ProteinShake', 'Espresso', 'Cappuccino', 'Latte', 'Mocha'
+        ]
+    },
+    tech: {
+        name: 'Technologie',
+        emoji: '💻',
+        icons: [
+            'Desktop', 'Laptop', 'DeviceMobile', 'DeviceTablet', 'Watch', 'Headphones', 'Speaker',
+            'Keyboard', 'Mouse', 'Printer', 'Scanner', 'Webcam', 'Camera', 'VideoCamera',
+            'Monitor', 'Tv', 'GameController', 'VirtualReality', 'Robot', 'Cpu', 'HardDrive',
+            'WifiHigh', 'Bluetooth', 'Cloud', 'Database', 'Code', 'Terminal', 'BracketsCurly',
+            'Usb', 'Lightning', 'Battery', 'BatteryCharging', 'Plug', 'Power', 'SignalHigh'
+        ]
+    },
+    animals: {
+        name: 'Tiere',
+        emoji: '🐾',
+        icons: [
+            'Dog', 'Cat', 'Bird', 'Fish', 'FishSimple', 'Butterfly', 'Bug', 'Spider', 'Snail',
+            'Rabbit', 'Horse', 'Cow', 'Pig', 'Sheep', 'Chicken', 'Duck', 'Turkey', 'Penguin',
+            'Elephant', 'Lion', 'Tiger', 'Bear', 'Monkey', 'Gorilla', 'Fox', 'Wolf', 'Deer',
+            'Whale', 'Dolphin', 'Shark', 'Octopus', 'Crab', 'Shrimp', 'Turtle', 'Frog', 'Snake',
+            'PawPrint', 'Bone', 'Feather', 'Egg', 'Nest', 'Fishbowl', 'DogBowl', 'CatBowl', 'Collar'
+        ]
+    }
+}
+
 // German keyword to icon mapping for better search
 const GERMAN_KEYWORDS: Record<string, string[]> = {
     // Food
@@ -246,6 +351,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
     const [selectedCategory, setSelectedCategory] = useState<keyof typeof ICON_CATEGORIES>('food')
     const [selectedIcon, setSelectedIcon] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
+    const [iconSource, setIconSource] = useState<IconSource>('lucide')  // Lucide or Phosphor
 
     // Advanced customization controls
     const [iconColor, setIconColor] = useState('#FFFFFF')
@@ -284,28 +390,37 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
     const [isRemovingBg, setIsRemovingBg] = useState(false)
     const aiPreviewRef = useRef<HTMLCanvasElement>(null)
 
-    // Get Lucide icon component by name
-    const getIconComponent = useCallback((name: string): LucideIcon | null => {
+    // Get icon component by name - supports both Lucide and Phosphor
+    const getIconComponent = useCallback((name: string): any => {
+        if (iconSource === 'phosphor') {
+            const icon = (PhosphorIcons as any)[name]
+            return icon || null
+        }
         const icon = (LucideIcons as any)[name]
         return icon || null
-    }, [])
+    }, [iconSource])
+
+    // Get current category source based on iconSource
+    const currentCategories = iconSource === 'phosphor' ? PHOSPHOR_CATEGORIES : ICON_CATEGORIES
 
     // Filter icons by search - includes German keywords
     const filteredIcons = searchQuery
         ? (() => {
             const query = searchQuery.toLowerCase()
-            const allIcons = Object.values(ICON_CATEGORIES).flatMap(cat => cat.icons)
+            const allIcons = Object.values(currentCategories).flatMap(cat => cat.icons)
 
-            // Get icons matching German keyword
-            const germanMatches = GERMAN_KEYWORDS[query] || []
+            // Get icons matching German keyword (for Lucide)
+            const germanMatches = iconSource === 'lucide' ? (GERMAN_KEYWORDS[query] || []) : []
 
             // Also check partial matches in German keywords
             const partialGermanMatches: string[] = []
-            Object.entries(GERMAN_KEYWORDS).forEach(([keyword, icons]) => {
-                if (keyword.includes(query) || query.includes(keyword)) {
-                    partialGermanMatches.push(...icons)
-                }
-            })
+            if (iconSource === 'lucide') {
+                Object.entries(GERMAN_KEYWORDS).forEach(([keyword, icons]) => {
+                    if (keyword.includes(query) || query.includes(keyword)) {
+                        partialGermanMatches.push(...icons)
+                    }
+                })
+            }
 
             // Combine: German keyword matches first, then English name matches
             const combinedMatches = [
@@ -317,7 +432,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
             // Remove duplicates while preserving order
             return [...new Set(combinedMatches)]
         })()
-        : ICON_CATEGORIES[selectedCategory].icons
+        : (currentCategories[selectedCategory as keyof typeof currentCategories]?.icons || [])
 
     // Draw preview on canvas - renders actual Lucide icons
     const drawPreview = useCallback(() => {
@@ -910,8 +1025,26 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                         <>
                             {/* Left: Categories */}
                             <div className="w-44 border-r border-white/10 p-3 overflow-y-auto shrink-0">
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Kategorien</p>
-                                {Object.entries(ICON_CATEGORIES).map(([key, cat]) => (
+                                {/* Source Toggle */}
+                                <div className="flex gap-1 mb-3 p-1 bg-white/5 rounded-lg">
+                                    <button
+                                        onClick={() => { setIconSource('lucide'); setSelectedCategory('food'); }}
+                                        className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${iconSource === 'lucide' ? 'bg-green-500 text-white' : 'text-zinc-400 hover:text-white'}`}
+                                    >
+                                        Lucide
+                                    </button>
+                                    <button
+                                        onClick={() => { setIconSource('phosphor'); setSelectedCategory('food' as any); }}
+                                        className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${iconSource === 'phosphor' ? 'bg-purple-500 text-white' : 'text-zinc-400 hover:text-white'}`}
+                                    >
+                                        Phosphor
+                                    </button>
+                                </div>
+
+                                <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">
+                                    {iconSource === 'lucide' ? 'Lucide Icons' : 'Phosphor Icons'}
+                                </p>
+                                {Object.entries(currentCategories).map(([key, cat]) => (
                                     <button
                                         key={key}
                                         onClick={() => {
@@ -919,7 +1052,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                             setSearchQuery('')
                                         }}
                                         className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition-all ${selectedCategory === key
-                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                            ? (iconSource === 'phosphor' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-green-500/20 text-green-400 border border-green-500/30')
                                             : 'text-zinc-400 hover:bg-white/5 hover:text-white'
                                             }`}
                                     >
