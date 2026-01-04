@@ -37,7 +37,7 @@ export function MarketingDesigner({ campaign }: MarketingDesignerProps) {
     }
 
     return (
-        <div className="flex h-[calc(100vh-4rem)]">
+        <div className="flex h-full">
             {/* Sidebar Controls */}
             <div className="w-[400px] border-r border-white/10 bg-zinc-900/50 p-6 flex flex-col gap-8 overflow-y-auto print:hidden">
                 <div className="space-y-2">

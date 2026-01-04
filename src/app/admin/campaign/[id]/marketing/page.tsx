@@ -46,7 +46,7 @@ export default function MarketingPage({ params }: { params: Promise<{ id: string
 
     if (loading) {
         return (
-            <div className="h-screen w-full flex items-center justify-center bg-zinc-950">
+            <div className="h-full w-full flex items-center justify-center bg-zinc-950">
                 <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
             </div>
         )
@@ -57,7 +57,7 @@ export default function MarketingPage({ params }: { params: Promise<{ id: string
     }
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-white overflow-hidden">
+        <div className="h-full flex-1 bg-zinc-950 text-white overflow-hidden">
             <MarketingDesigner campaign={campaign} />
         </div>
     )
