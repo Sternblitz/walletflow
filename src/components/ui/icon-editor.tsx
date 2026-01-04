@@ -158,6 +158,81 @@ const ICON_CATEGORIES: Record<string, { name: string; emoji: string; icons: stri
     }
 }
 
+// German keyword to icon mapping for better search
+const GERMAN_KEYWORDS: Record<string, string[]> = {
+    // Food
+    'döner': ['Sandwich', 'Beef', 'UtensilsCrossed', 'Flame', 'ChefHat'],
+    'kebab': ['Sandwich', 'Beef', 'UtensilsCrossed', 'Flame'],
+    'pizza': ['Pizza', 'Slice', 'Flame', 'ChefHat'],
+    'burger': ['Sandwich', 'Beef', 'UtensilsCrossed'],
+    'café': ['Coffee', 'CupSoda', 'Milk'],
+    'kaffee': ['Coffee', 'CupSoda', 'Milk'],
+    'bäckerei': ['Croissant', 'Wheat', 'Cookie', 'Cake', 'ChefHat'],
+    'bäcker': ['Croissant', 'Wheat', 'Cookie', 'Cake'],
+    'restaurant': ['UtensilsCrossed', 'Utensils', 'ChefHat', 'Fork', 'Knife'],
+    'essen': ['UtensilsCrossed', 'Utensils', 'Fork', 'Knife', 'Bowl'],
+    'trinken': ['Coffee', 'Wine', 'Beer', 'CupSoda', 'GlassWater'],
+    'eis': ['IceCream', 'Cone', 'Snowflake'],
+    'eisdiele': ['IceCream', 'Cone'],
+    'sushi': ['Fish', 'Rice', 'Salad'],
+    'bar': ['Martini', 'Wine', 'Beer', 'CupSoda'],
+    // Beauty
+    'friseur': ['Scissors', 'Brush', 'Sparkles', 'Scan'],
+    'frisör': ['Scissors', 'Brush', 'Sparkles'],
+    'haare': ['Scissors', 'Brush', 'Scan'],
+    'salon': ['Scissors', 'Brush', 'Sparkles', 'Crown'],
+    'kosmetik': ['Sparkles', 'Heart', 'Star', 'Palette'],
+    'makeup': ['Palette', 'Brush', 'Paintbrush', 'Sparkles'],
+    'spa': ['Lotus', 'Flower', 'Droplet', 'Waves', 'Shell'],
+    'wellness': ['Lotus', 'Flower', 'Heart', 'Sun', 'Moon'],
+    'massage': ['Hand', 'Heart', 'Sparkles', 'Lotus'],
+    'nagel': ['Hand', 'Sparkles', 'Paintbrush', 'Gem'],
+    'nagelstudio': ['Hand', 'Sparkles', 'Paintbrush'],
+    // Fitness
+    'gym': ['Dumbbell', 'Activity', 'HeartPulse', 'Flame'],
+    'fitness': ['Dumbbell', 'Activity', 'HeartPulse', 'Flame', 'Bike'],
+    'sport': ['Trophy', 'Medal', 'Dumbbell', 'Target', 'Flag'],
+    'yoga': ['Lotus', 'PersonStanding', 'Sun', 'Moon'],
+    'tanzen': ['Music', 'PersonStanding', 'Star', 'Sparkles'],
+    'boxen': ['Shield', 'Swords', 'Target', 'Flame'],
+    // Services
+    'auto': ['Car', 'CarFront', 'Wrench', 'Key', 'Fuel'],
+    'werkstatt': ['Wrench', 'Hammer', 'Settings', 'Car'],
+    'reparatur': ['Wrench', 'Hammer', 'Settings', 'Zap'],
+    'handwerk': ['Hammer', 'Wrench', 'Settings', 'Lightbulb'],
+    'reinigung': ['Droplet', 'Sparkles', 'Wind'],
+    'wäsche': ['Droplet', 'Wind', 'Shirt'],
+    // Retail
+    'laden': ['Store', 'ShoppingBag', 'Package', 'Tag'],
+    'geschäft': ['Store', 'ShoppingBag', 'Building', 'Briefcase'],
+    'shop': ['ShoppingBag', 'ShoppingCart', 'Store', 'Tag'],
+    'boutique': ['ShoppingBag', 'Gem', 'Crown', 'Star'],
+    'mode': ['ShoppingBag', 'Heart', 'Star', 'Sparkles'],
+    'schmuck': ['Gem', 'Diamond', 'Ring', 'Crown', 'Star'],
+    'blumen': ['Flower', 'Flower2', 'Leaf', 'Heart'],
+    // Entertainment
+    'musik': ['Music', 'Music2', 'Mic', 'Headphones', 'Speaker'],
+    'kino': ['Film', 'Clapperboard', 'Video', 'Ticket'],
+    'theater': ['Drama', 'Ticket', 'Sparkles', 'Star'],
+    'party': ['PartyPopper', 'Music', 'Sparkles', 'Star'],
+    // Health
+    'apotheke': ['Pill', 'Cross', 'Plus', 'Stethoscope'],
+    'arzt': ['Stethoscope', 'Cross', 'HeartPulse', 'Plus'],
+    'zahnarzt': ['Smile', 'Cross', 'Plus', 'Sparkles'],
+    'tierarzt': ['Paw', 'Cross', 'Heart', 'Stethoscope'],
+    // Animals
+    'hund': ['Dog', 'Paw', 'Bone', 'Heart'],
+    'katze': ['Cat', 'Paw', 'Heart', 'Fish'],
+    'tier': ['Paw', 'Heart', 'Dog', 'Cat', 'Bird'],
+    'haustier': ['Paw', 'Dog', 'Cat', 'Heart', 'Bone'],
+    // Travel
+    'reise': ['Plane', 'Globe', 'Map', 'Compass', 'Luggage'],
+    'hotel': ['Building', 'Bed', 'Key', 'Star'],
+    'taxi': ['Car', 'Navigation', 'MapPin'],
+    'flug': ['Plane', 'PlaneTakeoff', 'Cloud'],
+}
+
+
 // Quick color presets for fast selection
 const QUICK_COLORS = [
     '#FFFFFF', '#000000', '#EF4444', '#F97316', '#EAB308', '#22C55E',
@@ -215,11 +290,33 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         return icon || null
     }, [])
 
-    // Filter icons by search
+    // Filter icons by search - includes German keywords
     const filteredIcons = searchQuery
-        ? Object.values(ICON_CATEGORIES).flatMap(cat => cat.icons).filter(icon =>
-            icon.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        ? (() => {
+            const query = searchQuery.toLowerCase()
+            const allIcons = Object.values(ICON_CATEGORIES).flatMap(cat => cat.icons)
+
+            // Get icons matching German keyword
+            const germanMatches = GERMAN_KEYWORDS[query] || []
+
+            // Also check partial matches in German keywords
+            const partialGermanMatches: string[] = []
+            Object.entries(GERMAN_KEYWORDS).forEach(([keyword, icons]) => {
+                if (keyword.includes(query) || query.includes(keyword)) {
+                    partialGermanMatches.push(...icons)
+                }
+            })
+
+            // Combine: German keyword matches first, then English name matches
+            const combinedMatches = [
+                ...germanMatches,
+                ...partialGermanMatches,
+                ...allIcons.filter(icon => icon.toLowerCase().includes(query))
+            ]
+
+            // Remove duplicates while preserving order
+            return [...new Set(combinedMatches)]
+        })()
         : ICON_CATEGORIES[selectedCategory].icons
 
     // Draw preview on canvas - renders actual Lucide icons
