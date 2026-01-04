@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { X, Upload, Sparkles, Check, Loader2, ZoomIn, ZoomOut, RotateCcw, Search, RotateCw, FlipHorizontal, FlipVertical, Scissors } from 'lucide-react'
+import { X, Upload, Sparkles, Check, Loader2, ZoomIn, ZoomOut, RotateCcw, Search, RotateCw, FlipHorizontal, FlipVertical, Scissors, Pipette } from 'lucide-react'
 import { Button } from './button'
 import * as LucideIcons from 'lucide-react'
 import { LucideIcon } from 'lucide-react'
@@ -198,10 +198,16 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
     const [aiPrompt, setAiPrompt] = useState('')
     const [aiGenerating, setAiGenerating] = useState(false)
     const [aiResult, setAiResult] = useState<string | null>(null)
-    const [aiProcessed, setAiProcessed] = useState<string | null>(null)  // Background removed version
-    const [bgRemovalTolerance, setBgRemovalTolerance] = useState(30)  // Color tolerance for bg removal
-    const [isRemovingBg, setIsRemovingBg] = useState(false)
+    const [aiProcessed, setAiProcessed] = useState<string | null>(null)
     const [aiError, setAiError] = useState<string | null>(null)
+    // AI Editor controls
+    const [aiIconSize, setAiIconSize] = useState(80)  // Percentage 20-100
+    const [aiIconPos, setAiIconPos] = useState({ x: 0, y: 0 })  // Offset from center
+    const [pipetteMode, setPipetteMode] = useState(false)  // Picking color to remove
+    const [removeColor, setRemoveColor] = useState<string | null>(null)  // Color to remove
+    const [bgRemovalTolerance, setBgRemovalTolerance] = useState(25)
+    const [isRemovingBg, setIsRemovingBg] = useState(false)
+    const aiPreviewRef = useRef<HTMLCanvasElement>(null)
 
     // Get Lucide icon component by name
     const getIconComponent = useCallback((name: string): LucideIcon | null => {
@@ -540,9 +546,77 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         setAiGenerating(false)
     }
 
-    // Remove background from AI-generated image
+    // Handle click on AI preview to pick color for removal
+    const handleAiPreviewClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+        if (!pipetteMode || !aiResult) return
+
+        const canvas = e.currentTarget
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+
+        const rect = canvas.getBoundingClientRect()
+        const x = Math.floor((e.clientX - rect.left) * (canvas.width / rect.width))
+        const y = Math.floor((e.clientY - rect.top) * (canvas.height / rect.height))
+
+        const pixel = ctx.getImageData(x, y, 1, 1).data
+        const color = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`
+        setRemoveColor(color)
+        setPipetteMode(false)
+    }, [pipetteMode, aiResult])
+
+    // Draw AI preview canvas
+    const drawAiPreview = useCallback(() => {
+        const canvas = aiPreviewRef.current
+        const sourceImg = aiProcessed || aiResult
+        if (!canvas || !sourceImg) return
+
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = () => {
+            // Draw checkered background for transparency
+            const checkSize = 10
+            for (let y = 0; y < canvas.height; y += checkSize) {
+                for (let x = 0; x < canvas.width; x += checkSize) {
+                    ctx.fillStyle = (x + y) % (checkSize * 2) === 0 ? '#3a3a3a' : '#2a2a2a'
+                    ctx.fillRect(x, y, checkSize, checkSize)
+                }
+            }
+
+            // Draw user's chosen background
+            ctx.fillStyle = bgColor
+            ctx.globalAlpha = bgOpacity / 100
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            ctx.globalAlpha = 1
+
+            // Calculate icon size and position
+            const iconSizePixels = (canvas.width * aiIconSize) / 100
+            const centerX = canvas.width / 2 + aiIconPos.x
+            const centerY = canvas.height / 2 + aiIconPos.y
+            const scale = Math.min(iconSizePixels / img.width, iconSizePixels / img.height)
+            const drawW = img.width * scale
+            const drawH = img.height * scale
+
+            ctx.drawImage(img, centerX - drawW / 2, centerY - drawH / 2, drawW, drawH)
+        }
+        img.src = sourceImg
+    }, [aiResult, aiProcessed, bgColor, bgOpacity, aiIconSize, aiIconPos])
+
+    // Redraw AI preview when settings change
+    useEffect(() => {
+        if (aiResult) {
+            drawAiPreview()
+        }
+    }, [aiResult, aiProcessed, bgColor, bgOpacity, aiIconSize, aiIconPos, drawAiPreview])
+
+    // Remove background using selected color
     const removeBackground = useCallback(async () => {
-        if (!aiResult) return
+        if (!aiResult || !removeColor) {
+            setAiError('Wähle zuerst eine Farbe mit der Pipette')
+            return
+        }
 
         setIsRemovingBg(true)
 
@@ -559,41 +633,30 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                 return
             }
 
-            // Draw image
             ctx.drawImage(img, 0, 0)
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
             const data = imageData.data
 
-            // Sample corners to detect background color
-            const samplePositions = [
-                0, // top-left
-                (canvas.width - 1) * 4, // top-right
-                (canvas.height - 1) * canvas.width * 4, // bottom-left
-                ((canvas.height - 1) * canvas.width + canvas.width - 1) * 4, // bottom-right
-            ]
+            // Parse selected color
+            const match = removeColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+            if (!match) {
+                setIsRemovingBg(false)
+                return
+            }
+            const [, rStr, gStr, bStr] = match
+            const targetR = parseInt(rStr)
+            const targetG = parseInt(gStr)
+            const targetB = parseInt(bStr)
 
-            // Get average corner color
-            let r = 0, g = 0, b = 0
-            samplePositions.forEach(pos => {
-                r += data[pos]
-                g += data[pos + 1]
-                b += data[pos + 2]
-            })
-            r = Math.round(r / 4)
-            g = Math.round(g / 4)
-            b = Math.round(b / 4)
-
-            // Remove pixels matching background color within tolerance
-            const tolerance = bgRemovalTolerance * 2.55 // Convert 0-100 to 0-255 range
+            const tolerance = bgRemovalTolerance * 2.55
 
             for (let i = 0; i < data.length; i += 4) {
-                const dr = Math.abs(data[i] - r)
-                const dg = Math.abs(data[i + 1] - g)
-                const db = Math.abs(data[i + 2] - b)
+                const dr = Math.abs(data[i] - targetR)
+                const dg = Math.abs(data[i + 1] - targetG)
+                const db = Math.abs(data[i + 2] - targetB)
 
-                // If pixel is close to background color, make it transparent
                 if (dr < tolerance && dg < tolerance && db < tolerance) {
-                    data[i + 3] = 0 // Set alpha to 0
+                    data[i + 3] = 0
                 }
             }
 
@@ -608,7 +671,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
         }
 
         img.src = aiResult
-    }, [aiResult, bgRemovalTolerance])
+    }, [aiResult, removeColor, bgRemovalTolerance])
 
     // Save handler
     const handleSave = async () => {
@@ -630,12 +693,17 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                 const img = new Image()
                 img.crossOrigin = 'anonymous'
                 img.onload = async () => {
-                    // Calculate size to fit and center (use full canvas)
-                    const scale = Math.min(EXPORT_SIZE / img.width, EXPORT_SIZE / img.height)
+                    // Calculate size and position using user's controls
+                    const iconSizePixels = (EXPORT_SIZE * aiIconSize) / 100
+                    const scale = Math.min(iconSizePixels / img.width, iconSizePixels / img.height)
                     const drawWidth = img.width * scale
                     const drawHeight = img.height * scale
-                    const offsetX = (EXPORT_SIZE - drawWidth) / 2
-                    const offsetY = (EXPORT_SIZE - drawHeight) / 2
+                    // Center with user's position offset (scaled to export size)
+                    const posScale = EXPORT_SIZE / 200  // Scale from preview to export
+                    const centerX = EXPORT_SIZE / 2 + (aiIconPos.x * posScale)
+                    const centerY = EXPORT_SIZE / 2 + (aiIconPos.y * posScale)
+                    const offsetX = centerX - drawWidth / 2
+                    const offsetY = centerY - drawHeight / 2
 
                     ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight)
                     const composited = canvas.toDataURL('image/png')
@@ -1121,31 +1189,116 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
 
                                 {aiResult && (
                                     <div className="space-y-4">
-                                        {/* Preview - show processed or original */}
+                                        {/* Canvas Preview */}
                                         <div className="p-4 bg-zinc-800/50 border border-white/10 rounded-xl">
-                                            <p className="text-xs text-zinc-400 mb-3">
-                                                {aiProcessed ? 'Hintergrund entfernt:' : 'Original:'}
-                                            </p>
-                                            <div className="flex justify-center gap-4">
-                                                {/* Preview with user's background color */}
-                                                <div
-                                                    className="w-32 h-32 rounded-xl flex items-center justify-center overflow-hidden border-2 border-white/20"
-                                                    style={{ backgroundColor: bgColor }}
-                                                >
-                                                    <img
-                                                        src={aiProcessed || aiResult}
-                                                        alt="Icon"
-                                                        className="max-w-[90%] max-h-[90%] object-contain"
-                                                    />
-                                                </div>
+                                            <div className="flex justify-between items-center mb-3">
+                                                <p className="text-xs text-zinc-400">
+                                                    {pipetteMode ? '🔍 Klicke auf die Farbe die entfernt werden soll' : 'Vorschau:'}
+                                                </p>
+                                                {removeColor && (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] text-zinc-500">Zu entfernen:</span>
+                                                        <div
+                                                            className="w-5 h-5 rounded border border-white/20"
+                                                            style={{ backgroundColor: removeColor }}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex justify-center">
+                                                <canvas
+                                                    ref={aiPreviewRef}
+                                                    width={200}
+                                                    height={200}
+                                                    onClick={handleAiPreviewClick}
+                                                    className={`rounded-xl border-2 ${pipetteMode ? 'border-yellow-500 cursor-crosshair' : 'border-white/20'}`}
+                                                />
                                             </div>
                                         </div>
 
-                                        {/* Background Removal Controls */}
+                                        {/* Size and Position Controls */}
+                                        <div className="p-4 bg-zinc-800/50 border border-white/10 rounded-xl space-y-3">
+                                            <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Größe & Position</p>
+
+                                            {/* Size Slider */}
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-xs text-zinc-400">Icon-Größe</span>
+                                                    <span className="text-xs text-white font-mono">{aiIconSize}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="20"
+                                                    max="100"
+                                                    value={aiIconSize}
+                                                    onChange={(e) => setAiIconSize(parseInt(e.target.value))}
+                                                    className="w-full accent-green-500"
+                                                />
+                                            </div>
+
+                                            {/* Position Controls */}
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <span className="text-xs text-zinc-400 block mb-1">Horizontal</span>
+                                                    <input
+                                                        type="range"
+                                                        min="-50"
+                                                        max="50"
+                                                        value={aiIconPos.x}
+                                                        onChange={(e) => setAiIconPos(p => ({ ...p, x: parseInt(e.target.value) }))}
+                                                        className="w-full accent-blue-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <span className="text-xs text-zinc-400 block mb-1">Vertikal</span>
+                                                    <input
+                                                        type="range"
+                                                        min="-50"
+                                                        max="50"
+                                                        value={aiIconPos.y}
+                                                        onChange={(e) => setAiIconPos(p => ({ ...p, y: parseInt(e.target.value) }))}
+                                                        className="w-full accent-blue-500"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => { setAiIconSize(80); setAiIconPos({ x: 0, y: 0 }) }}
+                                                className="text-xs text-zinc-500 hover:text-zinc-300"
+                                            >
+                                                ↩ Position zurücksetzen
+                                            </button>
+                                        </div>
+
+                                        {/* Background Removal */}
                                         <div className="p-4 bg-zinc-800/50 border border-white/10 rounded-xl space-y-3">
                                             <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Hintergrund entfernen</p>
 
-                                            {/* Tolerance Slider */}
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    onClick={() => setPipetteMode(!pipetteMode)}
+                                                    variant={pipetteMode ? "default" : "outline"}
+                                                    className={`flex-1 ${pipetteMode ? 'bg-yellow-600' : ''}`}
+                                                >
+                                                    <Pipette className="w-4 h-4 mr-2" />
+                                                    {pipetteMode ? 'Farbe wählen...' : 'Pipette'}
+                                                </Button>
+                                                <Button
+                                                    onClick={removeBackground}
+                                                    disabled={isRemovingBg || !removeColor}
+                                                    variant="outline"
+                                                    className="flex-1 border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
+                                                >
+                                                    {isRemovingBg ? (
+                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                    ) : (
+                                                        <Scissors className="w-4 h-4 mr-2" />
+                                                    )}
+                                                    Entfernen
+                                                </Button>
+                                            </div>
+
+                                            {/* Tolerance */}
                                             <div>
                                                 <div className="flex justify-between items-center mb-1">
                                                     <span className="text-xs text-zinc-400">Toleranz</span>
@@ -1154,33 +1307,12 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                                 <input
                                                     type="range"
                                                     min="5"
-                                                    max="80"
+                                                    max="60"
                                                     value={bgRemovalTolerance}
                                                     onChange={(e) => setBgRemovalTolerance(parseInt(e.target.value))}
                                                     className="w-full accent-orange-500"
                                                 />
-                                                <p className="text-[9px] text-zinc-600 mt-1">Höher = mehr wird entfernt</p>
                                             </div>
-
-                                            {/* Remove Button */}
-                                            <Button
-                                                onClick={removeBackground}
-                                                disabled={isRemovingBg}
-                                                variant="outline"
-                                                className="w-full border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
-                                            >
-                                                {isRemovingBg ? (
-                                                    <>
-                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                        Entferne...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Scissors className="w-4 h-4 mr-2" />
-                                                        Hintergrund entfernen
-                                                    </>
-                                                )}
-                                            </Button>
 
                                             {aiProcessed && (
                                                 <button
@@ -1194,7 +1326,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
 
                                         {/* Background Color Picker */}
                                         <div>
-                                            <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Hintergrundfarbe wählen</p>
+                                            <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Hintergrundfarbe</p>
                                             <div className="flex gap-2 items-center">
                                                 <div className="relative w-10 h-10 rounded-lg overflow-hidden border-2 border-white/20 shrink-0">
                                                     <input
@@ -1220,12 +1352,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
 
                                         <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
                                             <Check className="w-4 h-4 text-green-500 shrink-0" />
-                                            <p className="text-sm text-white">
-                                                {aiProcessed
-                                                    ? 'Hintergrund entfernt! Klicke "Speichern"'
-                                                    : 'Icon generiert! Entferne den Hintergrund oder speichere direkt'
-                                                }
-                                            </p>
+                                            <p className="text-sm text-white">Fertig! Klicke "Speichern"</p>
                                         </div>
                                     </div>
                                 )}

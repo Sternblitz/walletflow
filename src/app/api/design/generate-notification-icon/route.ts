@@ -76,31 +76,22 @@ export async function POST(req: NextRequest) {
 
         const backgroundColor = colors?.background || "#1A1A2E"
 
-        const iconPrompt = `Generate a high-quality product image for a "${businessName}" business.
+        const iconPrompt = `Create a simple, clean icon of: ${iconHint}
 
-CRITICAL - TRANSPARENT BACKGROUND:
-- The subject MUST be on a completely TRANSPARENT background
-- NO background color, NO floor, NO shadows on background
-- Pure alpha transparency around the subject
-- PNG format with transparency
+STYLE:
+- Pure WHITE background (#FFFFFF)
+- Single centered object
+- Clean, simple, modern design
+- Flat or slight 3D style
+- Vibrant colors for the object
+- NO shadows on background
+- NO text, NO letters
+- Icon style like iOS app icons
 
-VISUAL REQUIREMENTS:
-- Main subject: ${iconHint}
-- Style: Modern, vibrant, photorealistic 3D render
-- Lighting: Professional studio lighting
-- Colors: Rich, saturated colors that pop
-- Composition: Centered, filling 80% of the frame
-- Quality: Ultra HD, crisp details, visually striking
-- Angle: Slightly angled 3/4 view for depth
-
-IMPORTANT:
-- ONLY the subject, nothing else
-- Should be eye-catching and appetizing (if food)
-- NO text, NO letters, NO words
-- NO background elements, NO surfaces
-- Clean isolated product shot
-
-Think: Professional product photography with transparent background for compositing.`
+The object should be:
+- ${businessName} related
+- Professional and clean
+- Easy to recognize at small sizes`
 
         console.log("🎨 Generating notification icon for:", businessName, "| Hint:", iconHint)
 
