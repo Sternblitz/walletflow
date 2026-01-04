@@ -10,6 +10,8 @@ import { ColorsEditor } from '@/components/wallet/colors-editor'
 import { ThemePicker } from '@/components/wallet/theme-picker'
 import { FieldsEditor } from '@/components/wallet/fields-editor'
 import { ImagesEditor } from '@/components/wallet/images-editor'
+import { LocationsEditor } from '@/components/wallet/locations-editor'
+import { Location } from '@/components/ui/location-picker'
 import {
     ArrowLeft,
     Loader2,
@@ -22,7 +24,8 @@ import {
     LayoutTemplate,
     Sparkles,
     Smartphone,
-    AlertCircle
+    AlertCircle,
+    MapPin
 } from 'lucide-react'
 
 interface Campaign {
@@ -43,6 +46,9 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
     const [campaignId, setCampaignId] = useState<string | null>(null)
     const [campaign, setCampaign] = useState<Campaign | null>(null)
     const [draft, setDraft] = useState<WalletPassDraft | null>(null)
+    // Locations state (separate from draft, part of config)
+    const [locations, setLocations] = useState<Location[]>([])
+
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [pushing, setPushing] = useState(false)
@@ -68,6 +74,10 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                     if (data.campaign.design_assets) {
                         setDraft(data.campaign.design_assets)
                     }
+                    // Load locations from config
+                    if (data.campaign.config?.locations) {
+                        setLocations(data.campaign.config.locations)
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching campaign:', error)
@@ -83,6 +93,12 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
     const handleDraftChange = useCallback((newDraft: WalletPassDraft) => {
         setDraft(newDraft)
         setSaveResult(null) // Clear previous result
+    }, [])
+
+    // Handle locations change
+    const handleLocationsChange = useCallback((newLocations: Location[]) => {
+        setLocations(newLocations)
+        setSaveResult(null)
     }, [])
 
     // Update colors helper
@@ -109,6 +125,7 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                     design_assets: draft,
                     config: {
                         ...campaign?.config,
+                        locations: locations, // Save locations
                         stampEmoji: draft.stampConfig?.icon || '☕',
                         maxStamps: draft.stampConfig?.total || 10
                     }
@@ -147,6 +164,7 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                     design_assets: draft,
                     config: {
                         ...campaign?.config,
+                        locations: locations, // Save locations
                         stampEmoji: draft.stampConfig?.icon || '☕',
                         maxStamps: draft.stampConfig?.total || 10
                     }
@@ -295,6 +313,21 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                             </div>
 
                             <FieldsEditor draft={draft} onChange={handleDraftChange} />
+                        </section>
+
+                        {/* Section 4: Geofencing */}
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                                <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg">
+                                    <MapPin className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold">Standorte</h2>
+                                    <p className="text-sm text-zinc-400">Geofencing & Lockscreen-Nachrichten</p>
+                                </div>
+                            </div>
+
+                            <LocationsEditor locations={locations} onChange={handleLocationsChange} />
                         </section>
 
                     </div>

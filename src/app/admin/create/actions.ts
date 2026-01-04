@@ -154,18 +154,18 @@ export async function createCampaignAction(data: any) {
     }
 
     // 6. Insert Campaign
-    const { error: campaignError } = await supabase.from('campaigns').insert({
+    const { data: campaign, error: campaignError } = await supabase.from('campaigns').insert({
         client_id: client.id,
         name: "Start Kampagne",
         concept: data.concept,
         config: cleanConfig,
         design_assets: cleanDesignConfig,
-    })
+    }).select().single()
 
     if (campaignError) {
         console.error("Campaign insert error:", campaignError)
         return { success: false, error: `Kampagne konnte nicht gespeichert werden: ${campaignError.message}` }
     }
 
-    return { success: true, slug: uniqueSlug }
+    return { success: true, slug: uniqueSlug, id: campaign.id }
 }
