@@ -20,7 +20,7 @@ export async function POST(
     // For Google: is_installed_on_android = true OR verification_status = 'verified'
     const { data: passes, error: passesError } = await supabase
         .from('passes')
-        .select('id, current_state, wallet_type, is_installed_on_android, verification_status')
+        .select('id, current_state, wallet_type, is_installed_on_android, is_installed_on_ios, verification_status')
         .eq('campaign_id', campaignId)
 
     if (passesError) {
@@ -28,16 +28,14 @@ export async function POST(
         return NextResponse.json({ error: 'Failed to fetch passes' }, { status: 500 })
     }
 
-    // Filter to only verified/registered passes
+    // Filter to only verified/registered passes - EXACTLY MATCHING customer list logic
+    // verification_status = 'verified' OR is_installed_on_ios = true OR is_installed_on_android = true
     const verifiedPasses = (passes || []).filter(p => {
-        if (p.wallet_type === 'google') {
-            // Google: check if installed or verified
-            return p.is_installed_on_android === true || p.verification_status === 'verified'
-        } else {
-            // Apple: we'll check for device registrations when sending
-            // For now, include all Apple passes (APNs will fail for unregistered)
-            return true
-        }
+        const isVerified = p.verification_status === 'verified'
+        const isInstalledIos = p.is_installed_on_ios === true
+        const isInstalledAndroid = p.is_installed_on_android === true
+
+        return isVerified || isInstalledIos || isInstalledAndroid
     })
 
     if (verifiedPasses.length === 0) {
