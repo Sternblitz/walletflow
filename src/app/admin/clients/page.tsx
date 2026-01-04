@@ -46,7 +46,7 @@ export default async function ClientsPage() {
     const clients = await getClients()
 
     return (
-        <div className="max-w-[1600px] mx-auto p-6 space-y-8">
+        <div className="max-w-[1600px] mx-auto p-6 md:p-8 pt-6 space-y-8">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div className="space-y-2">
