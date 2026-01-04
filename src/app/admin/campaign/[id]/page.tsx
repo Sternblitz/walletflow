@@ -18,7 +18,8 @@ import {
     Trash2,
     Copy,
     ExternalLink,
-    QrCode
+    QrCode,
+    Printer
 } from "lucide-react"
 
 interface Pass {
@@ -274,6 +275,16 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                                 />
                             </div>
                         </div>
+
+                        <div className="flex justify-center">
+                            <Link href={`/admin/campaign/${campaignId}/marketing`}>
+                                <Button variant="secondary" size="sm" className="w-full">
+                                    <Printer className="w-3 h-3 mr-2" />
+                                    Aufsteller & Flyer drucken
+                                </Button>
+                            </Link>
+                        </div>
+
                         <p className="text-center text-xs text-zinc-500">
                             Scan mich, um den Pass zu installieren
                         </p>
