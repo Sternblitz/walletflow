@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { WalletPassDraft } from '@/lib/wallet/types'
 import { PassPreview } from '@/components/wallet/pass-preview'
 import { ColorsEditor } from '@/components/wallet/colors-editor'
@@ -151,8 +152,17 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                 method: 'POST'
             })
             const pushResult = await pushRes.json()
+
+            if (pushResult.success) {
+                toast.success(`Gespeichert & an ${pushResult.count} Kunden gesendet!`)
+                // Redirect to dashboard to show link and passes
+                router.push(`/admin/campaign/${campaignId}`)
+            } else {
+                toast.error("Push Fehler: " + (pushResult.error || 'Unbekannt'))
+            }
         } catch (error) {
             console.error(error)
+            toast.error("Fehler beim Starten der Kampagne")
         } finally {
             setPushing(false)
         }
