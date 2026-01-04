@@ -208,148 +208,162 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
     if (!draft || !campaign) return null
 
     return (
-        // Negative margin to breakout of layout padding, h-[calc(100vh-5rem)] to fit exactly
-        <div className="h-[calc(100vh-5rem)] -m-4 bg-black text-white flex flex-col overflow-hidden rounded-xl border border-white/10">
-            {/* Top Bar */}
-            <div className="border-b border-white/10 bg-zinc-900/50 backdrop-blur-xl shrink-0 z-50">
-                <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link
-                            href={`/admin/campaign/${campaignId}`}
-                            className="p-2 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white"
-                        >
-                            <ArrowLeft size={20} />
-                        </Link>
-                        <div>
-                            <h1 className="text-sm font-medium text-zinc-400">Design Editor</h1>
-                            <p className="font-semibold">{campaign.name}</p>
+        <div className="flex flex-col h-full bg-zinc-950 overflow-hidden">
+
+            {/* 1. Command Bar (Top Navigation) */}
+            <div className="h-16 shrink-0 border-b border-white/5 bg-zinc-950/80 backdrop-blur-xl flex items-center justify-between px-6 z-50">
+                <div className="flex items-center gap-6">
+                    <Link
+                        href="/admin"
+                        className="p-2 rounded-full hover:bg-white/5 text-zinc-400 hover:text-white transition-colors"
+                        title="Zurück zum Dashboard"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </Link>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Editor</span>
+                            <div className="w-1 h-1 rounded-full bg-zinc-700" />
+                            <span className="text-xs text-green-500 font-medium flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                Live Draft
+                            </span>
                         </div>
+                        <h1 className="text-lg font-bold text-white">{campaign?.name || 'Lade Kampagne...'}</h1>
                     </div>
+                </div>
 
-                    <div className="flex items-center gap-3">
-                        {saveResult && (
-                            <div className={`text-sm px-3 py-1.5 rounded-full flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${saveResult.success ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-                                }`}>
-                                {saveResult.success ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-                                {saveResult.message}
-                            </div>
-                        )}
-
-                        <Button
-                            variant="ghost"
-                            onClick={handleSave}
-                            disabled={saving || pushing}
-                            className="text-zinc-400 hover:text-white"
-                        >
-                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                            Speichern
-                        </Button>
-
-                        <Button
-                            onClick={handleSaveAndPush}
-                            disabled={saving || pushing}
-                            className="bg-white text-black hover:bg-zinc-200"
-                        >
-                            {pushing ? (
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            ) : (
-                                <Send className="w-4 h-4 mr-2" />
-                            )}
-                            Push an Alle
-                        </Button>
-                    </div>
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={saving}
+                        onClick={handleSave}
+                        className="text-zinc-400 hover:text-white"
+                    >
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                        Speichern
+                    </Button>
+                    <Button
+                        size="sm"
+                        disabled={pushing || !draft}
+                        onClick={handleSaveAndPush}
+                        className="bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.1)] rounded-full px-6"
+                    >
+                        {pushing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                        Push Update
+                    </Button>
                 </div>
             </div>
 
-            {/* Main Editor Area - Split Screen */}
-            <div className="flex-1 flex overflow-hidden">
-                {/* Left: Scrollable Editor Settings */}
-                <div className="w-full lg:w-[45%] xl:w-[40%] overflow-y-auto border-r border-white/10 bg-zinc-900/30">
-                    <div className="p-6 space-y-12 pb-32">
+            {/* 2. Workspace (Split Screen) */}
+            <div className="flex flex-1 overflow-hidden">
 
-                        {/* Section 1: Themes & Colors */}
-                        <section className="space-y-6">
-                            <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-                                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
-                                    <Sparkles className="w-5 h-5 text-white" />
+                {/* Left Panel: Settings (Scrollable) */}
+                <div className="w-[500px] border-r border-white/5 bg-zinc-900/30 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                    <div className="p-6 md:p-8 space-y-12 pb-32">
+
+                        {/* Section: Themes */}
+                        <section className="space-y-4">
+                            <div className="flex items-center gap-2 mb-6">
+                                <div className="p-2 rounded-lg bg-pink-500/10 text-pink-500">
+                                    <Sparkles className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold">Design & Theme</h2>
-                                    <p className="text-sm text-zinc-400">Wähle einen Look für deine Karte</p>
+                                    <h2 className="text-base font-bold text-white">Smart Themes</h2>
+                                    <p className="text-xs text-zinc-500">Wähle einen professionellen Stil.</p>
                                 </div>
                             </div>
+                            <ThemePicker
+                                draft={draft!}
+                                onChange={handleColorChange}
+                            />
+                        </section>
 
-                            <ThemePicker draft={draft} onChange={handleColorChange} />
+                        <div className="h-px bg-white/5" />
 
-                            <div className="pt-6 border-t border-white/5">
-                                <ColorsEditor draft={draft} onChange={handleDraftChange} />
+                        {/* Section: Branding */}
+                        <section className="space-y-4">
+                            <div className="flex items-center gap-2 mb-6">
+                                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+                                    <Palette className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-white">Feinabstimmung</h2>
+                                    <p className="text-xs text-zinc-500">Farben und Branding anpassen.</p>
+                                </div>
+                            </div>
+                            <ColorsEditor
+                                draft={draft!}
+                                onChange={handleDraftChange}
+                            />
+                            <div className="pt-4">
+                                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Logos & Icons</p>
+                                <ImagesEditor
+                                    draft={draft!}
+                                    onChange={handleDraftChange}
+                                />
                             </div>
                         </section>
 
-                        {/* Section 2: Branding & Appearance */}
-                        <section className="space-y-6">
-                            <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-                                <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
-                                    <ImageIcon className="w-5 h-5 text-white" />
+                        <div className="h-px bg-white/5" />
+
+                        {/* Section: Content */}
+                        <section className="space-y-4">
+                            <div className="flex items-center gap-2 mb-6">
+                                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                                    <LayoutTemplate className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold">Logo & Bilder</h2>
-                                    <p className="text-sm text-zinc-400">Mach die Karte zu deiner Marke</p>
+                                    <h2 className="text-base font-bold text-white">Inhalt & Felder</h2>
+                                    <p className="text-xs text-zinc-500">Was steht auf der Karte?</p>
                                 </div>
                             </div>
-
-                            <ImagesEditor draft={draft} onChange={handleDraftChange} />
+                            <FieldsEditor
+                                draft={draft!}
+                                onChange={handleDraftChange}
+                            />
                         </section>
 
-                        {/* Section 3: Content & Fields */}
-                        <section className="space-y-6">
-                            <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-                                <div className="p-2 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg">
-                                    <LayoutTemplate className="w-5 h-5 text-white" />
+                        <div className="h-px bg-white/5" />
+
+                        {/* Section: Locations */}
+                        <section className="space-y-4">
+                            <div className="flex items-center gap-2 mb-6">
+                                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
+                                    <MapPin className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold">Inhalt & Felder</h2>
-                                    <p className="text-sm text-zinc-400">Texte und Label anpassen</p>
+                                    <h2 className="text-base font-bold text-white">Standorte</h2>
+                                    <p className="text-xs text-zinc-500">Geofencing & Lockscreen.</p>
                                 </div>
                             </div>
-
-                            <FieldsEditor draft={draft} onChange={handleDraftChange} />
-                        </section>
-
-                        {/* Section 4: Geofencing */}
-                        <section className="space-y-6">
-                            <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-                                <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg">
-                                    <MapPin className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold">Standorte</h2>
-                                    <p className="text-sm text-zinc-400">Geofencing & Lockscreen-Nachrichten</p>
-                                </div>
-                            </div>
-
-                            <LocationsEditor locations={locations} onChange={handleLocationsChange} />
+                            <LocationsEditor
+                                locations={locations}
+                                onChange={handleLocationsChange}
+                            />
                         </section>
 
                     </div>
                 </div>
 
-                {/* Right: Sticky Preview */}
-                <div className="hidden lg:flex flex-1 bg-black items-center justify-center relative overflow-hidden">
-                    {/* Ambient Background Glow based on pass color */}
-                    <div
-                        className="absolute inset-0 opacity-20 blur-[100px] transition-colors duration-700"
-                        style={{ background: `radial-gradient(circle at center, ${draft.colors.backgroundColor}, transparent 70%)` }}
-                    />
+                {/* Right Panel: Preview (Sticky Stage) */}
+                <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-dot-white/[0.1]" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
 
-                    <div className="relative z-10 flex flex-col items-center gap-6 scale-90 xl:scale-100 transition-transform duration-300">
-                        <div className="px-6 py-2 bg-white/5 backdrop-blur-md rounded-full border border-white/10 text-zinc-400 text-sm flex items-center gap-2">
-                            <Smartphone className="w-4 h-4" />
-                            Live Vorschau (Apple Wallet)
+                    <div className="relative z-10 scale-[0.85] xl:scale-100 transition-all duration-500">
+                        <div className="mb-6 flex justify-center">
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-white/10 text-xs text-zinc-400">
+                                <Smartphone className="w-3 h-3" />
+                                <span>Live Vorschau (Apple Wallet)</span>
+                            </div>
                         </div>
-                        <PassPreview draft={draft} />
+                        <PassPreview draft={draft!} />
                     </div>
                 </div>
+
             </div>
         </div>
     )
