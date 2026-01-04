@@ -263,7 +263,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 {sendResult && (
                     <div className="flex items-center gap-2 text-sm text-green-400 bg-green-500/10 rounded-lg px-4 py-2">
                         <CheckCircle2 className="w-4 h-4" />
-                        Nachricht an {sendResult.sent} von {sendResult.total} Geräten gesendet!
+                        Nachricht an {sendResult.total} {sendResult.total === 1 ? 'Kunden' : 'Kunden'} gesendet!
                     </div>
                 )}
             </div>
