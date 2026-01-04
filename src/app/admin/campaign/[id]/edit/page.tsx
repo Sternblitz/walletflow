@@ -208,9 +208,10 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
     if (!draft || !campaign) return null
 
     return (
-        <div className="min-h-screen bg-black text-white flex flex-col">
+        // Negative margin to breakout of layout padding, h-[calc(100vh-5rem)] to fit exactly
+        <div className="h-[calc(100vh-5rem)] -m-4 bg-black text-white flex flex-col overflow-hidden rounded-xl border border-white/10">
             {/* Top Bar */}
-            <div className="border-b border-white/10 bg-zinc-900/50 backdrop-blur-xl sticky top-0 z-50">
+            <div className="border-b border-white/10 bg-zinc-900/50 backdrop-blur-xl shrink-0 z-50">
                 <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link
