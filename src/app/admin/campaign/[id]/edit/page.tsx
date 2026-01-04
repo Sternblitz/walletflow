@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { WalletPassDraft } from '@/lib/wallet/types'
 import { PassPreview } from '@/components/wallet/pass-preview'
 import { ColorsEditor } from '@/components/wallet/colors-editor'
+import { ThemePicker } from '@/components/wallet/theme-picker'
 import { FieldsEditor } from '@/components/wallet/fields-editor'
 import { ImagesEditor } from '@/components/wallet/images-editor'
 import {
@@ -18,10 +19,11 @@ import {
     Type,
     Image as ImageIcon,
     CheckCircle2,
+    LayoutTemplate,
+    Sparkles,
+    Smartphone,
     AlertCircle
 } from 'lucide-react'
-
-type EditorTab = 'colors' | 'fields' | 'images'
 
 interface Campaign {
     id: string
@@ -41,7 +43,6 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
     const [campaignId, setCampaignId] = useState<string | null>(null)
     const [campaign, setCampaign] = useState<Campaign | null>(null)
     const [draft, setDraft] = useState<WalletPassDraft | null>(null)
-    const [activeTab, setActiveTab] = useState<EditorTab>('colors')
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [pushing, setPushing] = useState(false)
@@ -84,6 +85,15 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
         setSaveResult(null) // Clear previous result
     }, [])
 
+    // Update colors helper
+    const handleColorChange = useCallback((newColors: WalletPassDraft['colors']) => {
+        if (!draft) return
+        handleDraftChange({
+            ...draft,
+            colors: newColors
+        })
+    }, [draft, handleDraftChange])
+
     // Save campaign (without push)
     const handleSave = async () => {
         if (!campaignId || !draft) return
@@ -109,6 +119,8 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
 
             if (result.success) {
                 setSaveResult({ success: true, message: 'Design gespeichert!' })
+                // Auto-hide success message
+                setTimeout(() => setSaveResult(null), 3000)
             } else {
                 setSaveResult({ success: false, message: result.error || 'Fehler beim Speichern' })
             }
@@ -148,16 +160,18 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
 
             // Then push updates to all devices
             const pushRes = await fetch(`/api/campaign/${campaignId}/push-update`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                method: 'POST'
             })
-
             const pushResult = await pushRes.json()
 
-            setSaveResult({
-                success: true,
-                message: `Design gespeichert! Push an ${pushResult.sent || 0} Geräte gesendet.`
-            })
+            if (pushResult.success) {
+                setSaveResult({
+                    success: true,
+                    message: `Gespeichert & an ${pushResult.count} Kunden gesendet!`
+                })
+            } else {
+                setSaveResult({ success: false, message: 'Gespeichert, aber Update fehlgeschlagen' })
+            }
         } catch (error) {
             setSaveResult({ success: false, message: 'Netzwerkfehler' })
         } finally {
@@ -167,131 +181,139 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
 
     if (loading) {
         return (
-            <div className="p-8 max-w-6xl mx-auto flex items-center justify-center min-h-[500px]">
-                <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+            <div className="flex items-center justify-center min-h-screen bg-black">
+                <Loader2 className="w-8 h-8 text-white animate-spin" />
             </div>
         )
     }
 
-    if (!campaign || !draft) {
-        return (
-            <div className="p-8 max-w-6xl mx-auto">
-                <p className="text-zinc-400">Kampagne nicht gefunden.</p>
-                <Link href="/admin">
-                    <Button variant="outline" className="mt-4">Zurück</Button>
-                </Link>
-            </div>
-        )
-    }
-
-    const tabs: { id: EditorTab; label: string; icon: typeof Palette }[] = [
-        { id: 'colors', label: 'Farben', icon: Palette },
-        { id: 'fields', label: 'Inhalte', icon: Type },
-        { id: 'images', label: 'Bilder', icon: ImageIcon }
-    ]
-
-    const passCount = campaign.passes?.length || 0
+    if (!draft || !campaign) return null
 
     return (
-        <div className="p-8 max-w-6xl mx-auto space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Link href={`/admin/campaign/${campaignId}`}>
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                            <ArrowLeft className="w-5 h-5" />
-                        </Button>
-                    </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold">{campaign.client?.name || campaign.name}</h1>
-                        <p className="text-sm text-zinc-400">Design bearbeiten • {passCount} aktive Karten</p>
+        <div className="min-h-screen bg-black text-white flex flex-col">
+            {/* Top Bar */}
+            <div className="border-b border-white/10 bg-zinc-900/50 backdrop-blur-xl sticky top-0 z-50">
+                <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Link
+                            href={`/admin/campaign/${campaignId}`}
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white"
+                        >
+                            <ArrowLeft size={20} />
+                        </Link>
+                        <div>
+                            <h1 className="text-sm font-medium text-zinc-400">Design Editor</h1>
+                            <p className="font-semibold">{campaign.name}</p>
+                        </div>
                     </div>
-                </div>
 
-                <div className="flex gap-3">
-                    <Button
-                        variant="outline"
-                        onClick={handleSave}
-                        disabled={saving || pushing}
-                    >
-                        {saving ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                            <Save className="w-4 h-4 mr-2" />
+                    <div className="flex items-center gap-3">
+                        {saveResult && (
+                            <div className={`text-sm px-3 py-1.5 rounded-full flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${saveResult.success ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                                }`}>
+                                {saveResult.success ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                                {saveResult.message}
+                            </div>
                         )}
-                        Nur Speichern
-                    </Button>
-                    <Button
-                        onClick={handleSaveAndPush}
-                        disabled={saving || pushing}
-                        className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500"
-                    >
-                        {pushing ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                            <Send className="w-4 h-4 mr-2" />
-                        )}
-                        Speichern & Pushen
-                    </Button>
+
+                        <Button
+                            variant="ghost"
+                            onClick={handleSave}
+                            disabled={saving || pushing}
+                            className="text-zinc-400 hover:text-white"
+                        >
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                            Speichern
+                        </Button>
+
+                        <Button
+                            onClick={handleSaveAndPush}
+                            disabled={saving || pushing}
+                            className="bg-white text-black hover:bg-zinc-200"
+                        >
+                            {pushing ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <Send className="w-4 h-4 mr-2" />
+                            )}
+                            Push an Alle
+                        </Button>
+                    </div>
                 </div>
             </div>
 
-            {/* Result Message */}
-            {saveResult && (
-                <div className={`flex items-center gap-2 px-4 py-3 rounded-lg ${saveResult.success
-                        ? 'bg-green-500/10 text-green-400 border border-green-500/30'
-                        : 'bg-red-500/10 text-red-400 border border-red-500/30'
-                    }`}>
-                    {saveResult.success ? (
-                        <CheckCircle2 className="w-5 h-5" />
-                    ) : (
-                        <AlertCircle className="w-5 h-5" />
-                    )}
-                    {saveResult.message}
-                </div>
-            )}
+            {/* Main Editor Area - Split Screen */}
+            <div className="flex-1 flex overflow-hidden">
+                {/* Left: Scrollable Editor Settings */}
+                <div className="w-full lg:w-[45%] xl:w-[40%] overflow-y-auto border-r border-white/10 bg-zinc-900/30">
+                    <div className="p-6 space-y-12 pb-32">
 
-            {/* Editor Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left: Preview */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 flex items-start justify-center">
-                    <PassPreview draft={draft} scale={0.85} />
-                </div>
+                        {/* Section 1: Themes & Colors */}
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
+                                    <Sparkles className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold">Design & Theme</h2>
+                                    <p className="text-sm text-zinc-400">Wähle einen Look für deine Karte</p>
+                                </div>
+                            </div>
 
-                {/* Right: Editor */}
-                <div className="space-y-4">
-                    {/* Tabs */}
-                    <div className="flex gap-2 p-1 bg-zinc-900 rounded-xl">
-                        {tabs.map(tab => {
-                            const Icon = tab.icon
-                            const isActive = activeTab === tab.id
-                            return (
-                                <button
-                                    key={tab.id}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${isActive
-                                            ? 'bg-zinc-800 text-white'
-                                            : 'text-zinc-500 hover:text-zinc-300'
-                                        }`}
-                                    onClick={() => setActiveTab(tab.id)}
-                                >
-                                    <Icon className="w-4 h-4" />
-                                    {tab.label}
-                                </button>
-                            )
-                        })}
-                    </div>
+                            <ThemePicker draft={draft} onChange={handleColorChange} />
 
-                    {/* Tab Content */}
-                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 max-h-[600px] overflow-y-auto">
-                        {activeTab === 'colors' && (
-                            <ColorsEditor draft={draft} onChange={handleDraftChange} />
-                        )}
-                        {activeTab === 'fields' && (
-                            <FieldsEditor draft={draft} onChange={handleDraftChange} />
-                        )}
-                        {activeTab === 'images' && (
+                            <div className="pt-6 border-t border-white/5">
+                                <ColorsEditor draft={draft} onChange={handleDraftChange} />
+                            </div>
+                        </section>
+
+                        {/* Section 2: Branding & Appearance */}
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                                <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+                                    <ImageIcon className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold">Logo & Bilder</h2>
+                                    <p className="text-sm text-zinc-400">Mach die Karte zu deiner Marke</p>
+                                </div>
+                            </div>
+
                             <ImagesEditor draft={draft} onChange={handleDraftChange} />
-                        )}
+                        </section>
+
+                        {/* Section 3: Content & Fields */}
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                                <div className="p-2 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg">
+                                    <LayoutTemplate className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold">Inhalt & Felder</h2>
+                                    <p className="text-sm text-zinc-400">Texte und Label anpassen</p>
+                                </div>
+                            </div>
+
+                            <FieldsEditor draft={draft} onChange={handleDraftChange} />
+                        </section>
+
+                    </div>
+                </div>
+
+                {/* Right: Sticky Preview */}
+                <div className="hidden lg:flex flex-1 bg-black items-center justify-center relative overflow-hidden">
+                    {/* Ambient Background Glow based on pass color */}
+                    <div
+                        className="absolute inset-0 opacity-20 blur-[100px] transition-colors duration-700"
+                        style={{ background: `radial-gradient(circle at center, ${draft.colors.backgroundColor}, transparent 70%)` }}
+                    />
+
+                    <div className="relative z-10 flex flex-col items-center gap-6 scale-90 xl:scale-100 transition-transform duration-300">
+                        <div className="px-6 py-2 bg-white/5 backdrop-blur-md rounded-full border border-white/10 text-zinc-400 text-sm flex items-center gap-2">
+                            <Smartphone className="w-4 h-4" />
+                            Live Vorschau (Apple Wallet)
+                        </div>
+                        <PassPreview draft={draft} />
                     </div>
                 </div>
             </div>
