@@ -715,23 +715,17 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
 
             ctx.drawImage(logoImageEl, x, y, drawWidth, drawHeight)
         } else if (activeTab === 'emoji' && selectedEmoji) {
-            // Draw emoji with position offsets
+            // Draw emoji centered with position offsets
             const emojiSizePixels = (EXPORT_SIZE * emojiSize) / 100
             const centerX = EXPORT_SIZE / 2 + (emojiPosX * EXPORT_SIZE / 100)
-            const centerY = EXPORT_SIZE / 2 + (emojiPosY * EXPORT_SIZE / 100) - (emojiText ? emojiSizePixels * 0.15 : 0)
+            // Add slight offset to fix emoji vertical centering (emojis render slightly high)
+            const verticalOffset = emojiSizePixels * 0.1  // 10% offset to push down
+            const centerY = EXPORT_SIZE / 2 + (emojiPosY * EXPORT_SIZE / 100) + verticalOffset
 
             ctx.font = `${emojiSizePixels}px Arial, sans-serif`
             ctx.textAlign = 'center'
             ctx.textBaseline = 'middle'
             ctx.fillText(selectedEmoji, centerX, centerY)
-
-            // Draw optional text below emoji
-            if (emojiText) {
-                const textSizePixels = (EXPORT_SIZE * emojiTextSize) / 100
-                ctx.font = `bold ${textSizePixels}px Arial, sans-serif`
-                ctx.fillStyle = iconColor
-                ctx.fillText(emojiText, centerX, centerY + emojiSizePixels * 0.55)
-            }
         } else if (activeTab === 'icons' && selectedIcon) {
             // Apply transformations
             ctx.save()
@@ -1416,7 +1410,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
 
                             {/* Right: Preview & Customization */}
                             <div className="w-80 border-l border-white/10 p-4 overflow-y-auto shrink-0 space-y-4">
-                                {/* Preview - Canvas-based for accuracy */}
+                                {/* Preview */}
                                 <div className="p-4 bg-zinc-800/50 rounded-xl border border-white/10">
                                     <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-3">Vorschau</p>
                                     <div
@@ -1424,27 +1418,16 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                         style={{ backgroundColor: bgColor }}
                                     >
                                         <div
-                                            className="absolute flex flex-col items-center justify-center"
+                                            className="absolute"
                                             style={{
                                                 left: `calc(50% + ${emojiPosX}%)`,
-                                                top: `calc(50% + ${emojiPosY}% ${emojiText ? '- 10%' : ''})`,
+                                                // Add 5% offset to match canvas rendering 
+                                                top: `calc(50% + ${emojiPosY}% + ${emojiSize * 0.05}%)`,
                                                 transform: 'translate(-50%, -50%)',
                                                 fontSize: `${emojiSize * 1.2}px`
                                             }}
                                         >
                                             {selectedEmoji || '❓'}
-                                            {emojiText && (
-                                                <span
-                                                    className="font-bold whitespace-nowrap"
-                                                    style={{
-                                                        fontSize: `${emojiTextSize * 0.5}px`,
-                                                        color: iconColor,
-                                                        marginTop: '2px'
-                                                    }}
-                                                >
-                                                    {emojiText}
-                                                </span>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -1496,45 +1479,6 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                 >
                                     ↩ Position zurücksetzen
                                 </button>
-
-                                {/* Text Input */}
-                                <div>
-                                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Text hinzufügen</p>
-                                    <input
-                                        type="text"
-                                        value={emojiText}
-                                        onChange={(e) => setEmojiText(e.target.value)}
-                                        placeholder="z.B. PIZZA, CAFÉ..."
-                                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-zinc-500 text-sm"
-                                        maxLength={20}
-                                    />
-                                    {emojiText && (
-                                        <div className="mt-2">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="text-[10px] text-zinc-500">Text-Größe</span>
-                                                <span className="text-xs text-white font-mono">{emojiTextSize}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="10"
-                                                max="40"
-                                                value={emojiTextSize}
-                                                onChange={(e) => setEmojiTextSize(parseInt(e.target.value))}
-                                                className="w-full accent-yellow-500"
-                                            />
-                                            <div className="flex gap-1 mt-2">
-                                                {QUICK_COLORS.slice(0, 6).map((color) => (
-                                                    <button
-                                                        key={color}
-                                                        onClick={() => setIconColor(color)}
-                                                        className={`w-5 h-5 rounded border ${iconColor === color ? 'border-yellow-500' : 'border-white/20'}`}
-                                                        style={{ backgroundColor: color }}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
 
                                 {/* Background Color */}
                                 <div>
