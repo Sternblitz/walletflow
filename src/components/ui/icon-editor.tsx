@@ -337,7 +337,75 @@ const GERMAN_KEYWORDS: Record<string, string[]> = {
     'flug': ['Plane', 'PlaneTakeoff', 'Cloud'],
 }
 
-
+// Emoji categories for icon selection
+const EMOJI_CATEGORIES: Record<string, { name: string; emojis: string[] }> = {
+    food: {
+        name: '🍕 Essen',
+        emojis: ['🍕', '🍔', '🌭', '🌮', '🌯', '🥙', '🥪', '🍖', '🍗', '🥩', '🥓', '🍟',
+            '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🍤', '🥟', '🥠', '🥡', '🍚', '🍘',
+            '🍙', '🍧', '🍨', '🍦', '🥧', '🍰', '🎂', '🧁', '🍮', '🍭', '🍬', '🍫',
+            '🍿', '🧇', '🥞', '🧈', '🥐', '🥖', '🥨', '🥯', '🍞', '🧀', '🥚', '🍳']
+    },
+    drinks: {
+        name: '🍺 Getränke',
+        emojis: ['☕', '🍵', '🧋', '🥤', '🧃', '🍶', '🍺', '🍻', '🥂', '🍷', '🥃', '🍸',
+            '🍹', '🧉', '🍾', '🫖', '🥛', '🍼', '🧊', '💧', '🌊', '🫗']
+    },
+    beauty: {
+        name: '✂️ Beauty',
+        emojis: ['✂️', '💇', '💇‍♀️', '💇‍♂️', '💅', '💄', '👄', '💋', '💎', '👑', '💍', '🎀',
+            '🌸', '🌺', '🌹', '🌷', '🪷', '💐', '🧴', '🧼', '🧽', '🪥', '🪮', '💆', '💆‍♀️', '💆‍♂️']
+    },
+    fitness: {
+        name: '💪 Sport',
+        emojis: ['💪', '🏋️', '🏋️‍♀️', '🏋️‍♂️', '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉',
+            '🥏', '🎱', '🏓', '🏸', '🥊', '🥋', '⛳', '⛸️', '🎿', '🛷', '🥌', '🎯',
+            '🏃', '🏃‍♀️', '🏃‍♂️', '🚴', '🚴‍♀️', '🚴‍♂️', '🏊', '🏊‍♀️', '🏊‍♂️', '🧘', '🧘‍♀️', '🧘‍♂️']
+    },
+    animals: {
+        name: '🐾 Tiere',
+        emojis: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮',
+            '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🦆', '🦅', '🦉', '🦇', '🐺',
+            '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐙', '🦑', '🦐', '🦀', '🐠',
+            '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🦎', '🐍', '🐢', '🦜', '🐾', '🦮', '🐕‍🦺']
+    },
+    retail: {
+        name: '🛍️ Shopping',
+        emojis: ['🛍️', '🛒', '🏪', '🏬', '🏢', '💳', '💰', '💵', '💶', '💷', '💴', '🪙',
+            '💎', '🎁', '📦', '🏷️', '🎟️', '🧾', '💼', '👜', '👛', '🎒', '👓', '🕶️',
+            '👔', '👗', '👠', '👟', '👒', '🎩', '👑', '💍', '⌚', '📱']
+    },
+    services: {
+        name: '🔧 Services',
+        emojis: ['🔧', '🔨', '⚙️', '🔩', '🪛', '🪚', '🔑', '🗝️', '🔐', '🔒', '🔓', '🏠',
+            '🏡', '🏗️', '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🛻',
+            '✈️', '🚀', '🛸', '⛵', '🚢', '⛽', '🔌', '💡', '📞', '📧', '💬']
+    },
+    entertainment: {
+        name: '🎵 Unterhaltung',
+        emojis: ['🎵', '🎶', '🎤', '🎧', '🎷', '🎸', '🎹', '🥁', '🎺', '🎻', '🪕', '🎬',
+            '🎭', '🎪', '🎨', '🖼️', '🎮', '🕹️', '🎲', '🧩', '🎰', '🎢', '🎡', '🎠',
+            '📺', '📻', '📸', '📷', '🎥', '🎞️', '📹', '🎙️']
+    },
+    nature: {
+        name: '🌿 Natur',
+        emojis: ['🌲', '🌳', '🌴', '🌵', '🌾', '🌿', '☘️', '🍀', '🍁', '🍂', '🍃', '🌸',
+            '💐', '🌷', '🌹', '🥀', '🌺', '🌻', '🌼', '🌱', '🪴', '🪻', '🪷', '🍄',
+            '🌰', '🌞', '🌝', '🌛', '⭐', '🌟', '✨', '💫', '🌈', '☀️', '🌙', '❄️']
+    },
+    health: {
+        name: '🏥 Gesundheit',
+        emojis: ['🏥', '💊', '💉', '🩺', '🩹', '🩼', '🩻', '🦷', '👁️', '👃', '👂', '🫀',
+            '🫁', '🧠', '❤️', '🩷', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎',
+            '😷', '🤒', '🤕', '🏃‍♀️', '🧘‍♀️', '🥗', '🍎', '🥦', '🥕', '🧄']
+    },
+    misc: {
+        name: '⭐ Sonstiges',
+        emojis: ['⭐', '🌟', '✨', '💫', '🔥', '💥', '💢', '💯', '❤️', '🧡', '💛', '💚',
+            '💙', '💜', '🤎', '🖤', '🤍', '💝', '💖', '💗', '💓', '💞', '💕', '❣️',
+            '✅', '❌', '⚡', '💎', '🏆', '🥇', '🥈', '🥉', '🎖️', '🏅', '📍', '🎯']
+    }
+}
 // Quick color presets for fast selection
 const QUICK_COLORS = [
     '#FFFFFF', '#000000', '#EF4444', '#F97316', '#EAB308', '#22C55E',
@@ -347,11 +415,15 @@ const QUICK_COLORS = [
 const EXPORT_SIZE = 512
 
 export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000', businessType = '' }: IconEditorProps) {
-    const [activeTab, setActiveTab] = useState<'icons' | 'logo' | 'ai'>('icons')
+    const [activeTab, setActiveTab] = useState<'icons' | 'emoji' | 'logo' | 'ai'>('icons')
     const [selectedCategory, setSelectedCategory] = useState<keyof typeof ICON_CATEGORIES>('food')
     const [selectedIcon, setSelectedIcon] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
     const [iconSource, setIconSource] = useState<IconSource>('lucide')  // Lucide or Phosphor
+
+    // Emoji state
+    const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null)
+    const [emojiCategory, setEmojiCategory] = useState<keyof typeof EMOJI_CATEGORIES>('food')
 
     // Advanced customization controls
     const [iconColor, setIconColor] = useState('#FFFFFF')
@@ -657,6 +729,13 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
             const y = (EXPORT_SIZE - drawHeight) / 2 + (logoPosition.y * scaleFactor)
 
             ctx.drawImage(logoImageEl, x, y, drawWidth, drawHeight)
+        } else if (activeTab === 'emoji' && selectedEmoji) {
+            // Draw emoji
+            const emojiSizePixels = (EXPORT_SIZE * iconSize) / 100
+            ctx.font = `${emojiSizePixels}px Arial, sans-serif`
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillText(selectedEmoji, EXPORT_SIZE / 2, EXPORT_SIZE / 2)
         } else if (activeTab === 'icons' && selectedIcon) {
             // Apply transformations
             ctx.save()
@@ -1002,19 +1081,25 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                         onClick={() => setActiveTab('icons')}
                         className={`flex-1 py-3 text-sm font-medium ${activeTab === 'icons' ? 'text-white bg-white/5 border-b-2 border-green-500' : 'text-zinc-400 hover:text-white'}`}
                     >
-                        🎯 Icon Bibliothek
+                        🎯 Icons
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('emoji')}
+                        className={`flex-1 py-3 text-sm font-medium ${activeTab === 'emoji' ? 'text-white bg-white/5 border-b-2 border-yellow-500' : 'text-zinc-400 hover:text-white'}`}
+                    >
+                        😀 Emojis
                     </button>
                     <button
                         onClick={() => setActiveTab('logo')}
                         className={`flex-1 py-3 text-sm font-medium ${activeTab === 'logo' ? 'text-white bg-white/5 border-b-2 border-green-500' : 'text-zinc-400 hover:text-white'}`}
                     >
-                        📤 Logo hochladen
+                        📤 Logo
                     </button>
                     <button
                         onClick={() => setActiveTab('ai')}
                         className={`flex-1 py-3 text-sm font-medium ${activeTab === 'ai' ? 'text-white bg-white/5 border-b-2 border-green-500' : 'text-zinc-400 hover:text-white'}`}
                     >
-                        🤖 AI generieren
+                        🤖 AI
                     </button>
                 </div>
 
@@ -1290,6 +1375,105 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                                     <RotateCcw size={12} />
                                     Zurücksetzen
                                 </button>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Emoji Tab */}
+                    {activeTab === 'emoji' && (
+                        <>
+                            {/* Left: Emoji Categories */}
+                            <div className="w-44 border-r border-white/10 p-3 overflow-y-auto shrink-0">
+                                <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Emoji Kategorien</p>
+                                {Object.entries(EMOJI_CATEGORIES).map(([key, cat]) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => setEmojiCategory(key as keyof typeof EMOJI_CATEGORIES)}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition-all ${emojiCategory === key
+                                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                            : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                                            }`}
+                                    >
+                                        {cat.name}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Middle: Emoji Grid */}
+                            <div className="flex-1 p-4 overflow-y-auto">
+                                <p className="text-sm text-zinc-400 mb-4">Wähle ein Emoji als Icon:</p>
+                                <div className="grid grid-cols-8 gap-2">
+                                    {EMOJI_CATEGORIES[emojiCategory].emojis.map((emoji) => (
+                                        <button
+                                            key={emoji}
+                                            onClick={() => { setSelectedEmoji(emoji); setSelectedIcon(null); }}
+                                            className={`aspect-square rounded-xl flex items-center justify-center text-3xl transition-all ${selectedEmoji === emoji
+                                                ? 'bg-yellow-500/20 ring-2 ring-yellow-500 scale-110'
+                                                : 'bg-white/5 hover:bg-white/10 border border-white/10 hover:scale-105'
+                                                }`}
+                                        >
+                                            {emoji}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Right: Preview & Customization */}
+                            <div className="w-80 border-l border-white/10 p-4 overflow-y-auto shrink-0 space-y-4">
+                                {/* Preview */}
+                                <div className="p-4 bg-zinc-800/50 rounded-xl border border-white/10">
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-3">Vorschau</p>
+                                    <div
+                                        className="w-32 h-32 mx-auto rounded-2xl flex items-center justify-center border-2 border-white/20"
+                                        style={{ backgroundColor: bgColor }}
+                                    >
+                                        <span style={{ fontSize: `${iconSize * 1.2}px` }}>
+                                            {selectedEmoji || '❓'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Emoji Size */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Emoji-Größe</p>
+                                        <span className="text-xs text-white font-mono">{iconSize}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="20"
+                                        max="90"
+                                        value={iconSize}
+                                        onChange={(e) => setIconSize(parseInt(e.target.value))}
+                                        className="w-full accent-yellow-500"
+                                    />
+                                </div>
+
+                                {/* Background Color */}
+                                <div>
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Hintergrundfarbe</p>
+                                    <div className="flex gap-2 items-center">
+                                        <div className="relative w-10 h-10 rounded-lg overflow-hidden border-2 border-white/20 shrink-0">
+                                            <input
+                                                type="color"
+                                                value={bgColor}
+                                                onChange={(e) => setBgColor(e.target.value)}
+                                                className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                                            />
+                                            <div className="w-full h-full" style={{ backgroundColor: bgColor }} />
+                                        </div>
+                                        <div className="flex gap-1 flex-wrap flex-1">
+                                            {QUICK_COLORS.slice(0, 8).map((color) => (
+                                                <button
+                                                    key={color}
+                                                    onClick={() => setBgColor(color)}
+                                                    className={`w-6 h-6 rounded-md border-2 transition-transform hover:scale-110 ${bgColor === color ? 'border-yellow-500 scale-110' : 'border-transparent'}`}
+                                                    style={{ backgroundColor: color }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </>
                     )}
@@ -1600,6 +1784,7 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
                         onClick={handleSave}
                         disabled={
                             (activeTab === 'icons' && !selectedIcon) ||
+                            (activeTab === 'emoji' && !selectedEmoji) ||
                             (activeTab === 'logo' && !logoImageEl) ||
                             (activeTab === 'ai' && !aiResult)
                         }
