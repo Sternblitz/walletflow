@@ -15,7 +15,10 @@ import {
     Stamp,
     MessageSquare,
     RefreshCw,
-    Trash2
+    Trash2,
+    Copy,
+    ExternalLink,
+    QrCode
 } from "lucide-react"
 
 interface Pass {
@@ -224,49 +227,104 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                     </div>
                 </div>
             )}
-            <div className="rounded-xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 p-6 space-y-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
-                        <MessageSquare className="w-5 h-5 text-white" />
+
+            {/* Distribution Card & Message Card Grid */}
+            <div className="grid md:grid-cols-2 gap-4">
+                <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                            <QrCode className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h2 className="font-semibold text-white">Dein Kampagnen-Link</h2>
+                            <p className="text-xs text-zinc-400">Teile diesen Link oder QR-Code mit deinen Kunden</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="font-semibold text-white">Nachricht an alle Kunden</h2>
-                        <p className="text-xs text-white/60">Schicke eine Push-Benachrichtigung an alle {campaign.passes?.length || 0} Kunden</p>
+
+                    <div className="p-4 rounded-lg bg-black/50 border border-white/5 space-y-4">
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-zinc-900 rounded-md border border-white/10 px-3 py-2 text-sm text-zinc-300 font-mono truncate">
+                                https://walletflow-blush.vercel.app/start/{campaign.client?.slug}
+                            </div>
+                            <Button
+                                size="icon"
+                                variant="outline"
+                                className="shrink-0"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`https://walletflow-blush.vercel.app/start/${campaign.client?.slug}`)
+                                    alert('Link kopiert!')
+                                }}
+                            >
+                                <Copy className="w-4 h-4" />
+                            </Button>
+                            <Link href={`/start/${campaign.client?.slug}`} target="_blank">
+                                <Button size="icon" variant="outline" className="shrink-0">
+                                    <ExternalLink className="w-4 h-4" />
+                                </Button>
+                            </Link>
+                        </div>
+
+                        <div className="flex justify-center pt-2">
+                            <div className="p-2 bg-white rounded-xl">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://walletflow-blush.vercel.app/start/${campaign.client?.slug}`}
+                                    alt="QR Code"
+                                    className="w-32 h-32"
+                                />
+                            </div>
+                        </div>
+                        <p className="text-center text-xs text-zinc-500">
+                            Scan mich, um den Pass zu installieren
+                        </p>
                     </div>
                 </div>
 
-                <Textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="🎉 Heute 2x Stempel auf alle Getränke!"
-                    className="bg-black/30 border-white/10 text-white placeholder:text-white/30 min-h-[80px]"
-                />
-
-                <div className="flex items-center justify-between">
-                    <div className="text-xs text-white/40">
-                        {message.length} / 100 Zeichen empfohlen
+                <div className="rounded-xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+                            <MessageSquare className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <h2 className="font-semibold text-white">Nachricht an alle Kunden</h2>
+                            <p className="text-xs text-white/60">Schicke eine Push-Benachrichtigung an alle {campaign.passes?.length || 0} Kunden</p>
+                        </div>
                     </div>
-                    <Button
-                        onClick={sendMessage}
-                        disabled={!message.trim() || sending}
-                        className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500"
-                    >
-                        {sending ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                            <Send className="w-4 h-4 mr-2" />
-                        )}
-                        Jetzt senden
-                    </Button>
+
+                    <Textarea
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="🎉 Heute 2x Stempel auf alle Getränke!"
+                        className="bg-black/30 border-white/10 text-white placeholder:text-white/30 min-h-[80px]"
+                    />
+
+                    <div className="flex items-center justify-between">
+                        <div className="text-xs text-white/40">
+                            {message.length} / 100 Zeichen empfohlen
+                        </div>
+                        <Button
+                            onClick={sendMessage}
+                            disabled={!message.trim() || sending}
+                            className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500"
+                        >
+                            {sending ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <Send className="w-4 h-4 mr-2" />
+                            )}
+                            Jetzt senden
+                        </Button>
+                    </div>
+
+                    {sendResult && (
+                        <div className="flex items-center gap-2 text-sm text-green-400 bg-green-500/10 rounded-lg px-4 py-2">
+                            <CheckCircle2 className="w-4 h-4" />
+                            Nachricht an {sendResult.total} {sendResult.total === 1 ? 'Kunden' : 'Kunden'} gesendet!
+                        </div>
+                    )}
                 </div>
-
-                {sendResult && (
-                    <div className="flex items-center gap-2 text-sm text-green-400 bg-green-500/10 rounded-lg px-4 py-2">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Nachricht an {sendResult.total} {sendResult.total === 1 ? 'Kunden' : 'Kunden'} gesendet!
-                    </div>
-                )}
             </div>
+
 
             {/* Customer List */}
             <div className="space-y-4">
@@ -358,6 +416,6 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     )
 }
