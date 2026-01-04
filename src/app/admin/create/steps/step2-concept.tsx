@@ -69,61 +69,69 @@ export function Step2Concept({ data, update }: Step2ConceptProps) {
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-            <div className="space-y-2">
-                <h2 className="text-xl font-semibold">Wähle deinen Kartentyp</h2>
-                <p className="text-muted-foreground">Was möchtest du erstellen?</p>
+            <div className="space-y-2 text-center md:text-left">
+                <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">Wähle deinen Kartentyp</h2>
+                <p className="text-zinc-400">Welches Treueprogramm passt zu deinem Business?</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {CARD_TYPES.map((card) => {
                     const Icon = card.icon
                     const isSelected = selected === card.id
+                    const isPopular = card.id === 'STAMP_CARD'
 
                     return (
                         <div
                             key={card.id}
                             onClick={() => update({ concept: card.id })}
                             className={`
-                                cursor-pointer border-2 rounded-xl p-5 flex flex-col gap-4 
-                                transition-all duration-200 hover:scale-[1.02] hover:bg-white/5
+                                relative group cursor-pointer rounded-2xl p-6 flex flex-col gap-4 
+                                border transition-all duration-300 overflow-hidden
                                 ${isSelected
-                                    ? 'border-current shadow-lg'
-                                    : 'border-border opacity-70 hover:opacity-100'
+                                    ? 'border-white/20 bg-white/10 shadow-2xl scale-[1.02]'
+                                    : 'border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/10 hover:scale-[1.01]'
                                 }
                             `}
-                            style={{
-                                borderColor: isSelected ? card.color : undefined,
-                                background: isSelected ? `${card.color}10` : undefined
-                            }}
                         >
-                            {/* Icon */}
-                            <div
-                                className={`w-14 h-14 rounded-xl flex items-center justify-center`}
-                                style={{
-                                    background: isSelected ? card.color : 'rgba(255,255,255,0.1)',
-                                    color: isSelected ? '#000' : '#fff'
-                                }}
-                            >
-                                <Icon className="w-7 h-7" />
-                            </div>
-
-                            {/* Text */}
-                            <div>
-                                <h3 className="font-bold text-lg">{card.name}</h3>
-                                <p className="text-sm text-muted-foreground">{card.subtitle}</p>
-                                <p className="text-xs text-muted-foreground/70 mt-1">{card.description}</p>
-                            </div>
-
-                            {/* Selected Badge */}
+                            {/* Glow Effect */}
                             {isSelected && (
                                 <div
-                                    className="mt-auto self-start px-3 py-1 text-xs font-bold rounded-full uppercase flex items-center gap-1"
-                                    style={{ background: card.color, color: '#000' }}
-                                >
-                                    <Check className="w-3 h-3" />
-                                    Ausgewählt
+                                    className="absolute inset-0 opacity-20 pointer-events-none"
+                                    style={{ background: `radial-gradient(circle at center, ${card.color}, transparent 70%)` }}
+                                />
+                            )}
+
+                            {/* Popular Badge */}
+                            {isPopular && (
+                                <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-lg">
+                                    BELIEBT
                                 </div>
                             )}
+
+                            <div className="relative z-10 flex items-start justify-between">
+                                <div
+                                    className={`p-3 rounded-xl transition-colors duration-300 ${isSelected ? 'bg-white text-black' : 'bg-white/5 text-zinc-400 group-hover:text-white'}`}
+                                >
+                                    <Icon className="w-6 h-6" />
+                                </div>
+                                {isSelected && (
+                                    <div className="w-6 h-6 rounded-full bg-white text-black flex items-center justify-center animate-in zoom-in">
+                                        <Check className="w-3 h-3 stroke-[3]" />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="relative z-10 space-y-1">
+                                <h3 className={`font-bold transition-colors ${isSelected ? 'text-white' : 'text-zinc-300 group-hover:text-white'}`}>
+                                    {card.name}
+                                </h3>
+                                <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/5 border border-white/5 inline-block text-zinc-400">
+                                    {card.subtitle}
+                                </div>
+                                <p className="text-sm text-zinc-500 line-clamp-2 mt-2 group-hover:text-zinc-400 transition-colors">
+                                    {card.description}
+                                </p>
+                            </div>
                         </div>
                     )
                 })}
