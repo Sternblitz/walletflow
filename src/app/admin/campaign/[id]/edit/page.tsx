@@ -18,13 +18,9 @@ import {
     Save,
     Send,
     Palette,
-    Type,
-    Image as ImageIcon,
-    CheckCircle2,
     LayoutTemplate,
     Sparkles,
     Smartphone,
-    AlertCircle,
     MapPin
 } from 'lucide-react'
 
@@ -46,7 +42,6 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
     const [campaignId, setCampaignId] = useState<string | null>(null)
     const [campaign, setCampaign] = useState<Campaign | null>(null)
     const [draft, setDraft] = useState<WalletPassDraft | null>(null)
-    // Locations state (separate from draft, part of config)
     const [locations, setLocations] = useState<Location[]>([])
 
     const [loading, setLoading] = useState(true)
@@ -54,12 +49,10 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
     const [pushing, setPushing] = useState(false)
     const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
-    // Get campaign ID from params
     useEffect(() => {
         params.then(p => setCampaignId(p.id))
     }, [params])
 
-    // Fetch campaign data
     useEffect(() => {
         if (!campaignId) return
 
@@ -70,11 +63,9 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
 
                 if (data.campaign) {
                     setCampaign(data.campaign)
-                    // Load design_assets as draft
                     if (data.campaign.design_assets) {
                         setDraft(data.campaign.design_assets)
                     }
-                    // Load locations from config
                     if (data.campaign.config?.locations) {
                         setLocations(data.campaign.config.locations)
                     }
@@ -89,19 +80,16 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
         fetchCampaign()
     }, [campaignId])
 
-    // Handle draft changes
     const handleDraftChange = useCallback((newDraft: WalletPassDraft) => {
         setDraft(newDraft)
-        setSaveResult(null) // Clear previous result
+        setSaveResult(null)
     }, [])
 
-    // Handle locations change
     const handleLocationsChange = useCallback((newLocations: Location[]) => {
         setLocations(newLocations)
         setSaveResult(null)
     }, [])
 
-    // Update colors helper
     const handleColorChange = useCallback((newColors: WalletPassDraft['colors']) => {
         if (!draft) return
         handleDraftChange({
@@ -110,13 +98,9 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
         })
     }, [draft, handleDraftChange])
 
-    // Save campaign (without push)
     const handleSave = async () => {
         if (!campaignId || !draft) return
-
         setSaving(true)
-        setSaveResult(null)
-
         try {
             const res = await fetch(`/api/campaign/${campaignId}/update`, {
                 method: 'POST',
@@ -125,38 +109,28 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                     design_assets: draft,
                     config: {
                         ...campaign?.config,
-                        locations: locations, // Save locations
+                        locations: locations,
                         stampEmoji: draft.stampConfig?.icon || '☕',
                         maxStamps: draft.stampConfig?.total || 10
                     }
                 })
             })
-
             const result = await res.json()
-
             if (result.success) {
                 setSaveResult({ success: true, message: 'Design gespeichert!' })
-                // Auto-hide success message
                 setTimeout(() => setSaveResult(null), 3000)
-            } else {
-                setSaveResult({ success: false, message: result.error || 'Fehler beim Speichern' })
             }
         } catch (error) {
-            setSaveResult({ success: false, message: 'Netzwerkfehler' })
+            console.error(error)
         } finally {
             setSaving(false)
         }
     }
 
-    // Save and push to all devices
     const handleSaveAndPush = async () => {
         if (!campaignId || !draft) return
-
         setPushing(true)
-        setSaveResult(null)
-
         try {
-            // First save
             const saveRes = await fetch(`/api/campaign/${campaignId}/update`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -164,34 +138,21 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                     design_assets: draft,
                     config: {
                         ...campaign?.config,
-                        locations: locations, // Save locations
+                        locations: locations,
                         stampEmoji: draft.stampConfig?.icon || '☕',
                         maxStamps: draft.stampConfig?.total || 10
                     }
                 })
             })
 
-            if (!saveRes.ok) {
-                setSaveResult({ success: false, message: 'Fehler beim Speichern' })
-                return
-            }
+            if (!saveRes.ok) return
 
-            // Then push updates to all devices
             const pushRes = await fetch(`/api/campaign/${campaignId}/push-update`, {
                 method: 'POST'
             })
             const pushResult = await pushRes.json()
-
-            if (pushResult.success) {
-                setSaveResult({
-                    success: true,
-                    message: `Gespeichert & an ${pushResult.count} Kunden gesendet!`
-                })
-            } else {
-                setSaveResult({ success: false, message: 'Gespeichert, aber Update fehlgeschlagen' })
-            }
         } catch (error) {
-            setSaveResult({ success: false, message: 'Netzwerkfehler' })
+            console.error(error)
         } finally {
             setPushing(false)
         }
@@ -208,162 +169,176 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
     if (!draft || !campaign) return null
 
     return (
-        <div className="flex flex-col h-full bg-zinc-950 overflow-hidden">
+        <div className="flex flex-col h-full bg-black/95 items-center justify-center p-4">
 
-            {/* 1. Command Bar (Top Navigation) */}
-            <div className="h-16 shrink-0 border-b border-white/5 bg-zinc-950/80 backdrop-blur-xl flex items-center justify-between px-6 z-50">
-                <div className="flex items-center gap-6">
-                    <Link
-                        href="/admin"
-                        className="p-2 rounded-full hover:bg-white/5 text-zinc-400 hover:text-white transition-colors"
-                        title="Zurück zum Dashboard"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </Link>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Editor</span>
-                            <div className="w-1 h-1 rounded-full bg-zinc-700" />
-                            <span className="text-xs text-green-500 font-medium flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                Live Draft
-                            </span>
+            {/* CENTRAL WORKSPACE ISLAND */}
+            <div className="w-full max-w-[1700px] h-[calc(100vh-3rem)] bg-zinc-950 rounded-[2.5rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-500">
+
+                {/* 1. Command Bar */}
+                <div className="h-18 shrink-0 border-b border-white/5 bg-zinc-900/60 backdrop-blur-xl flex items-center justify-between px-8 z-50">
+                    <div className="flex items-center gap-6">
+                        <Link
+                            href="/admin"
+                            className="group flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
+                            title="Zurück"
+                        >
+                            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-sm font-medium">Dashboard</span>
+                        </Link>
+                        <div className="h-8 w-px bg-white/10" />
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Draft Mode</span>
+                                <div className="w-1 h-1 rounded-full bg-zinc-700" />
+                                <span className="text-[10px] text-green-500 font-medium flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                    Unsaved Changes
+                                </span>
+                            </div>
+                            <h1 className="text-xl font-bold text-white tracking-tight">{campaign?.name || 'Neuer Entwurf'}</h1>
                         </div>
-                        <h1 className="text-lg font-bold text-white">{campaign?.name || 'Lade Kampagne...'}</h1>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-4 rounded-full"
+                            onClick={() => router.push('/admin')}
+                        >
+                            Verwerfen
+                        </Button>
+                        <div className="h-4 w-px bg-white/10 mx-2" />
+                        <Button
+                            variant="ghost"
+                            size="lg"
+                            disabled={saving}
+                            onClick={handleSave}
+                            className="text-zinc-400 hover:text-white rounded-full px-6"
+                        >
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                            Speichern
+                        </Button>
+                        <Button
+                            size="lg"
+                            disabled={pushing || !draft}
+                            onClick={handleSaveAndPush}
+                            className="bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.1)] rounded-full px-8 font-medium"
+                        >
+                            {pushing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                            Kampagne Starten
+                        </Button>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={saving}
-                        onClick={handleSave}
-                        className="text-zinc-400 hover:text-white"
-                    >
-                        {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                        Speichern
-                    </Button>
-                    <Button
-                        size="sm"
-                        disabled={pushing || !draft}
-                        onClick={handleSaveAndPush}
-                        className="bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.1)] rounded-full px-6"
-                    >
-                        {pushing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                        Push Update
-                    </Button>
-                </div>
-            </div>
+                {/* 2. Workspace (Split Screen) */}
+                <div className="flex flex-1 overflow-hidden">
 
-            {/* 2. Workspace (Split Screen) */}
-            <div className="flex flex-1 overflow-hidden">
+                    {/* Left Panel: Settings */}
+                    <div className="w-[500px] border-r border-white/5 bg-zinc-900/30 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                        <div className="p-6 md:p-8 space-y-12 pb-32">
 
-                {/* Left Panel: Settings (Scrollable) */}
-                <div className="w-[500px] border-r border-white/5 bg-zinc-900/30 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                    <div className="p-6 md:p-8 space-y-12 pb-32">
-
-                        {/* Section: Themes */}
-                        <section className="space-y-4">
-                            <div className="flex items-center gap-2 mb-6">
-                                <div className="p-2 rounded-lg bg-pink-500/10 text-pink-500">
-                                    <Sparkles className="w-5 h-5" />
+                            {/* Themes */}
+                            <section className="space-y-4">
+                                <div className="flex items-center gap-2 mb-6">
+                                    <div className="p-2 rounded-lg bg-pink-500/10 text-pink-500">
+                                        <Sparkles className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-base font-bold text-white">Smart Themes</h2>
+                                        <p className="text-xs text-zinc-500">Wähle einen professionellen Stil.</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-base font-bold text-white">Smart Themes</h2>
-                                    <p className="text-xs text-zinc-500">Wähle einen professionellen Stil.</p>
-                                </div>
-                            </div>
-                            <ThemePicker
-                                draft={draft!}
-                                onChange={handleColorChange}
-                            />
-                        </section>
+                                <ThemePicker
+                                    draft={draft!}
+                                    onChange={handleColorChange}
+                                />
+                            </section>
 
-                        <div className="h-px bg-white/5" />
+                            <div className="h-px bg-white/5" />
 
-                        {/* Section: Branding */}
-                        <section className="space-y-4">
-                            <div className="flex items-center gap-2 mb-6">
-                                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
-                                    <Palette className="w-5 h-5" />
+                            {/* Branding */}
+                            <section className="space-y-4">
+                                <div className="flex items-center gap-2 mb-6">
+                                    <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+                                        <Palette className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-base font-bold text-white">Feinabstimmung</h2>
+                                        <p className="text-xs text-zinc-500">Farben und Branding anpassen.</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-base font-bold text-white">Feinabstimmung</h2>
-                                    <p className="text-xs text-zinc-500">Farben und Branding anpassen.</p>
-                                </div>
-                            </div>
-                            <ColorsEditor
-                                draft={draft!}
-                                onChange={handleDraftChange}
-                            />
-                            <div className="pt-4">
-                                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Logos & Icons</p>
-                                <ImagesEditor
+                                <ColorsEditor
                                     draft={draft!}
                                     onChange={handleDraftChange}
                                 />
-                            </div>
-                        </section>
-
-                        <div className="h-px bg-white/5" />
-
-                        {/* Section: Content */}
-                        <section className="space-y-4">
-                            <div className="flex items-center gap-2 mb-6">
-                                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
-                                    <LayoutTemplate className="w-5 h-5" />
+                                <div className="pt-4">
+                                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Logos & Icons</p>
+                                    <ImagesEditor
+                                        draft={draft!}
+                                        onChange={handleDraftChange}
+                                    />
                                 </div>
-                                <div>
-                                    <h2 className="text-base font-bold text-white">Inhalt & Felder</h2>
-                                    <p className="text-xs text-zinc-500">Was steht auf der Karte?</p>
+                            </section>
+
+                            <div className="h-px bg-white/5" />
+
+                            {/* Content */}
+                            <section className="space-y-4">
+                                <div className="flex items-center gap-2 mb-6">
+                                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                                        <LayoutTemplate className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-base font-bold text-white">Inhalt & Felder</h2>
+                                        <p className="text-xs text-zinc-500">Was steht auf der Karte?</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <FieldsEditor
-                                draft={draft!}
-                                onChange={handleDraftChange}
-                            />
-                        </section>
+                                <FieldsEditor
+                                    draft={draft!}
+                                    onChange={handleDraftChange}
+                                />
+                            </section>
 
-                        <div className="h-px bg-white/5" />
+                            <div className="h-px bg-white/5" />
 
-                        {/* Section: Locations */}
-                        <section className="space-y-4">
-                            <div className="flex items-center gap-2 mb-6">
-                                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
-                                    <MapPin className="w-5 h-5" />
+                            {/* Locations */}
+                            <section className="space-y-4">
+                                <div className="flex items-center gap-2 mb-6">
+                                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
+                                        <MapPin className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-base font-bold text-white">Standorte</h2>
+                                        <p className="text-xs text-zinc-500">Geofencing & Lockscreen.</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-base font-bold text-white">Standorte</h2>
-                                    <p className="text-xs text-zinc-500">Geofencing & Lockscreen.</p>
-                                </div>
-                            </div>
-                            <LocationsEditor
-                                locations={locations}
-                                onChange={handleLocationsChange}
-                            />
-                        </section>
+                                <LocationsEditor
+                                    locations={locations}
+                                    onChange={handleLocationsChange}
+                                />
+                            </section>
 
-                    </div>
-                </div>
-
-                {/* Right Panel: Preview (Sticky Stage) */}
-                <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
-                    {/* Background Pattern */}
-                    <div className="absolute inset-0 bg-dot-white/[0.1]" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
-
-                    <div className="relative z-10 scale-[0.85] xl:scale-100 transition-all duration-500">
-                        <div className="mb-6 flex justify-center">
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-white/10 text-xs text-zinc-400">
-                                <Smartphone className="w-3 h-3" />
-                                <span>Live Vorschau (Apple Wallet)</span>
-                            </div>
                         </div>
-                        <PassPreview draft={draft!} />
                     </div>
-                </div>
 
+                    {/* Right Panel: Preview */}
+                    <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
+                        <div className="absolute inset-0 bg-dot-white/[0.1]" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+
+                        <div className="relative z-10 scale-[0.85] xl:scale-100 transition-all duration-500">
+                            <div className="mb-6 flex justify-center">
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-white/10 text-xs text-zinc-400">
+                                    <Smartphone className="w-3 h-3" />
+                                    <span>Live Vorschau (Apple Wallet)</span>
+                                </div>
+                            </div>
+                            <PassPreview draft={draft!} />
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
     )
