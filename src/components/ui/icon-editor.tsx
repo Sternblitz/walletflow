@@ -161,39 +161,44 @@ const ICON_CATEGORIES: Record<string, { name: string; emoji: string; icons: stri
     }
 }
 
-// Phosphor Icons - 500+ curated business icons
+// Phosphor Icons - Validated icon names only
 const PHOSPHOR_CATEGORIES: Record<string, { name: string; emoji: string; icons: string[] }> = {
     food: {
         name: 'Gastronomie',
         emoji: '🍕',
         icons: [
-            'Pizza', 'Hamburger', 'ForkKnife', 'CookingPot', 'Coffee', 'Beer', 'Wine', 'Martini',
-            'Cake', 'Cookie', 'IceCream', 'Bread', 'Egg', 'Fish', 'FishSimple', 'Carrot',
-            'Apple', 'Orange', 'Lemon', 'Grains', 'Leaf', 'Plant', 'FlowerLotus', 'Shrimp',
-            'BowlFood', 'CoffeePot', 'TeaBag', 'Brandy', 'SodaCan', 'Champagne', 'BabyCarrot',
-            'Cheese', 'BreadLoaf', 'Popcorn', 'Steak', 'SaltShaker', 'Pepper', 'ChefHat', 'Oven'
+            'ForkKnife', 'CookingPot', 'Cookie', 'Bread', 'Egg', 'Fish', 'Carrot',
+            'Apple', 'Orange', 'Lemon', 'Grains', 'Leaf', 'Plant', 'FlowerLotus',
+            'BowlFood', 'CoffeePot', 'Popcorn', 'Pepper', 'Oven', 'FryingPan'
+        ]
+    },
+    drinks: {
+        name: 'Getränke',
+        emoji: '☕',
+        icons: [
+            'Coffee', 'CoffeePot', 'Wine', 'Beer', 'Martini', 'Champagne', 'BeerBottle',
+            'TeaBag', 'Drop', 'Droplet', 'Bottle', 'Flask'
         ]
     },
     beauty: {
         name: 'Beauty & Wellness',
         emoji: '✂️',
         icons: [
-            'Scissors', 'Comb', 'HairDryer', 'MagicWand', 'Sparkle', 'Star', 'Heart', 'Diamond',
-            'Crown', 'Flower', 'FlowerLotus', 'FlowerTulip', 'Leaf', 'Sun', 'Moon', 'Rainbow',
-            'Drop', 'Droplet', 'Wave', 'Waves', 'Wind', 'Cloud', 'Feather', 'Butterfly',
-            'SmileyWink', 'Smiley', 'HandSoap', 'Bathtub', 'HandPalm', 'Fingerprint', 'EyeClosed',
-            'Palette', 'PaintBrush', 'PaintBrushBroad', 'PaintRoller', 'Eyedropper', 'SprayBottle'
+            'Scissors', 'MagicWand', 'Sparkle', 'Star', 'Heart', 'Diamond',
+            'Crown', 'Flower', 'FlowerLotus', 'FlowerTulip', 'Leaf', 'Sun', 'Moon',
+            'Drop', 'Droplet', 'Wave', 'Wind', 'Cloud', 'Feather', 'Butterfly',
+            'Smiley', 'HandPalm', 'Fingerprint', 'Eye', 'Palette', 'PaintBrush'
         ]
     },
     fitness: {
         name: 'Sport & Fitness',
         emoji: '💪',
         icons: [
-            'Barbell', 'Dumbbell', 'PersonSimpleRun', 'PersonSimpleWalk', 'PersonSimpleBike',
-            'Bicycle', 'Football', 'SoccerBall', 'Basketball', 'TennisBall', 'BaseballCap',
-            'Medal', 'Trophy', 'Target', 'Flame', 'Lightning', 'Heartbeat', 'HeartHalf',
-            'Timer', 'Stopwatch', 'Clock', 'Mountains', 'Tree', 'TreeEvergreen', 'Campfire',
-            'Sneaker', 'TShirt', 'Hoodie', 'Pants', 'Shorts', 'SwimmingPool', 'Waves', 'Anchor'
+            'Barbell', 'PersonSimpleRun', 'PersonSimpleWalk', 'PersonSimpleBike',
+            'Bicycle', 'Football', 'SoccerBall', 'Basketball', 'TennisBall',
+            'Medal', 'Trophy', 'Target', 'Flame', 'Lightning', 'Heartbeat',
+            'Timer', 'Stopwatch', 'Clock', 'Mountains', 'Tree', 'Campfire',
+            'Sneaker', 'TShirt', 'Waves', 'Anchor'
         ]
     },
     retail: {
@@ -203,62 +208,37 @@ const PHOSPHOR_CATEGORIES: Record<string, { name: string; emoji: string; icons: 
             'ShoppingBag', 'ShoppingBagOpen', 'ShoppingCart', 'ShoppingCartSimple', 'Storefront',
             'Handbag', 'Tote', 'Backpack', 'Briefcase', 'Suitcase', 'Package', 'Gift', 'Tag',
             'Barcode', 'QrCode', 'CreditCard', 'Wallet', 'Money', 'CurrencyDollar', 'CurrencyEur',
-            'Receipt', 'Calculator', 'PiggyBank', 'Bank', 'Coins', 'Ticket', 'Percent',
-            'Scales', 'Scan', 'PencilSimple', 'Notebook', 'ClipboardText', 'FileText', 'Files'
+            'Receipt', 'Calculator', 'PiggyBank', 'Bank', 'Coins', 'Ticket', 'Percent', 'Scales'
         ]
     },
     services: {
         name: 'Dienstleistungen',
         emoji: '🔧',
         icons: [
-            'Wrench', 'Hammer', 'Screwdriver', 'Toolbox', 'Gear', 'GearSix', 'FadersHorizontal',
-            'Car', 'CarSimple', 'Taxi', 'Bus', 'Truck', 'Van', 'Motorcycle', 'Scooter',
-            'Key', 'KeyReturn', 'Lock', 'LockOpen', 'Door', 'DoorOpen', 'House', 'HouseSimple',
-            'Buildings', 'BuildingOffice', 'Warehouse', 'Factory', 'Garage', 'Plug', 'Lightbulb',
-            'Phone', 'PhoneCall', 'Envelope', 'At', 'ChatCircle', 'WhatsappLogo', 'TelegramLogo'
-        ]
-    },
-    food_detailed: {
-        name: 'Detailliert Essen',
-        emoji: '🥘',
-        icons: [
-            'Bowl', 'BowlFood', 'BowlSteam', 'Plate', 'Pan', 'Pot', 'Spoon', 'Knife',
-            'Steak', 'Hamburger', 'Pizza', 'HotDog', 'Taco', 'Burrito', 'Sushi', 'Ramen',
-            'Noodles', 'Rice', 'Salad', 'Soup', 'Sandwich', 'Croissant', 'Baguette', 'Pretzel',
-            'Donut', 'Cupcake', 'PieFilled', 'Waffle', 'Pancake', 'IceCreamCone', 'Popsicle',
-            'ChocolateBar', 'Candy', 'Lollipop', 'CandyCane', 'Gingerbread', 'CakeSlice', 'BirthdayCake'
-        ]
-    },
-    drinks: {
-        name: 'Getränke',
-        emoji: '🍺',
-        icons: [
-            'Coffee', 'CoffeePot', 'Mug', 'CupHot', 'TeaBag', 'Teapot', 'SodaCan', 'Bottle',
-            'Wine', 'WineGlass', 'Beer', 'BeerStein', 'Martini', 'Cocktail', 'Champagne', 'Brandy',
-            'Whiskey', 'Glass', 'GlassWater', 'Juice', 'Smoothie', 'Milkshake', 'Lemonade',
-            'Cola', 'EnergyDrink', 'ProteinShake', 'Espresso', 'Cappuccino', 'Latte', 'Mocha'
+            'Wrench', 'Hammer', 'Screwdriver', 'Toolbox', 'Gear', 'GearSix',
+            'Car', 'Taxi', 'Bus', 'Truck', 'Van', 'Motorcycle', 'Scooter',
+            'Key', 'Lock', 'LockOpen', 'Door', 'House', 'HouseSimple',
+            'Buildings', 'BuildingOffice', 'Warehouse', 'Factory', 'Plug', 'Lightbulb',
+            'Phone', 'PhoneCall', 'Envelope', 'At', 'ChatCircle'
         ]
     },
     tech: {
         name: 'Technologie',
         emoji: '💻',
         icons: [
-            'Desktop', 'Laptop', 'DeviceMobile', 'DeviceTablet', 'Watch', 'Headphones', 'Speaker',
-            'Keyboard', 'Mouse', 'Printer', 'Scanner', 'Webcam', 'Camera', 'VideoCamera',
-            'Monitor', 'Tv', 'GameController', 'VirtualReality', 'Robot', 'Cpu', 'HardDrive',
-            'WifiHigh', 'Bluetooth', 'Cloud', 'Database', 'Code', 'Terminal', 'BracketsCurly',
-            'Usb', 'Lightning', 'Battery', 'BatteryCharging', 'Plug', 'Power', 'SignalHigh'
+            'Desktop', 'Laptop', 'DeviceMobile', 'DeviceTablet', 'Headphones', 'Microphone',
+            'Keyboard', 'Mouse', 'Printer', 'Camera', 'VideoCamera',
+            'Monitor', 'Television', 'GameController', 'Robot', 'Cpu', 'HardDrive',
+            'WifiHigh', 'Bluetooth', 'Cloud', 'Database', 'Code', 'Terminal',
+            'Usb', 'Lightning', 'Battery', 'BatteryCharging', 'Plug', 'Power'
         ]
     },
     animals: {
         name: 'Tiere',
         emoji: '🐾',
         icons: [
-            'Dog', 'Cat', 'Bird', 'Fish', 'FishSimple', 'Butterfly', 'Bug', 'Spider', 'Snail',
-            'Rabbit', 'Horse', 'Cow', 'Pig', 'Sheep', 'Chicken', 'Duck', 'Turkey', 'Penguin',
-            'Elephant', 'Lion', 'Tiger', 'Bear', 'Monkey', 'Gorilla', 'Fox', 'Wolf', 'Deer',
-            'Whale', 'Dolphin', 'Shark', 'Octopus', 'Crab', 'Shrimp', 'Turtle', 'Frog', 'Snake',
-            'PawPrint', 'Bone', 'Feather', 'Egg', 'Nest', 'Fishbowl', 'DogBowl', 'CatBowl', 'Collar'
+            'Dog', 'Cat', 'Bird', 'Fish', 'Butterfly', 'Bug', 'Spider',
+            'Horse', 'PawPrint', 'Bone', 'Feather', 'Egg'
         ]
     }
 }
@@ -424,6 +404,11 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
     // Emoji state
     const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null)
     const [emojiCategory, setEmojiCategory] = useState<keyof typeof EMOJI_CATEGORIES>('food')
+    const [emojiSize, setEmojiSize] = useState(60)  // Percentage
+    const [emojiPosX, setEmojiPosX] = useState(0)  // -50 to 50
+    const [emojiPosY, setEmojiPosY] = useState(0)  // -50 to 50
+    const [emojiText, setEmojiText] = useState('')  // Optional text below emoji
+    const [emojiTextSize, setEmojiTextSize] = useState(20)  // Text size percentage
 
     // Advanced customization controls
     const [iconColor, setIconColor] = useState('#FFFFFF')
@@ -730,12 +715,23 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
 
             ctx.drawImage(logoImageEl, x, y, drawWidth, drawHeight)
         } else if (activeTab === 'emoji' && selectedEmoji) {
-            // Draw emoji
-            const emojiSizePixels = (EXPORT_SIZE * iconSize) / 100
+            // Draw emoji with position offsets
+            const emojiSizePixels = (EXPORT_SIZE * emojiSize) / 100
+            const centerX = EXPORT_SIZE / 2 + (emojiPosX * EXPORT_SIZE / 100)
+            const centerY = EXPORT_SIZE / 2 + (emojiPosY * EXPORT_SIZE / 100) - (emojiText ? emojiSizePixels * 0.15 : 0)
+
             ctx.font = `${emojiSizePixels}px Arial, sans-serif`
             ctx.textAlign = 'center'
             ctx.textBaseline = 'middle'
-            ctx.fillText(selectedEmoji, EXPORT_SIZE / 2, EXPORT_SIZE / 2)
+            ctx.fillText(selectedEmoji, centerX, centerY)
+
+            // Draw optional text below emoji
+            if (emojiText) {
+                const textSizePixels = (EXPORT_SIZE * emojiTextSize) / 100
+                ctx.font = `bold ${textSizePixels}px Arial, sans-serif`
+                ctx.fillStyle = iconColor
+                ctx.fillText(emojiText, centerX, centerY + emojiSizePixels * 0.55)
+            }
         } else if (activeTab === 'icons' && selectedIcon) {
             // Apply transformations
             ctx.save()
@@ -1420,38 +1416,129 @@ export function IconEditor({ isOpen, onClose, onSave, backgroundColor = '#000000
 
                             {/* Right: Preview & Customization */}
                             <div className="w-80 border-l border-white/10 p-4 overflow-y-auto shrink-0 space-y-4">
-                                {/* Preview */}
+                                {/* Preview - Canvas-based for accuracy */}
                                 <div className="p-4 bg-zinc-800/50 rounded-xl border border-white/10">
                                     <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-3">Vorschau</p>
                                     <div
-                                        className="w-32 h-32 mx-auto rounded-2xl flex items-center justify-center border-2 border-white/20"
+                                        className="w-32 h-32 mx-auto rounded-2xl border-2 border-white/20 relative overflow-hidden"
                                         style={{ backgroundColor: bgColor }}
                                     >
-                                        <span style={{ fontSize: `${iconSize * 1.2}px` }}>
+                                        <div
+                                            className="absolute flex flex-col items-center justify-center"
+                                            style={{
+                                                left: `calc(50% + ${emojiPosX}%)`,
+                                                top: `calc(50% + ${emojiPosY}% ${emojiText ? '- 10%' : ''})`,
+                                                transform: 'translate(-50%, -50%)',
+                                                fontSize: `${emojiSize * 1.2}px`
+                                            }}
+                                        >
                                             {selectedEmoji || '❓'}
-                                        </span>
+                                            {emojiText && (
+                                                <span
+                                                    className="font-bold whitespace-nowrap"
+                                                    style={{
+                                                        fontSize: `${emojiTextSize * 0.5}px`,
+                                                        color: iconColor,
+                                                        marginTop: '2px'
+                                                    }}
+                                                >
+                                                    {emojiText}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Emoji Size */}
                                 <div>
-                                    <div className="flex justify-between items-center mb-2">
+                                    <div className="flex justify-between items-center mb-1">
                                         <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Emoji-Größe</p>
-                                        <span className="text-xs text-white font-mono">{iconSize}%</span>
+                                        <span className="text-xs text-white font-mono">{emojiSize}%</span>
                                     </div>
                                     <input
                                         type="range"
                                         min="20"
                                         max="90"
-                                        value={iconSize}
-                                        onChange={(e) => setIconSize(parseInt(e.target.value))}
+                                        value={emojiSize}
+                                        onChange={(e) => setEmojiSize(parseInt(e.target.value))}
                                         className="w-full accent-yellow-500"
                                     />
                                 </div>
 
+                                {/* Position Controls */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <span className="text-[10px] text-zinc-500 uppercase">Horizontal</span>
+                                        <input
+                                            type="range"
+                                            min="-30"
+                                            max="30"
+                                            value={emojiPosX}
+                                            onChange={(e) => setEmojiPosX(parseInt(e.target.value))}
+                                            className="w-full accent-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] text-zinc-500 uppercase">Vertikal</span>
+                                        <input
+                                            type="range"
+                                            min="-30"
+                                            max="30"
+                                            value={emojiPosY}
+                                            onChange={(e) => setEmojiPosY(parseInt(e.target.value))}
+                                            className="w-full accent-blue-500"
+                                        />
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => { setEmojiPosX(0); setEmojiPosY(0); }}
+                                    className="text-xs text-zinc-500 hover:text-zinc-300"
+                                >
+                                    ↩ Position zurücksetzen
+                                </button>
+
+                                {/* Text Input */}
+                                <div>
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Text hinzufügen</p>
+                                    <input
+                                        type="text"
+                                        value={emojiText}
+                                        onChange={(e) => setEmojiText(e.target.value)}
+                                        placeholder="z.B. PIZZA, CAFÉ..."
+                                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-zinc-500 text-sm"
+                                        maxLength={20}
+                                    />
+                                    {emojiText && (
+                                        <div className="mt-2">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-[10px] text-zinc-500">Text-Größe</span>
+                                                <span className="text-xs text-white font-mono">{emojiTextSize}%</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="10"
+                                                max="40"
+                                                value={emojiTextSize}
+                                                onChange={(e) => setEmojiTextSize(parseInt(e.target.value))}
+                                                className="w-full accent-yellow-500"
+                                            />
+                                            <div className="flex gap-1 mt-2">
+                                                {QUICK_COLORS.slice(0, 6).map((color) => (
+                                                    <button
+                                                        key={color}
+                                                        onClick={() => setIconColor(color)}
+                                                        className={`w-5 h-5 rounded border ${iconColor === color ? 'border-yellow-500' : 'border-white/20'}`}
+                                                        style={{ backgroundColor: color }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Background Color */}
                                 <div>
-                                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Hintergrundfarbe</p>
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Hintergrund</p>
                                     <div className="flex gap-2 items-center">
                                         <div className="relative w-10 h-10 rounded-lg overflow-hidden border-2 border-white/20 shrink-0">
                                             <input
