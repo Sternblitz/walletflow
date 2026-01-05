@@ -163,7 +163,7 @@ export function SimpleSidebar() {
 
 export function SimpleContent({ children }: { children: React.ReactNode }) {
     return (
-        <main className="flex-1 flex flex-col h-full overflow-hidden bg-zinc-950">
+        <main className="flex-1 flex flex-col h-full overflow-auto bg-zinc-950">
             {children}
         </main>
     )
