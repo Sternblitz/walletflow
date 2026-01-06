@@ -56,7 +56,7 @@ export function Step4Geofence({ data, update }: any) {
 
                         <div className="relative z-10 w-full max-w-[250px] bg-gray-200/20 backdrop-blur-md rounded-lg p-3 text-xs text-white">
                             <div className="flex justify-between mb-1 opacity-70">
-                                <span>PASSIFY</span>
+                                <span>QARD</span>
                                 <span>Now</span>
                             </div>
                             <p className="font-semibold">{data.geofenceMessage || "Your text here..."}</p>

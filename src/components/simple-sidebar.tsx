@@ -68,8 +68,8 @@ export function SimpleSidebar() {
                 "h-16 flex items-center border-b border-white/5 px-4",
                 collapsed ? "justify-center" : "gap-3"
             )}>
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-white to-zinc-400 text-black shadow-lg shrink-0">
-                    <img src="/LOGO.svg" alt="QARD" className="w-5 h-5 invert" />
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 ring-1 ring-white/10 shrink-0 shadow-lg backdrop-blur-md">
+                    <img src="/LOGO.svg" alt="QARD" className="w-6 h-6 object-contain" />
                 </div>
                 {!collapsed && (
                     <div className="flex flex-col">

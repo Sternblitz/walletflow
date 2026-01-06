@@ -68,7 +68,7 @@ export function Step3Design({ data, update }: any) {
         secLabel2: data.designConfig?.secLabel2 || "", // Cleared (Gültig bis removed)
         secValue2: data.designConfig?.secValue2 || "",
         auxLabel1: data.designConfig?.auxLabel1 || "POWERED BY",
-        auxValue1: data.designConfig?.auxValue1 || "PASSIFY",
+        auxValue1: data.designConfig?.auxValue1 || "QARD",
         stampIcon: data.designConfig?.stampIcon || "🎁", // Engaging default icon
     })
 
@@ -309,7 +309,7 @@ export function Step3Design({ data, update }: any) {
                                     <Label className="text-xs uppercase text-muted-foreground pb-2 block">Branding (Karte Unten)</Label>
                                     <div className="flex gap-2">
                                         <Input value={config.auxLabel1} onChange={(e) => handleChange('auxLabel1', e.target.value)} placeholder="POWERED BY" className="text-xs" />
-                                        <Input value={config.auxValue1} onChange={(e) => handleChange('auxValue1', e.target.value)} placeholder="WALLETY" className="text-xs font-bold" />
+                                        <Input value={config.auxValue1} onChange={(e) => handleChange('auxValue1', e.target.value)} placeholder="QARD" className="text-xs font-bold" />
                                     </div>
                                 </div>
                             </div>

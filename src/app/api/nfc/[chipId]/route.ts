@@ -55,7 +55,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
         // 2. Check for existing pass ID in cookie
         const cookieStore = await cookies()
-        const passIdCookie = cookieStore.get(`passify_pass_${campaignId}`)
+        const passIdCookie = cookieStore.get(`pass_${campaignId}`)
         const passId = passIdCookie?.value
 
         if (passId) {

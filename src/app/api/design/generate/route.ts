@@ -71,7 +71,7 @@ Generate a premium design with vibrant accent colors. Return ONLY valid JSON (no
         "secLabel1": "NÄCHSTE PRÄMIE",
         "secValue1": "Matching reward",
         "auxLabel1": "POWERED BY",
-        "auxValue1": "PASSIFY"
+        "auxValue1": "QARD"
     },
     "stampIcon": "matching_emoji",
     "iconDescription": "What icon should represent the stamp (e.g., coffee cup, star, scissors)",
@@ -294,7 +294,7 @@ function generateLocalFullDesign(
             secLabel1: "NÄCHSTE PRÄMIE",
             secValue1: matched.reward,
             auxLabel1: "POWERED BY",
-            auxValue1: "PASSIFY"
+            auxValue1: "QARD"
         },
         stampIcon: matched.emoji,
         style: matched.style

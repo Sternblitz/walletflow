@@ -144,7 +144,7 @@ export const PASS_TEMPLATES: PassTemplate[] = [
                 // Secondary: Reward info
                 secondaryFields: [{ key: 'reward', label: 'PRÄMIE', value: 'Gratis Kaffee' }],
                 // Auxiliary: Powered by (at bottom)
-                auxiliaryFields: [{ key: 'powered', label: 'POWERED BY', value: 'WALLETFLOW' }],
+                auxiliaryFields: [{ key: 'powered', label: 'POWERED BY', value: 'QARD' }],
                 backFields: [
                     { key: 'howto', label: 'SO FUNKTIONIERT\'S', value: 'Bei jedem Besuch den QR-Code scannen lassen. Nach 10 Stempeln erhältst du deinen Gratis Kaffee!' }
                 ]
@@ -181,7 +181,7 @@ export const PASS_TEMPLATES: PassTemplate[] = [
                 // Auxiliary: Bottom info + Visual Progress
                 auxiliaryFields: [
                     { key: 'progress_visual', label: 'FORTSCHRITT', value: '⚪ ⚪ ⚪ ⚪ ⚪ ⚪ ⚪ ⚪ ⚪ ⚪' },
-                    { key: 'powered', label: 'POWERED BY', value: 'WALLETFLOW' }
+                    { key: 'powered', label: 'POWERED BY', value: 'QARD' }
                 ],
                 backFields: []
             },
@@ -211,7 +211,7 @@ export const PASS_TEMPLATES: PassTemplate[] = [
                     { key: 'nr', label: 'MITGLIEDS-NR', value: 'M-2024-0001' },
                     { key: 'since', label: 'DABEI SEIT', value: '2024' }
                 ],
-                auxiliaryFields: [{ key: 'powered', label: 'POWERED BY', value: 'WALLETFLOW' }],
+                auxiliaryFields: [{ key: 'powered', label: 'POWERED BY', value: 'QARD' }],
                 backFields: [
                     { key: 'benefits', label: 'DEINE VORTEILE', value: '✓ Exklusive Rabatte\n✓ Frühzugang zu Events\n✓ Punkte sammeln' }
                 ]
@@ -242,7 +242,7 @@ export const PASS_TEMPLATES: PassTemplate[] = [
                     { key: 'valid', label: 'GÜLTIG BIS', value: '31.12.2025' },
                     { key: 'min', label: 'AB', value: '20€ MBW' }
                 ],
-                auxiliaryFields: [{ key: 'powered', label: 'POWERED BY', value: 'WALLETFLOW' }],
+                auxiliaryFields: [{ key: 'powered', label: 'POWERED BY', value: 'QARD' }],
                 backFields: [
                     { key: 'terms', label: 'BEDINGUNGEN', value: 'Einmalig einlösbar. Nicht mit anderen Aktionen kombinierbar. Nur im Ladengeschäft gültig.' }
                 ]
@@ -273,7 +273,7 @@ export const PASS_TEMPLATES: PassTemplate[] = [
                     { key: 'next', label: 'NÄCHSTES LEVEL', value: 'Silber bei 500' },
                     { key: 'value', label: 'WERT', value: '0,00 €' }
                 ],
-                auxiliaryFields: [{ key: 'powered', label: 'POWERED BY', value: 'WALLETFLOW' }],
+                auxiliaryFields: [{ key: 'powered', label: 'POWERED BY', value: 'QARD' }],
                 backFields: [
                     { key: 'info', label: 'PUNKTE SAMMELN', value: '1€ = 1 Punkt\n100 Punkte = 5€ Rabatt\n\nLevel:\n• Bronze: 0-499\n• Silber: 500-999\n• Gold: 1000+' }
                 ]

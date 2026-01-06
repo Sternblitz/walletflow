@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
         serialNumber: "test-" + Date.now().toString(),
 
         // Visuals
-        logoText: "Passify Test Pass",
+        logoText: "QARD Test Pass",
         backgroundColor: "#000000",
         labelColor: "#ffffff",
         foregroundColor: "#ffffff",
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
             { label: "INFO", value: "If you see this, Apple setup works." },
         ],
 
-        barcodeValue: "https://passify.test/local",
+        barcodeValue: "https://qard.io/local",
     }
 
     try {
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
                 status: 200,
                 headers: {
                     "Content-Type": "application/vnd.apple.pkpass",
-                    "Content-Disposition": "attachment; filename=passify-test.pkpass",
+                    "Content-Disposition": "attachment; filename=qard-test.pkpass",
                 },
             })
         } else {

@@ -30,7 +30,7 @@ export function MarketingDesigner({ campaign }: MarketingDesignerProps) {
     const [subline, setSubline] = useState("Einfach QR-Code scannen und Karte hinzufügen.")
     const [accentColor, setAccentColor] = useState(campaign.color || "#09090b") // Default to black or campaign color
 
-    const qrUrl = `https://walletflow-blush.vercel.app/start/${campaign.slug}`
+    const qrUrl = `https://qard.io/start/${campaign.slug}`
 
     const handlePrint = () => {
         window.print()

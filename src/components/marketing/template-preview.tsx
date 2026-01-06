@@ -44,8 +44,13 @@ export function TemplatePreview({ template, data, className }: TemplatePreviewPr
                     </p>
                 </div>
 
-                <div className="text-xs text-zinc-400 font-mono uppercase tracking-widest mt-auto">
-                    Scannen & Sammeln
+                <div className="flex flex-col items-center gap-1 mt-auto pb-4">
+                    <div className="text-xs text-zinc-400 font-mono uppercase tracking-widest">
+                        Scannen & Sammeln
+                    </div>
+                    <div className="text-[10px] text-zinc-300 font-medium opacity-50">
+                        Powered by QARD
+                    </div>
                 </div>
                 <div className="w-full h-2 absolute bottom-0 left-0" style={{ background: data.accentColor }} />
             </div>
@@ -62,6 +67,7 @@ export function TemplatePreview({ template, data, className }: TemplatePreviewPr
                     <img src={qrImage} alt="QR Code" className="w-32 h-32" />
                 </div>
                 <p className="text-sm font-medium relative z-10">{data.subline}</p>
+                <p className="text-[8px] text-zinc-400 uppercase tracking-widest absolute bottom-2 opacity-50">Powered by QARD</p>
             </div>
         )
     }
@@ -75,6 +81,7 @@ export function TemplatePreview({ template, data, className }: TemplatePreviewPr
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={qrImage} alt="QR Code" className="w-24 h-24" />
                 </div>
+                <p className="text-[6px] text-zinc-400 uppercase tracking-widest opacity-50 absolute bottom-4">Powered by QARD</p>
             </div>
         )
     }

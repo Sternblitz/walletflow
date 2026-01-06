@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
                         textFields,
                         classConfig: {
                             programName: campaign.client?.name || campaign.name || 'Loyalty Card',
-                            issuerName: campaign.client?.name || 'Passify',
+                            issuerName: campaign.client?.name || 'QARD',
                             logoUrl: designAssets.images?.logo?.url,
                             heroImageUrl: designAssets.images?.strip?.url,
                             backgroundColor: designAssets.colors?.backgroundColor,
@@ -172,13 +172,13 @@ export async function GET(req: NextRequest) {
             images: {},
             fields: {
                 headerFields: [{ key: 'customerNumber', label: 'Kunde', value: '' }], // Value will be filled by PassFactory
-                primaryFields: [{ key: 'welcome', label: 'WILLKOMMEN', value: 'Passify Test' }],
+                primaryFields: [{ key: 'welcome', label: 'WILLKOMMEN', value: 'QARD Test' }],
                 secondaryFields: [],
                 auxiliaryFields: [],
                 backFields: []
             },
             barcode: { format: 'PKBarcodeFormatQR', message: campaignId, messageEncoding: 'iso-8859-1' },
-            content: { description: 'Loyalty Card', organizationName: campaign.client?.name || 'Passify' }
+            content: { description: 'Loyalty Card', organizationName: campaign.client?.name || 'QARD' }
         }
         return await generatePass(fallbackDraft, campaign, supabase, platform, { customerName, customerBirthday })
     }
@@ -475,7 +475,7 @@ async function generateGooglePass(
             // Include class config so JWT creates both class + object
             classConfig: {
                 programName: campaign.client?.name || campaign.name || 'Loyalty Card',
-                issuerName: campaign.client?.name || 'Passify',
+                issuerName: campaign.client?.name || 'QARD',
                 logoUrl: draft.images?.logo?.url,
                 heroImageUrl: draft.images?.strip?.url,
                 backgroundColor: draft.colors?.backgroundColor,

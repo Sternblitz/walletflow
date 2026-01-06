@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
             `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`,
             {
                 headers: {
-                    'User-Agent': 'Passify/1.0 (contact@passify.io)' // Required by Nominatim
+                    'User-Agent': 'QARD/1.0 (contact@qard.io)' // Required by Nominatim
                 }
             }
         )

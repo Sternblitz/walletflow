@@ -41,8 +41,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild className="hover:bg-transparent data-[state=open]:bg-transparent">
                             <Link href="/admin">
-                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-white to-zinc-400 text-black shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                                    <img src="/LOGO.svg" alt="QARD" className="size-4 invert" />
+                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/10 text-white shadow-sm backdrop-blur-md">
+                                    <img src="/LOGO.svg" alt="QARD" className="size-5 object-contain" />
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight ml-2">
                                     <span className="truncate font-bold tracking-tight text-white">QARD</span>

@@ -172,7 +172,7 @@ export function Step3DesignV2({ data, update }: Step3DesignProps) {
         secLabel2: data.designConfig?.secLabel2 || "",
         secValue2: data.designConfig?.secValue2 || "",
         auxLabel1: data.designConfig?.auxLabel1 || "POWERED BY",
-        auxValue1: data.designConfig?.auxValue1 || "PASSIFY",
+        auxValue1: data.designConfig?.auxValue1 || "QARD",
         stampIcon: data.designConfig?.stampIcon || "☕️",
     })
 

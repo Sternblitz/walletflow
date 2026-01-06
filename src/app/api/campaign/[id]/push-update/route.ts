@@ -116,7 +116,7 @@ export async function POST(
                 try {
                     // Get client name (handle both array and object from Supabase)
                     const clientData = Array.isArray(campaign.client) ? campaign.client[0] : campaign.client
-                    const clientName = clientData?.name || campaign.name || 'Passify'
+                    const clientName = clientData?.name || campaign.name || 'QARD'
 
                     await googleService.createOrUpdateClass({
                         classId,
