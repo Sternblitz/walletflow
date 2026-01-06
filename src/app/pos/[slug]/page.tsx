@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { Camera, X, RotateCcw, Zap, BarChart3, Send, Users, TrendingUp, Wallet, Settings } from 'lucide-react'
+import { Camera, X, RotateCcw, Zap, BarChart3, Send, Users, TrendingUp, Wallet, Settings, LogOut, ChevronRight, Check, Sparkles } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 type Role = 'none' | 'staff' | 'chef'
 type Mode = 'idle' | 'scanning' | 'camera' | 'result'
@@ -16,6 +17,7 @@ export default function POSPage() {
     const [pin, setPin] = useState('')
     const [authError, setAuthError] = useState<string | null>(null)
     const [campaignData, setCampaignData] = useState<any>(null)
+    const [label, setLabel] = useState<string>('')
 
     // Scanner state
     const [mode, setMode] = useState<Mode>('idle')
@@ -87,9 +89,11 @@ export default function POSPage() {
 
             if (res.ok && data.success) {
                 setRole(data.role)
+                setLabel(data.label || (data.role === 'chef' ? 'Chef' : 'Mitarbeiter'))
                 setPin('')
             } else {
                 setAuthError(data.error || 'Falscher PIN')
+                // Shake effect could be added here
             }
         } catch (e) {
             setAuthError('Netzwerkfehler')
@@ -166,10 +170,11 @@ export default function POSPage() {
             if (res.ok) {
                 setResult(data)
                 setMode('result')
-                if (navigator.vibrate) navigator.vibrate(200)
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100])
             } else {
                 setError(data.error || 'Scan fehlgeschlagen')
                 setMode('idle')
+                if (navigator.vibrate) navigator.vibrate(500)
             }
         } catch (e) {
             setError('Netzwerkfehler')
@@ -218,56 +223,70 @@ export default function POSPage() {
         setPushSubmitting(false)
     }
 
+    // --- Components ---
+
+    const Background = () => (
+        <div className="fixed inset-0 z-0 bg-black">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/20 blur-[120px] rounded-full opacity-50 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/20 blur-[120px] rounded-full opacity-50 pointer-events-none" />
+        </div>
+    )
+
     // ========================================
     // RENDER: PIN Login Screen
     // ========================================
     if (role === 'none') {
         return (
-            <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center p-6">
-                <div className="w-full max-w-sm space-y-8">
+            <div className="min-h-screen relative flex flex-col items-center justify-center p-6 overflow-hidden">
+                <Background />
+                <div className="relative z-10 w-full max-w-sm space-y-8 animate-in fade-in zoom-in duration-500">
                     {/* Logo */}
-                    <div className="text-center">
-                        <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-500/20">
-                            <Zap className="w-10 h-10" />
+                    <div className="text-center space-y-4">
+                        <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-emerald-500/20 rotate-3 transform hover:rotate-6 transition-transform">
+                            <Zap className="w-12 h-12 text-white" />
                         </div>
-                        <h1 className="text-2xl font-bold">Passify POS</h1>
-                        <p className="text-zinc-500 text-sm mt-1">{slug}</p>
+                        <div>
+                            <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 tracking-tight">Passify POS</h1>
+                            <p className="text-emerald-400 font-medium mt-1 uppercase tracking-widest text-xs">{slug}</p>
+                        </div>
                     </div>
 
                     {/* PIN Form */}
-                    <form onSubmit={handlePinSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm text-zinc-400 mb-2">PIN eingeben</label>
-                            <input
-                                type="password"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                maxLength={6}
-                                value={pin}
-                                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                                placeholder="••••"
-                                className="w-full px-4 py-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white text-center text-2xl tracking-[0.5em] placeholder:tracking-normal placeholder:text-zinc-600 focus:outline-none focus:border-green-500"
-                                autoFocus
-                            />
-                        </div>
-
-                        {authError && (
-                            <div className="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-center text-sm">
-                                {authError}
+                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+                        <form onSubmit={handlePinSubmit} className="space-y-6">
+                            <div>
+                                <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-3 text-center">Zugangspin eingeben</label>
+                                <input
+                                    type="password"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    maxLength={6}
+                                    value={pin}
+                                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                                    placeholder="••••"
+                                    className="w-full px-4 py-4 bg-black/30 border border-white/10 rounded-xl text-white text-center text-3xl tracking-[0.6em] placeholder:tracking-normal placeholder:text-zinc-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                                    autoFocus
+                                />
                             </div>
-                        )}
 
-                        <button
-                            type="submit"
-                            disabled={pin.length < 4}
-                            className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:from-zinc-700 disabled:to-zinc-700 rounded-xl font-semibold transition-all"
-                        >
-                            Anmelden
-                        </button>
-                    </form>
+                            {authError && (
+                                <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-xl text-center text-sm font-medium animate-in slide-in-from-top-2">
+                                    {authError}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={pin.length < 4}
+                                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 rounded-xl font-bold text-lg shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
+                            >
+                                Anmelden
+                            </button>
+                        </form>
+                    </div>
 
                     <p className="text-center text-zinc-600 text-xs">
-                        Standard: 1234 (Kellner) • 9999 (Chef)
+                        Powered by <span className="text-zinc-400 font-semibold">PASSIFY</span>
                     </p>
                 </div>
             </div>
@@ -279,88 +298,102 @@ export default function POSPage() {
     // ========================================
     if (role === 'chef' && view === 'dashboard') {
         return (
-            <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
+            <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
+                <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-900/40 via-black to-black pointer-events-none" />
+
                 {/* Header */}
-                <header className="p-4 border-b border-white/10 flex items-center justify-between">
+                <header className="relative z-10 px-6 py-6 flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl font-bold flex items-center gap-2">
-                            <BarChart3 className="w-5 h-5 text-purple-500" />
+                        <h1 className="text-2xl font-bold flex items-center gap-2">
                             Dashboard
                         </h1>
-                        <p className="text-sm text-zinc-500">{slug}</p>
+                        <p className="text-sm text-purple-400 font-medium">Hallo Chef 👋</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                         <button
                             onClick={() => setView('scanner')}
-                            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm"
+                            className="w-10 h-10 bg-white/5 border border-white/10 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
                         >
-                            Scanner
-                        </button>
-                        <button
-                            onClick={handleLogout}
-                            className="px-3 py-1.5 text-zinc-500 hover:text-white text-sm"
-                        >
-                            Logout
+                            <Camera className="w-5 h-5" />
                         </button>
                     </div>
                 </header>
 
                 {/* Stats Grid */}
-                <main className="flex-1 p-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Total Passes */}
-                        <div className="bg-zinc-900 rounded-2xl p-4">
-                            <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2">
-                                <Wallet className="w-4 h-4" />
-                                Aktive Karten
+                <main className="relative z-10 flex-1 px-4 pb-6 space-y-4 overflow-y-auto">
+
+                    {/* Live Ticker */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="col-span-2 bg-gradient-to-br from-zinc-900 to-black border border-white/10 rounded-3xl p-5 relative overflow-hidden">
+                            <div className="relative z-10 flex justify-between items-start">
+                                <div>
+                                    <p className="text-zinc-500 text-sm font-medium mb-1">Stempel Heute</p>
+                                    <p className="text-4xl font-bold text-white tracking-tight">{stats?.todayStamps || 0}</p>
+                                </div>
+                                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                    <Sparkles className="w-5 h-5" />
+                                </div>
                             </div>
-                            <div className="text-3xl font-bold">{stats?.totalPasses || 0}</div>
+                            <div className="mt-4 flex items-center gap-2 text-emerald-400 text-xs font-medium bg-emerald-500/10 self-start inline-flex px-2 py-1 rounded-lg">
+                                <TrendingUp className="w-3 h-3" />
+                                {stats?.weekStamps || 0} diese Woche
+                            </div>
                         </div>
 
-                        {/* Today's Scans */}
-                        <div className="bg-zinc-900 rounded-2xl p-4">
-                            <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2">
-                                <TrendingUp className="w-4 h-4" />
-                                Heute Stempel
-                            </div>
-                            <div className="text-3xl font-bold text-green-400">{stats?.todayStamps || 0}</div>
-                        </div>
-
-                        {/* Apple vs Google */}
-                        <div className="bg-zinc-900 rounded-2xl p-4">
-                            <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2">
-                                <Wallet className="w-4 h-4" />
-                                Apple Wallet
+                        <div className="bg-zinc-900/50 border border-white/5 rounded-3xl p-5 flex flex-col justify-between">
+                            <div className="text-zinc-500 mb-2">
+                                <Wallet className="w-6 h-6 text-white mb-2" />
+                                <span className="text-xs font-medium">Apple Wallet</span>
                             </div>
                             <div className="text-2xl font-bold">{stats?.appleCount || 0}</div>
                         </div>
 
-                        <div className="bg-zinc-900 rounded-2xl p-4">
-                            <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2">
-                                <Wallet className="w-4 h-4" />
-                                Google Wallet
+                        <div className="bg-zinc-900/50 border border-white/5 rounded-3xl p-5 flex flex-col justify-between">
+                            <div className="text-zinc-500 mb-2">
+                                <Wallet className="w-6 h-6 text-zinc-400 mb-2" />
+                                <span className="text-xs font-medium">Google Wallet</span>
                             </div>
                             <div className="text-2xl font-bold">{stats?.googleCount || 0}</div>
                         </div>
+                    </div>
 
-                        {/* Redemptions */}
-                        <div className="col-span-2 bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-2xl p-4 border border-purple-500/20">
-                            <div className="flex items-center gap-2 text-purple-300 text-sm mb-2">
-                                <Users className="w-4 h-4" />
-                                Einlösungen (Gesamt)
-                            </div>
-                            <div className="text-3xl font-bold text-purple-300">{stats?.totalRedemptions || 0}</div>
+                    {/* Total Members */}
+                    <div className="bg-white/5 border border-white/5 rounded-3xl p-6 flex items-center justify-between">
+                        <div>
+                            <p className="text-zinc-400 text-sm font-medium">Gesamte Kundenkartei</p>
+                            <p className="text-3xl font-bold mt-1">{stats?.totalPasses || 0}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400">
+                            <Users className="w-6 h-6" />
                         </div>
                     </div>
 
-                    {/* Push Request Button */}
-                    <button
-                        onClick={() => setView('push')}
-                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl font-semibold flex items-center justify-center gap-2"
-                    >
-                        <Send className="w-5 h-5" />
-                        Push-Nachricht beantragen
-                    </button>
+                    {/* Redemptions Highlight */}
+                    <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-3xl p-6 shadow-lg shadow-purple-500/20">
+                        <div className="flex justify-between items-center mb-2">
+                            <p className="text-purple-100 text-sm font-medium">Eingelöste Prämien</p>
+                            <div className="bg-white/20 px-2 py-1 rounded-md text-xs text-white font-bold">LIFETIME</div>
+                        </div>
+                        <p className="text-5xl font-bold text-white tracking-tight">{stats?.totalRedemptions || 0}</p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                        <button
+                            onClick={() => setView('push')}
+                            className="col-span-2 py-4 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all border border-white/5"
+                        >
+                            <Send className="w-5 h-5 text-blue-400" />
+                            Push-Nachricht senden
+                        </button>
+
+                        <button
+                            onClick={handleLogout}
+                            className="col-span-2 py-4 bg-black/50 border border-white/10 text-zinc-400 hover:text-white rounded-2xl font-medium text-sm transition-all"
+                        >
+                            Abmelden
+                        </button>
+                    </div>
                 </main>
             </div>
         )
@@ -371,69 +404,77 @@ export default function POSPage() {
     // ========================================
     if (role === 'chef' && view === 'push') {
         return (
-            <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
-                <header className="p-4 border-b border-white/10 flex items-center justify-between">
+            <div className="min-h-screen bg-black text-white flex flex-col relative">
+                <div className="fixed inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-blue-900/20 via-black to-black pointer-events-none" />
+
+                <header className="relative z-10 p-6 flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold flex items-center gap-2">
-                            <Send className="w-5 h-5 text-blue-500" />
-                            Push beantragen
+                            Nachricht schreiben
                         </h1>
                     </div>
                     <button
                         onClick={() => setView('dashboard')}
-                        className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm"
+                        className="w-8 h-8 flex items-center justify-center bg-zinc-800 rounded-full"
                     >
-                        Zurück
+                        <X size={16} />
                     </button>
                 </header>
 
-                <main className="flex-1 p-4">
-                    <form onSubmit={handlePushRequest} className="space-y-4">
-                        <div>
-                            <label className="block text-sm text-zinc-400 mb-2">Nachricht</label>
-                            <textarea
-                                value={pushMessage}
-                                onChange={(e) => setPushMessage(e.target.value)}
-                                placeholder="z.B. Happy Hour heute ab 17 Uhr! 🍻"
-                                rows={4}
-                                className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500 resize-none"
-                            />
+                <main className="relative z-10 flex-1 p-6">
+                    <form onSubmit={handlePushRequest} className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-sm text-zinc-400 ml-1">Deine Nachricht</label>
+                            <div className="relative">
+                                <textarea
+                                    value={pushMessage}
+                                    onChange={(e) => setPushMessage(e.target.value)}
+                                    placeholder="z.B. 2-für-1 auf alle Cocktails heute Abend! 🍹"
+                                    rows={5}
+                                    className="w-full px-5 py-4 bg-zinc-900/80 border border-white/10 rounded-2xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none text-lg"
+                                />
+                                <div className="absolute bottom-3 right-3 text-xs text-zinc-600 font-mono">
+                                    {pushMessage.length} Zeichen
+                                </div>
+                            </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm text-zinc-400 mb-2">Wann senden? (optional)</label>
+                        <div className="space-y-2">
+                            <label className="text-sm text-zinc-400 ml-1">Zeitpunkt (Optional)</label>
                             <input
                                 type="datetime-local"
                                 value={pushSchedule}
                                 onChange={(e) => setPushSchedule(e.target.value)}
-                                className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-blue-500"
+                                className="w-full px-5 py-4 bg-zinc-900/80 border border-white/10 rounded-2xl text-white focus:outline-none focus:border-blue-500"
                             />
                         </div>
 
                         {pushSuccess && (
-                            <div className="bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-center">
-                                ✅ Anfrage gesendet! Wir prüfen deine Nachricht.
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-4 py-4 rounded-2xl flex items-center gap-3">
+                                <div className="w-8 h-8 bg-emerald-500/20 rounded-full flex items-center justify-center shrink-0">
+                                    <Check size={16} />
+                                </div>
+                                <div>
+                                    <p className="font-bold">Gesendet!</p>
+                                    <p className="text-xs opacity-80">Nachricht wird geprüft.</p>
+                                </div>
                             </div>
                         )}
 
                         <button
                             type="submit"
                             disabled={!pushMessage.trim() || pushSubmitting}
-                            className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-zinc-700 disabled:to-zinc-700 rounded-xl font-semibold flex items-center justify-center gap-2"
+                            className="w-full py-5 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-lg shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]"
                         >
                             {pushSubmitting ? (
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (
                                 <>
                                     <Send className="w-5 h-5" />
-                                    Zur Genehmigung senden
+                                    Absenden
                                 </>
                             )}
                         </button>
-
-                        <p className="text-center text-zinc-600 text-xs">
-                            Nachrichten werden von Passify geprüft bevor sie versendet werden.
-                        </p>
                     </form>
                 </main>
             </div>
@@ -444,78 +485,86 @@ export default function POSPage() {
     // RENDER: Scanner (Staff & Chef)
     // ========================================
     return (
-        <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
+        <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
+            <Background />
+
             {/* Header */}
-            <header className="p-4 border-b border-white/10 flex items-center justify-between">
-                <div>
-                    <h1 className="text-xl font-bold flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-green-500" />
-                        Passify Scanner
-                    </h1>
-                    <p className="text-sm text-zinc-500">{slug} • {role === 'chef' ? '👑 Chef' : '👤 Staff'}</p>
+            <header className="relative z-10 px-6 py-5 flex items-center justify-between border-b border-white/5 bg-black/20 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-900/50">
+                        <Zap className="w-6 h-6 text-white" fill="currentColor" />
+                    </div>
+                    <div>
+                        <h1 className="font-bold leading-none">Scanner</h1>
+                        <p className="text-xs text-emerald-400 font-medium mt-1 uppercase tracking-wide">{label || role}</p>
+                    </div>
                 </div>
                 <div className="flex gap-2">
                     {role === 'chef' && (
                         <button
                             onClick={() => setView('dashboard')}
-                            className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm flex items-center gap-1"
+                            className="w-10 h-10 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-xl flex items-center justify-center hover:bg-purple-500/20 transition-colors"
                         >
-                            <BarChart3 className="w-4 h-4" />
-                            Dashboard
+                            <BarChart3 className="w-5 h-5" />
                         </button>
                     )}
                     <button
                         onClick={handleLogout}
-                        className="px-3 py-1.5 text-zinc-500 hover:text-white text-sm"
+                        className="w-10 h-10 bg-zinc-800/50 border border-zinc-700/50 text-zinc-400 rounded-xl flex items-center justify-center hover:bg-zinc-800 hover:text-white transition-colors"
                     >
-                        Logout
+                        <LogOut className="w-4 h-4 ml-0.5" />
                     </button>
                 </div>
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 p-4 flex flex-col items-center justify-center gap-4">
+            <main className="relative z-10 flex-1 p-6 flex flex-col items-center justify-center">
 
                 {mode === 'idle' && (
-                    <div className="w-full max-w-sm space-y-6">
+                    <div className="w-full max-w-sm space-y-8 animate-in fade-in zoom-in duration-300">
+
+                        {/* Status Card */}
+                        <div className="text-center space-y-2 mb-8">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                System Bereit
+                            </div>
+                        </div>
+
                         {/* Camera Button */}
                         <button
                             onClick={startCamera}
-                            className="w-full py-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-2xl font-semibold text-lg flex items-center justify-center gap-3 transition-all shadow-lg shadow-green-500/20"
+                            className="group relative w-full aspect-square max-h-[300px] rounded-[3rem] bg-zinc-900 border border-white/10 flex flex-col items-center justify-center gap-4 hover:border-emerald-500/50 hover:bg-zinc-800/80 transition-all shadow-2xl overflow-hidden"
                         >
-                            <Camera size={28} />
-                            QR-Code scannen
+                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                            <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-500">
+                                <Camera size={40} className="text-white" />
+                            </div>
+                            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">Kunde scannen</span>
                         </button>
 
-                        {/* Divider */}
-                        <div className="flex items-center gap-4">
-                            <div className="flex-1 h-px bg-zinc-800" />
-                            <span className="text-xs text-zinc-600">oder</span>
-                            <div className="flex-1 h-px bg-zinc-800" />
-                        </div>
-
                         {/* Manual Input */}
-                        <div className="space-y-3">
+                        <div className="bg-black/40 backdrop-blur-md rounded-2xl p-1 border border-white/10 flex items-center">
                             <input
                                 type="text"
-                                placeholder="Pass-ID manuell eingeben"
+                                placeholder="#ID eingeben"
                                 value={manualId}
                                 onChange={(e) => setManualId(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
-                                className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-green-500"
+                                className="flex-1 bg-transparent border-none text-white px-4 py-3 focus:ring-0 placeholder:text-zinc-600 font-mono text-lg"
                             />
-
                             <button
                                 onClick={handleManualScan}
                                 disabled={!manualId.trim()}
-                                className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 disabled:bg-zinc-900 disabled:text-zinc-600 rounded-xl font-medium transition-colors"
+                                className="bg-zinc-800 hover:bg-emerald-600 disabled:opacity-0 disabled:pointer-events-none text-white p-3 rounded-xl transition-all"
                             >
-                                Stempel hinzufügen
+                                <ChevronRight size={20} />
                             </button>
                         </div>
 
                         {error && (
-                            <div className="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-center text-sm">
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-3 rounded-xl text-center text-sm">
                                 {error}
                             </div>
                         )}
@@ -523,79 +572,86 @@ export default function POSPage() {
                 )}
 
                 {mode === 'camera' && (
-                    <div className="w-full max-w-sm space-y-4">
-                        <div className="relative">
+                    <div className="w-full max-w-sm space-y-6 animate-in fade-in duration-300">
+                        <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10">
                             <div
                                 id="qr-reader"
-                                className="w-full aspect-square rounded-2xl overflow-hidden bg-black"
+                                className="w-full aspect-square bg-black"
                             />
+                            <div className="absolute inset-0 border-[3px] border-emerald-500/50 rounded-3xl pointer-events-none" />
+
+                            {/* Scanning Overlay */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-white/50 rounded-2xl pointer-events-none">
+                                <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-emerald-500 -mt-1 -ml-1 rounded-tl-lg" />
+                                <div className="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-emerald-500 -mt-1 -mr-1 rounded-tr-lg" />
+                                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-emerald-500 -mb-1 -ml-1 rounded-bl-lg" />
+                                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-emerald-500 -mb-1 -mr-1 rounded-br-lg" />
+                            </div>
+
                             <button
                                 onClick={stopCamera}
-                                className="absolute top-3 right-3 p-2 bg-black/50 backdrop-blur rounded-full text-white hover:bg-black/70"
+                                className="absolute top-4 right-4 p-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-white hover:bg-black/60 transition-colors"
                             >
                                 <X size={20} />
                             </button>
                         </div>
-
-                        <p className="text-center text-zinc-500 text-sm">
-                            Halte die Kamera auf den QR-Code des Kunden
-                        </p>
-
-                        {cameraError && (
-                            <div className="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-center text-sm">
-                                {cameraError}
-                            </div>
-                        )}
+                        <p className="text-center text-zinc-400 font-medium">QR-Code im Rahmen platzieren</p>
                     </div>
                 )}
 
                 {mode === 'scanning' && (
                     <div className="text-center">
-                        <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                        <p className="text-zinc-400">Verarbeite Stempel...</p>
+                        <div className="w-20 h-20 rounded-full border-4 border-zinc-800 border-t-emerald-500 animate-spin mx-auto mb-6" />
+                        <h2 className="text-2xl font-bold animate-pulse">Verarbeite...</h2>
                     </div>
                 )}
 
                 {mode === 'result' && result && (
                     <div className="w-full max-w-sm text-center space-y-6 animate-in zoom-in-50 duration-300">
                         {/* Success Icon */}
-                        <div className={`w-28 h-28 rounded-full flex items-center justify-center mx-auto text-5xl shadow-2xl ${result.celebration
-                                ? 'bg-gradient-to-br from-yellow-500 to-orange-600 shadow-yellow-500/30'
-                                : 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/30'
-                            }`}>
-                            {result.celebration ? '🎉' : '✅'}
-                        </div>
+                        <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 200, damping: 10 }}
+                            className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto text-6xl shadow-[0_0_60px_-15px_rgba(0,0,0,0.5)] ${result.celebration
+                                ? 'bg-gradient-to-br from-amber-400 to-orange-600 shadow-orange-500/40'
+                                : 'bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/40'
+                                }`}
+                        >
+                            {result.celebration ? '🎉' : <Check className="w-16 h-16 text-white" strokeWidth={3} />}
+                        </motion.div>
 
                         {/* Message */}
                         <div>
-                            <h2 className="text-2xl font-bold mb-2">{result.message}</h2>
-                            <p className="text-zinc-500 text-sm">Aktion: {result.action}</p>
+                            <h2 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-br from-white to-zinc-400">{result.message}</h2>
+                            <div className="inline-block px-3 py-1 bg-white/10 rounded-lg text-sm text-zinc-300">
+                                {result.action === 'ADD_STAMP' ? 'Stempel erhalten' : result.action}
+                            </div>
                         </div>
 
-                        {/* State Display */}
+                        {/* State Display Card */}
                         {result.newState && (
-                            <div className="bg-zinc-900/80 backdrop-blur p-5 rounded-2xl space-y-3">
+                            <div className="bg-zinc-900/60 backdrop-blur-md p-6 rounded-3xl border border-white/10 space-y-4 shadow-xl">
                                 {result.newState.stamps !== undefined && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-zinc-400">Stempel</span>
-                                        <span className="text-2xl font-bold text-green-400">
-                                            {result.newState.stamps} / {result.newState.max_stamps || 10}
-                                        </span>
+                                    <div className="flex justify-between items-center p-2">
+                                        <span className="text-zinc-400 font-medium">Neuer Stand</span>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex -space-x-1">
+                                                {Array.from({ length: Math.min(5, result.newState.stamps) }).map((_, i) => (
+                                                    <div key={i} className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                ))}
+                                            </div>
+                                            <span className="text-3xl font-bold text-emerald-400 font-mono">
+                                                {result.newState.stamps}/{result.newState.max_stamps || 10}
+                                            </span>
+                                        </div>
                                     </div>
                                 )}
                                 {result.newState.customer_name && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-zinc-400">Kunde</span>
-                                        <span className="text-lg font-semibold">
+                                    <div className="flex justify-between items-center border-t border-white/5 pt-4">
+                                        <span className="text-zinc-500 text-sm">Kunde</span>
+                                        <span className="text-lg font-semibold text-white">
                                             {result.newState.customer_name}
-                                        </span>
-                                    </div>
-                                )}
-                                {result.newState.redemptions > 0 && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-zinc-400">Einlösungen</span>
-                                        <span className="text-lg font-semibold text-purple-400">
-                                            {result.newState.redemptions}
                                         </span>
                                     </div>
                                 )}
@@ -605,9 +661,9 @@ export default function POSPage() {
                         {/* Next Button */}
                         <button
                             onClick={resetScanner}
-                            className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
+                            className="w-full py-5 bg-white text-black hover:bg-zinc-200 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-white/10"
                         >
-                            <RotateCcw size={18} />
+                            <RotateCcw size={20} />
                             Nächster Kunde
                         </button>
                     </div>
@@ -615,8 +671,8 @@ export default function POSPage() {
             </main>
 
             {/* Footer */}
-            <footer className="p-4 border-t border-white/10 text-center text-xs text-zinc-600">
-                Powered by PASSIFY
+            <footer className="relative z-10 p-4 border-t border-white/5 text-center">
+                <p className="text-[10px] text-zinc-600 uppercase tracking-widest">Passify Point of Sale</p>
             </footer>
         </div>
     )

@@ -125,7 +125,11 @@ export async function GET(req: NextRequest) {
                             logoUrl: designAssets.images?.logo?.url,
                             heroImageUrl: designAssets.images?.strip?.url,
                             backgroundColor: designAssets.colors?.backgroundColor,
-                            callbackUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/google-wallet`
+                            callbackUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/google-wallet`,
+                            locations: campaign.config?.locations?.map((loc: any) => ({
+                                latitude: loc.latitude,
+                                longitude: loc.longitude
+                            })) || []
                         }
                     })
 
@@ -397,7 +401,11 @@ async function generateGooglePass(
                 // Use strip image, or fall back to background image for eventTicket style
                 heroImageUrl: draft.images?.strip?.url || draft.images?.background?.url,
                 backgroundColor: draft.colors?.backgroundColor,
-                callbackUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/google-wallet`
+                callbackUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/google-wallet`,
+                locations: campaign.config?.locations?.map((loc: any) => ({
+                    latitude: loc.latitude,
+                    longitude: loc.longitude
+                })) || []
             })
         } catch (classError) {
             console.warn("[GOOGLE] Class creation failed (may already exist):", classError)
@@ -471,7 +479,11 @@ async function generateGooglePass(
                 logoUrl: draft.images?.logo?.url,
                 heroImageUrl: draft.images?.strip?.url,
                 backgroundColor: draft.colors?.backgroundColor,
-                callbackUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/google-wallet`
+                callbackUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/google-wallet`,
+                locations: campaign.config?.locations?.map((loc: any) => ({
+                    latitude: loc.latitude,
+                    longitude: loc.longitude
+                })) || []
             }
         })
 

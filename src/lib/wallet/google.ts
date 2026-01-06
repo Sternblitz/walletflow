@@ -56,6 +56,11 @@ export interface GoogleLoyaltyClass {
         url: string
         updateRequestUrl?: string
     }
+    locations?: Array<{
+        kind: 'walletobjects#latLongPoint',
+        latitude: number,
+        longitude: number
+    }>
 }
 
 export interface GoogleLoyaltyObject {
@@ -217,6 +222,7 @@ export class GoogleWalletService implements WalletService {
         heroImageUrl?: string
         backgroundColor?: string
         callbackUrl?: string
+        locations?: Array<{ latitude: number; longitude: number }>
     }): Promise<GoogleLoyaltyClass> {
         const { serviceAccount, issuerId } = this.getCredentials()
         const accessToken = await this.getAccessToken()
@@ -248,6 +254,13 @@ export class GoogleWalletService implements WalletService {
                 callbackOptions: {
                     url: classConfig.callbackUrl
                 }
+            }),
+            ...(classConfig.locations && classConfig.locations.length > 0 && {
+                locations: classConfig.locations.map(loc => ({
+                    kind: 'walletobjects#latLongPoint',
+                    latitude: loc.latitude,
+                    longitude: loc.longitude
+                }))
             })
         }
 
@@ -500,6 +513,7 @@ export class GoogleWalletService implements WalletService {
             heroImageUrl?: string
             backgroundColor?: string
             callbackUrl?: string
+            locations?: Array<{ latitude: number; longitude: number }>
         }
     }): GoogleWalletSaveLink {
         const { serviceAccount, issuerId } = this.getCredentials()
@@ -540,6 +554,13 @@ export class GoogleWalletService implements WalletService {
                 callbackOptions: {
                     url: objectConfig.classConfig.callbackUrl
                 }
+            }),
+            ...(objectConfig.classConfig?.locations && objectConfig.classConfig.locations.length > 0 && {
+                locations: objectConfig.classConfig.locations.map(loc => ({
+                    kind: 'walletobjects#latLongPoint',
+                    latitude: loc.latitude,
+                    longitude: loc.longitude
+                }))
             })
         }
 

@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { WalletPassDraft, PassField } from '@/lib/wallet/types'
 import { getLayoutDefinition } from '@/lib/wallet/layout-definitions'
-import { RotateCcw } from 'lucide-react'
+import { RotateCcw, Smartphone, Wallet } from 'lucide-react'
+import { GooglePassPreview } from './google-pass-preview'
+import { cn } from '@/lib/utils'
 
 interface PassPreviewProps {
   draft: WalletPassDraft
@@ -13,24 +15,10 @@ interface PassPreviewProps {
 /**
  * PassPreview - Matches Apple Wallet layout as closely as possible
  * Now with flip functionality to show back side!
- * 
- * Apple's Store Card Layout:
- * ┌─────────────────────────────────┐
- * │ [LOGO]              HEADER →    │ ← Logo left, header right
- * ├─────────────────────────────────┤
- * │         [STRIP IMAGE]           │ ← Strip covers this area
- * │      ┌─────────────────┐        │
- * │      │   PRIMARY VAL   │        │ ← Primary value LARGE
- * │      │   primary label │        │ ← Primary label small
- * │      └─────────────────┘        │
- * ├─────────────────────────────────┤
- * │ SEC1   SEC2   AUX1   AUX2       │ ← All on ONE row
- * ├─────────────────────────────────┤
- * │         [QR CODE]               │
- * └─────────────────────────────────┘
  */
 export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
   const [isFlipped, setIsFlipped] = useState(false)
+  const [platform, setPlatform] = useState<'apple' | 'google'>('apple')
   const { colors, fields, content, barcode } = draft
   const def = getLayoutDefinition(draft.meta.style)
 
@@ -39,199 +27,231 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
 
   return (
     <div className="pass-preview-wrapper" style={{ transform: `scale(${scale})` }}>
-      {/* Flip Button */}
-      <button
-        className="flip-button"
-        onClick={() => setIsFlipped(!isFlipped)}
-        title={isFlipped ? 'Vorderseite zeigen' : 'Rückseite zeigen'}
-      >
-        <RotateCcw size={16} />
-        {isFlipped ? 'Vorne' : 'Hinten'}
-      </button>
-
-      <div className={`flip-container ${isFlipped ? 'flipped' : ''}`}>
-        {/* FRONT SIDE */}
-        <div
-          className="pass-preview pass-front"
-          style={{
-            backgroundColor: colors.backgroundColor,
-            color: colors.foregroundColor,
-            ...(draft.images.background && !draft.images.strip ? {
-              backgroundImage: `url(${draft.images.background.url})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            } : {})
-          }}
-        >
-          {/* Helper overlay for background tint if needed */}
-          {draft.images.background && !draft.images.strip && (
-            <div className="background-overlay" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }} />
+      {/* Platform Toggle */}
+      <div className="flex bg-white/10 p-1 rounded-full border border-white/20 mb-4 backdrop-blur-sm">
+        <button
+          onClick={() => setPlatform('apple')}
+          className={cn(
+            "flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium transition-all",
+            platform === 'apple'
+              ? "bg-white text-black shadow-md"
+              : "text-white/60 hover:text-white"
           )}
-
-          {/* Content Content Container (Relative for z-index) */}
-          <div className="pass-content">
-            {/* Logo + Header Row */}
-            <div className="pass-header">
-              <div className="logo-area">
-                {draft.images.logo && (
-                  <img src={draft.images.logo.url} alt="Logo" className="logo-image" />
-                )}
-                {content.logoText && (
-                  <span className="logo-text" style={{ color: colors.labelColor }}>{content.logoText}</span>
-                )}
-              </div>
-              <div className="header-fields">
-                {fields.headerFields.map(f => (
-                  <div className="field header-field" key={f.key}>
-                    {f.label && <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>}
-                    <span className="field-value">{f.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* EVENTTICKET LAYOUT */}
-            {def.style === 'eventTicket' && (
-              <div className="eventticket-content">
-                {/* Primary with optional thumbnail */}
-                <div className="primary-row">
-                  <div className="primary-left">
-                    {fields.primaryFields.map(f => (
-                      <div className="field primary-field" key={f.key}>
-                        {f.label && <span className="primary-label" style={{ color: colors.labelColor }}>{f.label}</span>}
-                        <span className="primary-value">{f.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {draft.images.thumbnail && (
-                    <div className="primary-thumbnail">
-                      <img src={draft.images.thumbnail.url} alt="Thumbnail" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Secondary Fields Row */}
-                {fields.secondaryFields.length > 0 && (
-                  <div className="eventticket-fields-row">
-                    {fields.secondaryFields.map(f => (
-                      <div className="field eventticket-field" key={f.key}>
-                        <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>
-                        <span className="field-value">{f.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Auxiliary Fields (Progress) */}
-                {fields.auxiliaryFields.length > 0 && (
-                  <div className="eventticket-aux-fields">
-                    {fields.auxiliaryFields.map(f => (
-                      <div className="field eventticket-field" key={f.key}>
-                        <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>
-                        <span className="field-value">{f.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* STORECARD/COUPON LAYOUT (with strip image) */}
-            {def.style !== 'eventTicket' && def.allowedImages.includes('strip') && (
-              <div className="strip-area">
-                {draft.images.strip ? (
-                  <img src={draft.images.strip.url} alt="Strip" />
-                ) : (
-                  <div className="strip-placeholder" />
-                )}
-
-                {/* Primary field overlays the strip */}
-                <div className="primary-overlay">
-                  {fields.primaryFields.map(f => (
-                    <div className="field primary-field" key={f.key}>
-                      <span className="primary-value">{f.value}</span>
-                      {f.label && <span className="primary-label" style={{ color: colors.labelColor }}>{f.label}</span>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* STORECARD Bottom Fields */}
-            {def.style !== 'eventTicket' && bottomFields.length > 0 && (
-              <div className="bottom-fields">
-                {bottomFields.map(f => (
-                  <div className="field bottom-field" key={f.key}>
-                    <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>
-                    <span className="field-value">{f.value}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Thumbnail Area (generic style WITHOUT strip/background) */}
-            {def.style === 'generic' && (
-              <div className="content-with-thumbnail">
-                <div className="primary-no-strip">
-                  {fields.primaryFields.map(f => (
-                    <div className="field primary-field" key={f.key}>
-                      <span className="primary-value">{f.value}</span>
-                      {f.label && <span className="primary-label" style={{ color: colors.labelColor }}>{f.label}</span>}
-                    </div>
-                  ))}
-                </div>
-                {draft.images.thumbnail && (
-                  <div className="thumbnail-area">
-                    <img src={draft.images.thumbnail.url} alt="Thumbnail" />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Barcode */}
-            <div className="barcode-area">
-              <div className="barcode-container">
-                {barcode.format.includes('QR') || barcode.format.includes('Aztec') ? (
-                  <div className="qr-code" />
-                ) : (
-                  <div className="linear-barcode" />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* BACK SIDE */}
-        <div
-          className="pass-preview pass-back"
-          style={{
-            backgroundColor: colors.backgroundColor,
-            color: colors.foregroundColor,
-          }}
         >
-          <div className="back-content">
-            <div className="back-header">
-              <span className="back-title">ⓘ Kartendetails</span>
+          <Smartphone size={14} /> iOS
+        </button>
+        <button
+          onClick={() => setPlatform('google')}
+          className={cn(
+            "flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium transition-all",
+            platform === 'google'
+              ? "bg-white text-black shadow-md"
+              : "text-white/60 hover:text-white"
+          )}
+        >
+          <Wallet size={14} /> Google
+        </button>
+      </div>
+
+      {platform === 'google' ? (
+        <GooglePassPreview draft={draft} />
+      ) : (
+        <>
+          {/* Flip Button (Apple Only) */}
+          <button
+            className="flip-button"
+            onClick={() => setIsFlipped(!isFlipped)}
+            title={isFlipped ? 'Vorderseite zeigen' : 'Rückseite zeigen'}
+          >
+            <RotateCcw size={16} />
+            {isFlipped ? 'Vorne' : 'Hinten'}
+          </button>
+
+          <div className={`flip-container ${isFlipped ? 'flipped' : ''}`}>
+            {/* FRONT SIDE */}
+            <div
+              className="pass-preview pass-front"
+              style={{
+                backgroundColor: colors.backgroundColor,
+                color: colors.foregroundColor,
+                ...(draft.images.background && !draft.images.strip ? {
+                  backgroundImage: `url(${draft.images.background.url})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                } : {})
+              }}
+            >
+              {/* Helper overlay for background tint if needed */}
+              {draft.images.background && !draft.images.strip && (
+                <div className="background-overlay" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }} />
+              )}
+
+              {/* Content Content Container (Relative for z-index) */}
+              <div className="pass-content">
+                {/* Logo + Header Row */}
+                <div className="pass-header">
+                  <div className="logo-area">
+                    {draft.images.logo && (
+                      <img src={draft.images.logo.url} alt="Logo" className="logo-image" />
+                    )}
+                    {content.logoText && (
+                      <span className="logo-text" style={{ color: colors.labelColor }}>{content.logoText}</span>
+                    )}
+                  </div>
+                  <div className="header-fields">
+                    {fields.headerFields.map(f => (
+                      <div className="field header-field" key={f.key}>
+                        {f.label && <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>}
+                        <span className="field-value">{f.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* EVENTTICKET LAYOUT */}
+                {def.style === 'eventTicket' && (
+                  <div className="eventticket-content">
+                    {/* Primary with optional thumbnail */}
+                    <div className="primary-row">
+                      <div className="primary-left">
+                        {fields.primaryFields.map(f => (
+                          <div className="field primary-field" key={f.key}>
+                            {f.label && <span className="primary-label" style={{ color: colors.labelColor }}>{f.label}</span>}
+                            <span className="primary-value">{f.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {draft.images.thumbnail && (
+                        <div className="primary-thumbnail">
+                          <img src={draft.images.thumbnail.url} alt="Thumbnail" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Secondary Fields Row */}
+                    {fields.secondaryFields.length > 0 && (
+                      <div className="eventticket-fields-row">
+                        {fields.secondaryFields.map(f => (
+                          <div className="field eventticket-field" key={f.key}>
+                            <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>
+                            <span className="field-value">{f.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Auxiliary Fields (Progress) */}
+                    {fields.auxiliaryFields.length > 0 && (
+                      <div className="eventticket-aux-fields">
+                        {fields.auxiliaryFields.map(f => (
+                          <div className="field eventticket-field" key={f.key}>
+                            <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>
+                            <span className="field-value">{f.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* STORECARD/COUPON LAYOUT (with strip image) */}
+                {def.style !== 'eventTicket' && def.allowedImages.includes('strip') && (
+                  <div className="strip-area">
+                    {draft.images.strip ? (
+                      <img src={draft.images.strip.url} alt="Strip" />
+                    ) : (
+                      <div className="strip-placeholder" />
+                    )}
+
+                    {/* Primary field overlays the strip */}
+                    <div className="primary-overlay">
+                      {fields.primaryFields.map(f => (
+                        <div className="field primary-field" key={f.key}>
+                          <span className="primary-value">{f.value}</span>
+                          {f.label && <span className="primary-label" style={{ color: colors.labelColor }}>{f.label}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* STORECARD Bottom Fields */}
+                {def.style !== 'eventTicket' && bottomFields.length > 0 && (
+                  <div className="bottom-fields">
+                    {bottomFields.map(f => (
+                      <div className="field bottom-field" key={f.key}>
+                        <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>
+                        <span className="field-value">{f.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Thumbnail Area (generic style WITHOUT strip/background) */}
+                {def.style === 'generic' && (
+                  <div className="content-with-thumbnail">
+                    <div className="primary-no-strip">
+                      {fields.primaryFields.map(f => (
+                        <div className="field primary-field" key={f.key}>
+                          <span className="primary-value">{f.value}</span>
+                          {f.label && <span className="primary-label" style={{ color: colors.labelColor }}>{f.label}</span>}
+                        </div>
+                      ))}
+                    </div>
+                    {draft.images.thumbnail && (
+                      <div className="thumbnail-area">
+                        <img src={draft.images.thumbnail.url} alt="Thumbnail" />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Barcode */}
+                <div className="barcode-area">
+                  <div className="barcode-container">
+                    {barcode.format.includes('QR') || barcode.format.includes('Aztec') ? (
+                      <div className="qr-code" />
+                    ) : (
+                      <div className="linear-barcode" />
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {fields.backFields && fields.backFields.length > 0 ? (
-              <div className="back-fields">
-                {fields.backFields.map((f, idx) => (
-                  <div className="back-field" key={f.key || idx}>
-                    <span className="back-field-label" style={{ color: colors.labelColor }}>{f.label}</span>
-                    <span className="back-field-value">{f.value}</span>
+            {/* BACK SIDE */}
+            <div
+              className="pass-preview pass-back"
+              style={{
+                backgroundColor: colors.backgroundColor,
+                color: colors.foregroundColor,
+              }}
+            >
+              <div className="back-content">
+                <div className="back-header">
+                  <span className="back-title">ⓘ Kartendetails</span>
+                </div>
+
+                {fields.backFields && fields.backFields.length > 0 ? (
+                  <div className="back-fields">
+                    {fields.backFields.map((f, idx) => (
+                      <div className="back-field" key={f.key || idx}>
+                        <span className="back-field-label" style={{ color: colors.labelColor }}>{f.label}</span>
+                        <span className="back-field-value">{f.value}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <div className="back-empty">
+                    <p>Keine Rückseiten-Infos</p>
+                    <p className="back-hint">Füge Felder unter "Rückseite" im Editor hinzu</p>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="back-empty">
-                <p>Keine Rückseiten-Infos</p>
-                <p className="back-hint">Füge Felder unter "Rückseite" im Editor hinzu</p>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       <style jsx>{`
         .pass-preview-wrapper {

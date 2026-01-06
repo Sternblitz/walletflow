@@ -19,8 +19,20 @@ import {
     Copy,
     ExternalLink,
     QrCode,
-    Printer
+    Printer,
+    Smartphone,
+    Shield,
+    Eye,
+    EyeOff,
+    Save
 } from "lucide-react"
+
+interface PosCredential {
+    id?: string
+    role: 'staff' | 'chef'
+    label: string
+    pin_code: string
+}
 
 interface Pass {
     id: string
@@ -62,6 +74,12 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [deleting, setDeleting] = useState(false)
 
+    // POS Credentials State
+    const [posCredentials, setPosCredentials] = useState<PosCredential[]>([])
+    const [loadingCredentials, setLoadingCredentials] = useState(false)
+    const [showPins, setShowPins] = useState<Record<string, boolean>>({})
+    const [savingPins, setSavingPins] = useState(false)
+
     useEffect(() => {
         params.then(p => setCampaignId(p.id))
     }, [params])
@@ -69,8 +87,62 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     useEffect(() => {
         if (campaignId) {
             fetchCampaign()
+            fetchPosCredentials()
         }
     }, [campaignId])
+
+    const fetchPosCredentials = async () => {
+        if (!campaignId) return
+        setLoadingCredentials(true)
+        try {
+            const res = await fetch(`/api/campaign/${campaignId}/pos-credentials`)
+            const data = await res.json()
+            if (data.credentials) {
+                // Ensure we have at least defaults if empty (though api doesn't create them on get, migration does)
+                let creds = data.credentials
+                if (creds.length === 0) {
+                    creds = [
+                        { role: 'staff', label: 'Mitarbeiter', pin_code: '1234' },
+                        { role: 'chef', label: 'Chef', pin_code: '9999' }
+                    ]
+                }
+                setPosCredentials(creds)
+            }
+        } catch (e) {
+            console.error('Failed to fetch credentials:', e)
+        } finally {
+            setLoadingCredentials(false)
+        }
+    }
+
+    const savePosCredentials = async () => {
+        if (!campaignId) return
+        setSavingPins(true)
+        try {
+            const res = await fetch(`/api/campaign/${campaignId}/pos-credentials`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ credentials: posCredentials })
+            })
+            if (res.ok) {
+                alert('PIN-Codes gespeichert!')
+                fetchPosCredentials()
+            } else {
+                alert('Fehler beim Speichern')
+            }
+        } catch (e) {
+            console.error('Failed to save credentials:', e)
+            alert('Fehler beim Speichern')
+        } finally {
+            setSavingPins(false)
+        }
+    }
+
+    const updateCredential = (index: number, field: keyof PosCredential, value: string) => {
+        const newCreds = [...posCredentials]
+        newCreds[index] = { ...newCreds[index], [field]: value }
+        setPosCredentials(newCreds)
+    }
 
     const fetchCampaign = async () => {
         if (!campaignId) return
@@ -333,6 +405,99 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                             Nachricht an {sendResult.total} {sendResult.total === 1 ? 'Kunden' : 'Kunden'} gesendet!
                         </div>
                     )}
+                </div>
+            </div>
+
+
+            {/* POS System Section */}
+            <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-6 space-y-6">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                            <Smartphone className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h2 className="font-semibold text-white">POS Scanner System</h2>
+                            <p className="text-xs text-zinc-400">Zugang für Mitarbeiter und Chef verwalten</p>
+                        </div>
+                    </div>
+                    {/* Link to POS */}
+                    {campaign.client?.slug && (
+                        <Link href={`/pos/${campaign.client.slug}`} target="_blank">
+                            <Button variant="outline" size="sm" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Scanner öffnen
+                            </Button>
+                        </Link>
+                    )}
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8">
+                    {/* Access Data */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                            <Shield className="w-4 h-4" /> Zugangsdaten
+                        </h3>
+
+                        {loadingCredentials ? (
+                            <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+                        ) : (
+                            <div className="space-y-4">
+                                {posCredentials.map((cred, index) => (
+                                    <div key={index} className="flex gap-4 items-end bg-black/20 p-4 rounded-xl border border-white/5">
+                                        <div className="flex-1 space-y-2">
+                                            <label className="text-xs text-zinc-500 uppercase tracking-wider">{cred.role === 'chef' ? '👑 Chef-Zugang' : '👤 Mitarbeiter-Zugang'}</label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    value={cred.label}
+                                                    onChange={(e) => updateCredential(index, 'label', e.target.value)}
+                                                    className="bg-black/50 border-white/10 text-white h-10 text-sm"
+                                                    placeholder="Bezeichnung"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="w-32 space-y-2">
+                                            <label className="text-xs text-zinc-500 uppercase tracking-wider">PIN</label>
+                                            <div className="relative">
+                                                <Input
+                                                    type={showPins[index] ? "text" : "password"}
+                                                    value={cred.pin_code}
+                                                    maxLength={6}
+                                                    onChange={(e) => updateCredential(index, 'pin_code', e.target.value.replace(/\D/g, ''))}
+                                                    className="bg-black/50 border-white/10 text-white font-mono text-center h-10 tracking-widest"
+                                                />
+                                                <button
+                                                    onClick={() => setShowPins(prev => ({ ...prev, [index]: !prev[index] }))}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                                                >
+                                                    {showPins[index] ? <EyeOff size={14} /> : <Eye size={14} />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <Button
+                                    onClick={savePosCredentials}
+                                    disabled={savingPins}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
+                                >
+                                    {savingPins ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                                    PIN-Codes speichern
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Info Section */}
+                    <div className="text-sm text-zinc-400 space-y-4 bg-zinc-900 rounded-xl p-4 border border-white/5">
+                        <h4 className="font-medium text-white">So funktioniert's:</h4>
+                        <ul className="space-y-2 list-disc list-inside">
+                            <li><strong className="text-emerald-400">Mitarbeiter (Staff)</strong>: Können nur Scannen und Punkte vergeben.</li>
+                            <li><strong className="text-purple-400">Chef</strong>: Hat Zugriff auf das Dashboard und kann Push-Nachrichten beantragen.</li>
+                            <li>Der QR-Code für den Scanner ist derselbe, nur der PIN entscheidet über die Rechte.</li>
+                            <li>PINs können jederzeit geändert werden.</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
 
