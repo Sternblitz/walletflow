@@ -111,6 +111,7 @@ export interface WalletPassDraft {
     content: {
         logoText?: string
         hideLogoText?: boolean
+        programName?: string
         description: string
         organizationName: string
     }
