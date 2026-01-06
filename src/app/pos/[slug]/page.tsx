@@ -2,8 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { Camera, X, RotateCcw, Zap, BarChart3, Send, Users, TrendingUp, Wallet, Settings, LogOut, ChevronRight, Check, Sparkles } from 'lucide-react'
+import { Camera, X, RotateCcw, Zap, BarChart3, Send, Users, TrendingUp, Wallet, Settings, LogOut, ChevronRight, Check, Sparkles, LayoutDashboard, Bell, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Toaster, toast } from 'sonner'
+import { ActivityChart, WalletDonut, RetentionGauge } from '@/components/pos/POSCharts'
+import { AutomationManager } from '@/components/pos/AutomationManager'
+import { ThemeToggle } from '@/components/pos/ThemeToggle'
 
 type Role = 'none' | 'staff' | 'chef'
 type Mode = 'idle' | 'scanning' | 'camera' | 'result'
@@ -35,7 +39,6 @@ export default function POSPage() {
     const [pushMessage, setPushMessage] = useState('')
     const [pushSchedule, setPushSchedule] = useState('')
     const [pushSubmitting, setPushSubmitting] = useState(false)
-    const [pushSuccess, setPushSuccess] = useState(false)
 
     // Load campaign data
     useEffect(() => {
@@ -93,7 +96,6 @@ export default function POSPage() {
                 setPin('')
             } else {
                 setAuthError(data.error || 'Falscher PIN')
-                // Shake effect could be added here
             }
         } catch (e) {
             setAuthError('Netzwerkfehler')
@@ -170,11 +172,11 @@ export default function POSPage() {
             if (res.ok) {
                 setResult(data)
                 setMode('result')
-                if (navigator.vibrate) navigator.vibrate([100, 50, 100])
+                toast.success('Stempel erfolgreich!')
             } else {
                 setError(data.error || 'Scan fehlgeschlagen')
                 setMode('idle')
-                if (navigator.vibrate) navigator.vibrate(500)
+                toast.error(data.error || 'Scan failed')
             }
         } catch (e) {
             setError('Netzwerkfehler')
@@ -194,7 +196,6 @@ export default function POSPage() {
         setError(null)
     }
 
-    // Push request submission
     const handlePushRequest = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!pushMessage.trim()) return
@@ -212,10 +213,12 @@ export default function POSPage() {
             })
 
             if (res.ok) {
-                setPushSuccess(true)
+                toast.success('Push-Nachricht beantragt!')
                 setPushMessage('')
                 setPushSchedule('')
-                setTimeout(() => setPushSuccess(false), 3000)
+                setView('dashboard')
+            } else {
+                toast.error('Fehler beim Senden')
             }
         } catch (e) {
             console.error('Push request failed:', e)
@@ -226,9 +229,10 @@ export default function POSPage() {
     // --- Components ---
 
     const Background = () => (
-        <div className="fixed inset-0 z-0 bg-black">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/20 blur-[120px] rounded-full opacity-50 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/20 blur-[120px] rounded-full opacity-50 pointer-events-none" />
+        <div className="fixed inset-0 z-0 bg-background pointer-events-none">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 dark:bg-emerald-500/20 blur-[120px] rounded-full opacity-50 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/10 dark:bg-purple-500/20 blur-[120px] rounded-full opacity-50 pointer-events-none" />
+            <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.02]" />
         </div>
     )
 
@@ -237,7 +241,10 @@ export default function POSPage() {
     // ========================================
     if (role === 'none') {
         return (
-            <div className="min-h-screen relative flex flex-col items-center justify-center p-6 overflow-hidden">
+            <div className="min-h-screen relative flex flex-col items-center justify-center p-6 overflow-hidden bg-background text-foreground transition-colors duration-500">
+                <div className="absolute top-4 right-4 z-50">
+                    <ThemeToggle />
+                </div>
                 <Background />
                 <div className="relative z-10 w-full max-w-sm space-y-8 animate-in fade-in zoom-in duration-500">
                     {/* Logo */}
@@ -246,16 +253,16 @@ export default function POSPage() {
                             <Zap className="w-12 h-12 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 tracking-tight">Passify POS</h1>
-                            <p className="text-emerald-400 font-medium mt-1 uppercase tracking-widest text-xs">{slug}</p>
+                            <h1 className="text-3xl font-extrabold tracking-tight">Passify POS</h1>
+                            <p className="text-emerald-500 font-medium mt-1 uppercase tracking-widest text-xs">{slug}</p>
                         </div>
                     </div>
 
                     {/* PIN Form */}
-                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+                    <div className="bg-white/50 dark:bg-black/30 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-8 shadow-2xl">
                         <form onSubmit={handlePinSubmit} className="space-y-6">
                             <div>
-                                <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-3 text-center">Zugangspin eingeben</label>
+                                <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-3 text-center">Zugangspin eingeben</label>
                                 <input
                                     type="password"
                                     inputMode="numeric"
@@ -264,13 +271,13 @@ export default function POSPage() {
                                     value={pin}
                                     onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
                                     placeholder="••••"
-                                    className="w-full px-4 py-4 bg-black/30 border border-white/10 rounded-xl text-white text-center text-3xl tracking-[0.6em] placeholder:tracking-normal placeholder:text-zinc-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                                    className="w-full px-4 py-4 bg-transparent border-2 border-dashed border-black/10 dark:border-white/20 rounded-xl text-center text-3xl tracking-[0.6em] placeholder:tracking-normal focus:outline-none focus:border-emerald-500 focus:ring-0 transition-all font-mono"
                                     autoFocus
                                 />
                             </div>
 
                             {authError && (
-                                <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-xl text-center text-sm font-medium animate-in slide-in-from-top-2">
+                                <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl text-center text-sm font-medium animate-in slide-in-from-top-2">
                                     {authError}
                                 </div>
                             )}
@@ -278,16 +285,12 @@ export default function POSPage() {
                             <button
                                 type="submit"
                                 disabled={pin.length < 4}
-                                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 rounded-xl font-bold text-lg shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
+                                className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white rounded-xl font-bold text-lg shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
                             >
                                 Anmelden
                             </button>
                         </form>
                     </div>
-
-                    <p className="text-center text-zinc-600 text-xs">
-                        Powered by <span className="text-zinc-400 font-semibold">PASSIFY</span>
-                    </p>
                 </div>
             </div>
         )
@@ -303,215 +306,241 @@ export default function POSPage() {
         }
 
         return (
-            <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
-                <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-900/40 via-black to-black pointer-events-none" />
+            <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden transition-colors duration-500">
+                <Background />
 
                 {/* Header */}
-                <header className="relative z-10 px-6 py-6 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-2">
-                            Dashboard
-                        </h1>
-                        <p className="text-sm text-purple-400 font-medium">Hallo {label || 'Chef'} 👋</p>
+                <header className="relative z-10 px-6 py-6 flex items-center justify-between backdrop-blur-sm bg-background/50 border-b border-white/5 sticky top-0">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                            <Zap className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-bold leading-tight">Dashboard</h1>
+                            <p className="text-xs text-muted-foreground font-medium">Hallo {label || 'Chef'} 👋</p>
+                        </div>
                     </div>
                     <div className="flex gap-3">
+                        <ThemeToggle />
                         <button
                             onClick={() => setView('scanner')}
-                            className="w-10 h-10 bg-white/5 border border-white/10 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+                            className="h-12 px-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center hover:bg-emerald-500/20 transition-colors gap-2 text-sm font-semibold"
                         >
                             <Camera className="w-5 h-5" />
+                            Scanner
                         </button>
                     </div>
                 </header>
 
                 {/* Main Grid */}
-                <main className="relative z-10 flex-1 px-4 pb-6 space-y-6 overflow-y-auto">
+                <main className="relative z-10 flex-1 p-6 overflow-y-auto max-w-7xl mx-auto w-full">
 
                     {/* Top Stats Row */}
-                    <div className="grid grid-cols-2 gap-3">
-                        {/* Daily Stamps */}
-                        <div className="col-span-2 bg-gradient-to-br from-zinc-900 to-black border border-white/10 rounded-3xl p-5 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-5 opacity-20">
-                                <Sparkles className="w-16 h-16 text-emerald-500" />
-                            </div>
-                            <div className="relative z-10">
-                                <p className="text-zinc-500 text-sm font-medium mb-1">Stempel Heute</p>
-                                <div className="flex items-baseline gap-2">
-                                    <p className="text-5xl font-bold text-white tracking-tight">{stats?.todayStamps || 0}</p>
-                                    <span className="text-sm text-emerald-500 font-medium">
-                                        + {stats?.weekStamps || 0} diese Woche
-                                    </span>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        {/* 1. Daily Stamps */}
+                        <div className="bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-5 shadow-sm">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-2 bg-emerald-500/10 rounded-xl">
+                                    <Sparkles className="w-5 h-5 text-emerald-500" />
                                 </div>
+                                <span className="text-xs font-bold bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full">
+                                    Today
+                                </span>
                             </div>
+                            <div className="flex items-baseline gap-2">
+                                <h2 className="text-4xl font-bold">{stats?.summary?.todayStamps || 0}</h2>
+                                <span className="text-sm text-emerald-500 font-semibold">+ {stats?.summary?.weekStamps || 0} Week</span>
+                            </div>
+                            <p className="text-muted-foreground text-xs mt-1">Stempel vergeben</p>
                         </div>
 
-                        {/* Active Installs */}
-                        <div className="col-span-2 bg-white/5 border border-white/5 rounded-3xl p-5 flex items-center justify-between">
-                            <div>
-                                <p className="text-zinc-400 text-xs uppercase tracking-wider font-bold">Installierte Pässe</p>
-                                <p className="text-3xl font-bold mt-1 text-white">{stats?.totalPasses || 0}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="flex flex-col items-center justify-center bg-black/40 w-12 h-12 rounded-xl border border-white/5">
-                                    <Wallet className="w-4 h-4 text-white mb-1" />
-                                    <span className="text-[10px] font-bold">{stats?.appleCount || 0}</span>
-                                </div>
-                                <div className="flex flex-col items-center justify-center bg-black/40 w-12 h-12 rounded-xl border border-white/5">
-                                    <Wallet className="w-4 h-4 text-zinc-400 mb-1" />
-                                    <span className="text-[10px] font-bold text-zinc-400">{stats?.googleCount || 0}</span>
+                        {/* 2. Total Installs */}
+                        <div className="bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-5 shadow-sm">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-2 bg-blue-500/10 rounded-xl">
+                                    <Users className="w-5 h-5 text-blue-500" />
                                 </div>
                             </div>
+                            <h2 className="text-4xl font-bold">{stats?.summary?.totalPasses || 0}</h2>
+                            <p className="text-muted-foreground text-xs mt-1">Aktive Kunden (Installiert)</p>
                         </div>
-                    </div>
 
-                    {/* Redemptions Banner */}
-                    <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-3xl p-6 shadow-lg shadow-purple-500/20 relative overflow-hidden">
-                        <div className="relative z-10 flex justify-between items-center">
-                            <div>
-                                <p className="text-purple-100 text-xs font-bold uppercase tracking-wider mb-1">Eingelöste Prämien</p>
-                                <p className="text-4xl font-bold text-white tracking-tight">{stats?.totalRedemptions || 0}</p>
+                        {/* 3. Retention Rate */}
+                        <div className="col-span-2 bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="font-bold text-muted-foreground text-sm uppercase">Kundenbindung</h3>
+                                <div className="p-1.5 bg-purple-500/10 rounded-lg">
+                                    <TrendingUp className="w-4 h-4 text-purple-500" />
+                                </div>
                             </div>
-                            <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
-                                <Users className="w-6 h-6 text-white" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Recent Activity Feed */}
-                    <div className="space-y-3">
-                        <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider px-1">Letzte Aktivitäten</h3>
-                        {stats?.recentActivity?.length > 0 ? (
-                            <div className="space-y-2">
-                                {stats.recentActivity.map((activity: any) => (
-                                    <div key={activity.id} className="bg-zinc-900/50 border border-white/5 p-4 rounded-2xl flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.action === 'redeem'
-                                                    ? 'bg-purple-500/10 text-purple-400'
-                                                    : 'bg-emerald-500/10 text-emerald-400'
-                                                }`}>
-                                                {activity.action === 'redeem' ? <Users size={18} /> : <Check size={18} />}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-white">
-                                                    {activity.action === 'redeem' ? 'Prämie eingelöst' : 'Stempel gesammelt'}
-                                                </p>
-                                                <p className="text-xs text-zinc-500">
-                                                    Karte #{activity.passes?.serial_number?.slice(-4) || 'Unknown'}
-                                                    {activity.passes?.wallet_type === 'apple' && ' '}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-sm font-bold text-white">{formatDate(activity.created_at)}</p>
-                                            {activity.stamps_after && (
-                                                <p className="text-xs text-zinc-500">{activity.stamps_after} Stempel</p>
-                                            )}
-                                        </div>
+                            <div className="flex items-end justify-between gap-4">
+                                <div className="flex-1">
+                                    <RetentionGauge rate={stats?.summary?.retentionRate || 0} />
+                                    <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
+                                        <span>{stats?.summary?.newCustomers || 0} Neue</span>
+                                        <span>{stats?.summary?.returningCustomers || 0} treue Fans</span>
                                     </div>
-                                ))}
+                                </div>
                             </div>
-                        ) : (
-                            <div className="text-center p-8 border border-dashed border-white/10 rounded-2xl">
-                                <p className="text-zinc-500 text-sm">Noch keine Aktivitäten heute</p>
-                            </div>
-                        )}
+                        </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="grid grid-cols-2 gap-3 pt-4">
-                        <button
-                            onClick={() => setView('push')}
-                            className="col-span-2 py-4 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all border border-white/5"
-                        >
-                            <Send className="w-5 h-5 text-blue-400" />
-                            Push-Nachricht senden
-                        </button>
+                    {/* Middle Row: Charts */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        {/* Bar Chart (Activity) */}
+                        <div className="lg:col-span-2 bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-6 shadow-sm min-h-[300px] flex flex-col">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="font-bold text-lg">Aktivitäten</h3>
+                                <select className="bg-background border border-border text-xs rounded-lg px-2 py-1 outline-none">
+                                    <option>Letzte 7 Tage</option>
+                                </select>
+                            </div>
+                            <div className="flex-1 w-full">
+                                <ActivityChart data={stats?.history || []} />
+                            </div>
+                        </div>
 
-                        <button
-                            onClick={handleLogout}
-                            className="col-span-2 py-4 bg-black/50 border border-white/10 text-zinc-400 hover:text-white rounded-2xl font-medium text-sm transition-all"
-                        >
-                            Abmelden
-                        </button>
+                        {/* Donut Chart (Wallet Share) */}
+                        <div className="bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-6 shadow-sm flex flex-col items-center justify-center relative">
+                            <h3 className="absolute top-6 left-6 font-bold text-lg">Platform</h3>
+                            <WalletDonut
+                                apple={stats?.summary?.appleCount || 0}
+                                google={stats?.summary?.googleCount || 0}
+                            />
+                            <div className="flex gap-6 mt-8 w-full justify-center">
+                                <div className="flex items-center gap-2 text-sm">
+                                    <div className="w-3 h-3 rounded-full bg-white border border-gray-300" />
+                                    <span>Apple</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                    <div className="w-3 h-3 rounded-full bg-zinc-800" />
+                                    <span>Google</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    {/* Bottom Row: Automation & Feed */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+                        {/* Automation Manager */}
+                        <div className="h-[400px]">
+                            <AutomationManager />
+                        </div>
+
+                        {/* Feed */}
+                        <div className="bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-6 h-[400px] flex flex-col">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-lg flex items-center gap-2">
+                                    <Bell className="w-4 h-4 text-emerald-500" />
+                                    Live Feed
+                                </h3>
+                                <button className="text-xs text-emerald-500 font-medium hover:underline">View All</button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2">
+                                {stats?.recentActivity?.length > 0 ? (
+                                    stats.recentActivity.map((activity: any) => (
+                                        <div key={activity.id} className="flex items-center justify-between p-3 rounded-2xl bg-background/50 border border-border dark:border-white/5 hover:bg-background transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.action === 'redeem'
+                                                        ? 'bg-purple-500/10 text-purple-500'
+                                                        : 'bg-emerald-500/10 text-emerald-500'
+                                                    }`}>
+                                                    {activity.action === 'redeem' ? <Users size={18} /> : <Check size={18} />}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-semibold">
+                                                        {activity.action === 'redeem' ? 'Prämie eingelöst' : 'Stempel gesammelt'}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Pass #{activity.passes?.serial_number?.slice(-4) || 'Unknown'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs text-muted-foreground font-mono">
+                                                {formatDate(activity.created_at)}
+                                            </span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-20 text-muted-foreground">
+                                        <p>Noch keine Scans heute</p>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="pt-4 mt-auto border-t border-white/5">
+                                <button
+                                    onClick={() => setView('push')}
+                                    className="w-full py-3 bg-zinc-900 border border-zinc-800 hover:bg-black text-white rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Send size={16} />
+                                    Manuelle Push-Nachricht
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <button
+                        onClick={handleLogout}
+                        className="mx-auto block mt-8 mb-8 text-xs text-muted-foreground hover:text-red-400 transition-colors"
+                    >
+                        Abmelden
+                    </button>
+
                 </main>
             </div>
         )
     }
 
     // ========================================
-    // RENDER: Push Request Form (Chef only)
+    // RENDER: Push Request Form
     // ========================================
     if (role === 'chef' && view === 'push') {
         return (
-            <div className="min-h-screen bg-black text-white flex flex-col relative">
-                <div className="fixed inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-blue-900/20 via-black to-black pointer-events-none" />
-
+            <div className="min-h-screen bg-background text-foreground flex flex-col relative">
                 <header className="relative z-10 p-6 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-xl font-bold flex items-center gap-2">
-                            Nachricht schreiben
-                        </h1>
-                    </div>
+                    <h1 className="text-xl font-bold">Nachricht senden</h1>
                     <button
                         onClick={() => setView('dashboard')}
-                        className="w-8 h-8 flex items-center justify-center bg-zinc-800 rounded-full"
+                        className="w-8 h-8 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-full"
                     >
                         <X size={16} />
                     </button>
                 </header>
 
-                <main className="relative z-10 flex-1 p-6">
+                <main className="relative z-10 flex-1 p-6 max-w-lg mx-auto w-full">
                     <form onSubmit={handlePushRequest} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-sm text-zinc-400 ml-1">Deine Nachricht</label>
+                            <label className="text-sm text-muted-foreground font-medium ml-1">Deine Nachricht</label>
                             <div className="relative">
                                 <textarea
                                     value={pushMessage}
                                     onChange={(e) => setPushMessage(e.target.value)}
-                                    placeholder="z.B. 2-für-1 auf alle Cocktails heute Abend! 🍹"
+                                    placeholder="Deine Nachricht an alle Kunden..."
                                     rows={5}
-                                    className="w-full px-5 py-4 bg-zinc-900/80 border border-white/10 rounded-2xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none text-lg"
+                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl placeholder:text-muted-foreground focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none text-lg shadow-sm"
                                 />
-                                <div className="absolute bottom-3 right-3 text-xs text-zinc-600 font-mono">
-                                    {pushMessage.length} Zeichen
+                                <div className="absolute bottom-3 right-3 text-xs text-muted-foreground font-mono">
+                                    {pushMessage.length}
                                 </div>
                             </div>
+                            <p className="text-xs text-muted-foreground ml-1">
+                                Tipp: Halte es kurz und knackig. Emojis helfen! 🍕
+                            </p>
                         </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm text-zinc-400 ml-1">Zeitpunkt (Optional)</label>
-                            <input
-                                type="datetime-local"
-                                value={pushSchedule}
-                                onChange={(e) => setPushSchedule(e.target.value)}
-                                className="w-full px-5 py-4 bg-zinc-900/80 border border-white/10 rounded-2xl text-white focus:outline-none focus:border-blue-500"
-                            />
-                        </div>
-
-                        {pushSuccess && (
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-4 py-4 rounded-2xl flex items-center gap-3">
-                                <div className="w-8 h-8 bg-emerald-500/20 rounded-full flex items-center justify-center shrink-0">
-                                    <Check size={16} />
-                                </div>
-                                <div>
-                                    <p className="font-bold">Gesendet!</p>
-                                    <p className="text-xs opacity-80">Nachricht wird geprüft.</p>
-                                </div>
-                            </div>
-                        )}
 
                         <button
                             type="submit"
                             disabled={!pushMessage.trim() || pushSubmitting}
-                            className="w-full py-5 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-lg shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]"
+                            className="w-full py-5 bg-gradient-to-r from-blue-600 to-violet-600 text-white hover:from-blue-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]"
                         >
                             {pushSubmitting ? (
-                                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (
                                 <>
                                     <Send className="w-5 h-5" />
-                                    Absenden
+                                    Jetzt Senden
                                 </>
                             )}
                         </button>
@@ -545,7 +574,7 @@ export default function POSPage() {
                             onClick={() => setView('dashboard')}
                             className="w-10 h-10 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-xl flex items-center justify-center hover:bg-purple-500/20 transition-colors"
                         >
-                            <BarChart3 className="w-5 h-5" />
+                            <LayoutDashboard className="w-5 h-5" />
                         </button>
                     )}
                     <button
@@ -562,15 +591,6 @@ export default function POSPage() {
 
                 {mode === 'idle' && (
                     <div className="w-full max-w-sm space-y-8 animate-in fade-in zoom-in duration-300">
-
-                        {/* Status Card */}
-                        <div className="text-center space-y-2 mb-8">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                System Bereit
-                            </div>
-                        </div>
-
                         {/* Camera Button */}
                         <button
                             onClick={startCamera}
@@ -668,35 +688,6 @@ export default function POSPage() {
                                 {result.action === 'ADD_STAMP' ? 'Stempel erhalten' : result.action}
                             </div>
                         </div>
-
-                        {/* State Display Card */}
-                        {result.newState && (
-                            <div className="bg-zinc-900/60 backdrop-blur-md p-6 rounded-3xl border border-white/10 space-y-4 shadow-xl">
-                                {result.newState.stamps !== undefined && (
-                                    <div className="flex justify-between items-center p-2">
-                                        <span className="text-zinc-400 font-medium">Neuer Stand</span>
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex -space-x-1">
-                                                {Array.from({ length: Math.min(5, result.newState.stamps) }).map((_, i) => (
-                                                    <div key={i} className="w-2 h-2 rounded-full bg-emerald-500" />
-                                                ))}
-                                            </div>
-                                            <span className="text-3xl font-bold text-emerald-400 font-mono">
-                                                {result.newState.stamps}/{result.newState.max_stamps || 10}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-                                {result.newState.customer_name && (
-                                    <div className="flex justify-between items-center border-t border-white/5 pt-4">
-                                        <span className="text-zinc-500 text-sm">Kunde</span>
-                                        <span className="text-lg font-semibold text-white">
-                                            {result.newState.customer_name}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
 
                         {/* Next Button */}
                         <button
