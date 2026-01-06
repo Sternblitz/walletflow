@@ -297,6 +297,11 @@ export default function POSPage() {
     // RENDER: Chef Dashboard
     // ========================================
     if (role === 'chef' && view === 'dashboard') {
+        const formatDate = (dateString: string) => {
+            const date = new Date(dateString)
+            return new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' }).format(date)
+        }
+
         return (
             <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
                 <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-900/40 via-black to-black pointer-events-none" />
@@ -307,7 +312,7 @@ export default function POSPage() {
                         <h1 className="text-2xl font-bold flex items-center gap-2">
                             Dashboard
                         </h1>
-                        <p className="text-sm text-purple-400 font-medium">Hallo Chef 👋</p>
+                        <p className="text-sm text-purple-400 font-medium">Hallo {label || 'Chef'} 👋</p>
                     </div>
                     <div className="flex gap-3">
                         <button
@@ -319,66 +324,101 @@ export default function POSPage() {
                     </div>
                 </header>
 
-                {/* Stats Grid */}
-                <main className="relative z-10 flex-1 px-4 pb-6 space-y-4 overflow-y-auto">
+                {/* Main Grid */}
+                <main className="relative z-10 flex-1 px-4 pb-6 space-y-6 overflow-y-auto">
 
-                    {/* Live Ticker */}
+                    {/* Top Stats Row */}
                     <div className="grid grid-cols-2 gap-3">
+                        {/* Daily Stamps */}
                         <div className="col-span-2 bg-gradient-to-br from-zinc-900 to-black border border-white/10 rounded-3xl p-5 relative overflow-hidden">
-                            <div className="relative z-10 flex justify-between items-start">
-                                <div>
-                                    <p className="text-zinc-500 text-sm font-medium mb-1">Stempel Heute</p>
-                                    <p className="text-4xl font-bold text-white tracking-tight">{stats?.todayStamps || 0}</p>
-                                </div>
-                                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                                    <Sparkles className="w-5 h-5" />
-                                </div>
+                            <div className="absolute top-0 right-0 p-5 opacity-20">
+                                <Sparkles className="w-16 h-16 text-emerald-500" />
                             </div>
-                            <div className="mt-4 flex items-center gap-2 text-emerald-400 text-xs font-medium bg-emerald-500/10 self-start inline-flex px-2 py-1 rounded-lg">
-                                <TrendingUp className="w-3 h-3" />
-                                {stats?.weekStamps || 0} diese Woche
+                            <div className="relative z-10">
+                                <p className="text-zinc-500 text-sm font-medium mb-1">Stempel Heute</p>
+                                <div className="flex items-baseline gap-2">
+                                    <p className="text-5xl font-bold text-white tracking-tight">{stats?.todayStamps || 0}</p>
+                                    <span className="text-sm text-emerald-500 font-medium">
+                                        + {stats?.weekStamps || 0} diese Woche
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="bg-zinc-900/50 border border-white/5 rounded-3xl p-5 flex flex-col justify-between">
-                            <div className="text-zinc-500 mb-2">
-                                <Wallet className="w-6 h-6 text-white mb-2" />
-                                <span className="text-xs font-medium">Apple Wallet</span>
+                        {/* Active Installs */}
+                        <div className="col-span-2 bg-white/5 border border-white/5 rounded-3xl p-5 flex items-center justify-between">
+                            <div>
+                                <p className="text-zinc-400 text-xs uppercase tracking-wider font-bold">Installierte Pässe</p>
+                                <p className="text-3xl font-bold mt-1 text-white">{stats?.totalPasses || 0}</p>
                             </div>
-                            <div className="text-2xl font-bold">{stats?.appleCount || 0}</div>
-                        </div>
-
-                        <div className="bg-zinc-900/50 border border-white/5 rounded-3xl p-5 flex flex-col justify-between">
-                            <div className="text-zinc-500 mb-2">
-                                <Wallet className="w-6 h-6 text-zinc-400 mb-2" />
-                                <span className="text-xs font-medium">Google Wallet</span>
+                            <div className="flex items-center gap-2">
+                                <div className="flex flex-col items-center justify-center bg-black/40 w-12 h-12 rounded-xl border border-white/5">
+                                    <Wallet className="w-4 h-4 text-white mb-1" />
+                                    <span className="text-[10px] font-bold">{stats?.appleCount || 0}</span>
+                                </div>
+                                <div className="flex flex-col items-center justify-center bg-black/40 w-12 h-12 rounded-xl border border-white/5">
+                                    <Wallet className="w-4 h-4 text-zinc-400 mb-1" />
+                                    <span className="text-[10px] font-bold text-zinc-400">{stats?.googleCount || 0}</span>
+                                </div>
                             </div>
-                            <div className="text-2xl font-bold">{stats?.googleCount || 0}</div>
                         </div>
                     </div>
 
-                    {/* Total Members */}
-                    <div className="bg-white/5 border border-white/5 rounded-3xl p-6 flex items-center justify-between">
-                        <div>
-                            <p className="text-zinc-400 text-sm font-medium">Gesamte Kundenkartei</p>
-                            <p className="text-3xl font-bold mt-1">{stats?.totalPasses || 0}</p>
-                        </div>
-                        <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400">
-                            <Users className="w-6 h-6" />
+                    {/* Redemptions Banner */}
+                    <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-3xl p-6 shadow-lg shadow-purple-500/20 relative overflow-hidden">
+                        <div className="relative z-10 flex justify-between items-center">
+                            <div>
+                                <p className="text-purple-100 text-xs font-bold uppercase tracking-wider mb-1">Eingelöste Prämien</p>
+                                <p className="text-4xl font-bold text-white tracking-tight">{stats?.totalRedemptions || 0}</p>
+                            </div>
+                            <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
+                                <Users className="w-6 h-6 text-white" />
+                            </div>
                         </div>
                     </div>
 
-                    {/* Redemptions Highlight */}
-                    <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-3xl p-6 shadow-lg shadow-purple-500/20">
-                        <div className="flex justify-between items-center mb-2">
-                            <p className="text-purple-100 text-sm font-medium">Eingelöste Prämien</p>
-                            <div className="bg-white/20 px-2 py-1 rounded-md text-xs text-white font-bold">LIFETIME</div>
-                        </div>
-                        <p className="text-5xl font-bold text-white tracking-tight">{stats?.totalRedemptions || 0}</p>
+                    {/* Recent Activity Feed */}
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider px-1">Letzte Aktivitäten</h3>
+                        {stats?.recentActivity?.length > 0 ? (
+                            <div className="space-y-2">
+                                {stats.recentActivity.map((activity: any) => (
+                                    <div key={activity.id} className="bg-zinc-900/50 border border-white/5 p-4 rounded-2xl flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.action === 'redeem'
+                                                    ? 'bg-purple-500/10 text-purple-400'
+                                                    : 'bg-emerald-500/10 text-emerald-400'
+                                                }`}>
+                                                {activity.action === 'redeem' ? <Users size={18} /> : <Check size={18} />}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-white">
+                                                    {activity.action === 'redeem' ? 'Prämie eingelöst' : 'Stempel gesammelt'}
+                                                </p>
+                                                <p className="text-xs text-zinc-500">
+                                                    Karte #{activity.passes?.serial_number?.slice(-4) || 'Unknown'}
+                                                    {activity.passes?.wallet_type === 'apple' && ' '}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-bold text-white">{formatDate(activity.created_at)}</p>
+                                            {activity.stamps_after && (
+                                                <p className="text-xs text-zinc-500">{activity.stamps_after} Stempel</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center p-8 border border-dashed border-white/10 rounded-2xl">
+                                <p className="text-zinc-500 text-sm">Noch keine Aktivitäten heute</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Actions */}
-                    <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div className="grid grid-cols-2 gap-3 pt-4">
                         <button
                             onClick={() => setView('push')}
                             className="col-span-2 py-4 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all border border-white/5"

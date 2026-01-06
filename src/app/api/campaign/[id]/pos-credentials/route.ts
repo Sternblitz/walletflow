@@ -57,34 +57,60 @@ export async function POST(
 
         for (const cred of credentials) {
             if (cred.id) {
-                // Update existing
+                // Explicit Update by ID
                 const { data, error } = await supabase
                     .from('pos_credentials')
                     .update({
                         pin_code: cred.pin_code,
                         label: cred.label,
-                        // role should typically not change for an ID, but let's allow it or ignore it
                     })
                     .eq('id', cred.id)
                     .eq('campaign_id', id)
                     .select()
 
-                if (error) throw error
-                results.push(data[0])
+                if (error) {
+                    console.error('Error updating credential:', error)
+                    throw error
+                }
+                if (data && data.length > 0) results.push(data[0])
             } else {
-                // Create new
-                const { data, error } = await supabase
+                // No ID provided? This usually implies "New", but we only want ONE of each role typically.
+                // Let's check if one exists for this role first.
+                const { data: existing } = await supabase
                     .from('pos_credentials')
-                    .insert({
-                        campaign_id: id,
-                        role: cred.role,
-                        pin_code: cred.pin_code,
-                        label: cred.label || (cred.role === 'chef' ? 'Chef' : 'Mitarbeiter')
-                    })
-                    .select()
+                    .select('id')
+                    .eq('campaign_id', id)
+                    .eq('role', cred.role)
+                    .single()
 
-                if (error) throw error
-                results.push(data[0])
+                if (existing) {
+                    // Update the existing one instead of inserting duplicate
+                    const { data, error } = await supabase
+                        .from('pos_credentials')
+                        .update({
+                            pin_code: cred.pin_code,
+                            label: cred.label
+                        })
+                        .eq('id', existing.id)
+                        .select()
+
+                    if (error) throw error
+                    results.push(data[0])
+                } else {
+                    // Create new
+                    const { data, error } = await supabase
+                        .from('pos_credentials')
+                        .insert({
+                            campaign_id: id,
+                            role: cred.role,
+                            pin_code: cred.pin_code,
+                            label: cred.label || (cred.role === 'chef' ? 'Chef' : 'Mitarbeiter')
+                        })
+                        .select()
+
+                    if (error) throw error
+                    results.push(data[0])
+                }
             }
         }
 
