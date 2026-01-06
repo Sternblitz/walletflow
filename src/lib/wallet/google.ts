@@ -524,8 +524,8 @@ export class GoogleWalletService implements WalletService {
         // Build the loyalty CLASS (template)
         const loyaltyClass: GoogleLoyaltyClass = {
             id: fullClassId,
-            issuerName: objectConfig.classConfig?.issuerName || 'Passify',
-            programName: objectConfig.classConfig?.programName || 'Loyalty Card',
+            issuerName: objectConfig.classConfig?.issuerName || 'QARD',
+            programName: objectConfig.classConfig?.programName || 'QARD Loyalty',
             reviewStatus: 'UNDER_REVIEW',
             multipleDevicesAndHoldersAllowedStatus: 'MULTIPLE_HOLDERS',
             programLogo: {
@@ -537,7 +537,7 @@ export class GoogleWalletService implements WalletService {
                 contentDescription: {
                     defaultValue: {
                         language: 'de',
-                        value: objectConfig.classConfig?.programName || 'Loyalty Card'
+                        value: objectConfig.classConfig?.programName || 'QARD Loyalty'
                     }
                 }
             },
@@ -639,7 +639,7 @@ export class GoogleWalletService implements WalletService {
         const claims = {
             iss: serviceAccount.client_email,
             aud: 'google',
-            origins: [process.env.NEXT_PUBLIC_BASE_URL || 'https://passify.io'],
+            origins: [process.env.NEXT_PUBLIC_BASE_URL || 'https://qard.io'],
             typ: 'savetowallet',
             payload: {
                 loyaltyClasses: [loyaltyClass],  // Include class!

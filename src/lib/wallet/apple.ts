@@ -147,9 +147,9 @@ export class AppleWalletService implements WalletService {
                 {
                     passTypeIdentifier: certs.passTypeIdentifier,
                     teamIdentifier: certs.teamIdentifier || '',
-                    organizationName: 'Passify',
+                    organizationName: 'QARD',
                     serialNumber: config.serialNumber,
-                    description: 'Passify Test Pass',
+                    description: 'QARD Test Pass',
                     formatVersion: 1, // Required
                     backgroundColor: config.backgroundColor,
                     foregroundColor: config.foregroundColor,

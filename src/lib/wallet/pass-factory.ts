@@ -33,7 +33,7 @@ export class PassFactory {
             {
                 passTypeIdentifier: certs.passTypeIdentifier,
                 teamIdentifier: certs.teamIdentifier || '',
-                organizationName: draft.content.organizationName || 'Passify',
+                organizationName: draft.content.organizationName || 'QARD',
                 description: draft.content.description || 'Loyalty Card',
                 serialNumber: serialNumber,
                 formatVersion: 1,

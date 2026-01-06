@@ -42,7 +42,7 @@ export function Step1Client({ data, update }: any) {
                             <div className="absolute left-3 top-3 z-10">
                                 <LinkIcon className="h-4 w-4 text-zinc-500 group-focus-within:text-white transition-colors" />
                             </div>
-                            <span className="absolute left-9 text-sm text-zinc-500 font-mono">passify.io/</span>
+                            <span className="absolute left-9 text-sm text-zinc-500 font-mono">qard.io/</span>
                             <Input
                                 value={data.slug}
                                 onChange={(e) => update({ slug: e.target.value })}

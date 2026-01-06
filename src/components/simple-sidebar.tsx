@@ -9,7 +9,6 @@ import {
     Users,
     Send,
     Settings2,
-    Wallet,
     ChevronLeft,
     ChevronRight,
     LogOut
@@ -70,11 +69,11 @@ export function SimpleSidebar() {
                 collapsed ? "justify-center" : "gap-3"
             )}>
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-white to-zinc-400 text-black shadow-lg shrink-0">
-                    <Wallet className="w-5 h-5" />
+                    <img src="/LOGO.svg" alt="QARD" className="w-5 h-5 invert" />
                 </div>
                 {!collapsed && (
                     <div className="flex flex-col">
-                        <span className="font-bold text-white text-sm">Passify</span>
+                        <span className="font-bold text-white text-sm">QARD</span>
                         <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Engine</span>
                     </div>
                 )}
@@ -144,7 +143,7 @@ export function SimpleSidebar() {
                     {!collapsed && (
                         <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-white truncate">Admin</div>
-                            <div className="text-xs text-zinc-500 truncate">admin@passify.io</div>
+                            <div className="text-xs text-zinc-500 truncate">admin@qard.io</div>
                         </div>
                     )}
                 </div>

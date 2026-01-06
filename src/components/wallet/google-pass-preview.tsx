@@ -41,7 +41,7 @@ export function GooglePassPreview({ draft, scale = 1 }: GooglePassPreviewProps) 
                             </div>
                         )}
                         <span className="font-medium text-[17px] tracking-tight" style={{ color: fgColor }}>
-                            {content.logoText || "Passify Rewards"}
+                            {content.logoText || "QARD Rewards"}
                         </span>
                     </div>
 

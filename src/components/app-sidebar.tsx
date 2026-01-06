@@ -11,7 +11,6 @@ import {
     Plus,
     LayoutDashboard,
     Users,
-    Wallet
 } from "lucide-react"
 
 import {
@@ -43,10 +42,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         <SidebarMenuButton size="lg" asChild className="hover:bg-transparent data-[state=open]:bg-transparent">
                             <Link href="/admin">
                                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-white to-zinc-400 text-black shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                                    <Wallet className="size-4" />
+                                    <img src="/LOGO.svg" alt="QARD" className="size-4 invert" />
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight ml-2">
-                                    <span className="truncate font-bold tracking-tight text-white">Passify</span>
+                                    <span className="truncate font-bold tracking-tight text-white">QARD</span>
                                     <span className="truncate text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Engine</span>
                                 </div>
                             </Link>
@@ -126,7 +125,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                     </Avatar>
                                     <div className="grid flex-1 text-left text-sm leading-tight ml-2">
                                         <span className="truncate font-semibold text-white">Agency Admin</span>
-                                        <span className="truncate text-xs text-zinc-500">owner@passify.io</span>
+                                        <span className="truncate text-xs text-zinc-500">owner@qard.io</span>
                                     </div>
                                     <SquareTerminal className="ml-auto size-4 text-zinc-500" />
                                 </SidebarMenuButton>

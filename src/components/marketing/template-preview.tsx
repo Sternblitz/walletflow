@@ -103,7 +103,7 @@ export function TemplatePreview({ template, data, className }: TemplatePreviewPr
 
                     <div className="mt-auto pt-12 flex flex-col items-center gap-4 opacity-50">
                         <div className="h-1 w-24 bg-zinc-200" />
-                        <span className="font-mono text-sm uppercase tracking-widest">Powered by Passify</span>
+                        <span className="font-mono text-sm uppercase tracking-widest">Powered by QARD</span>
                     </div>
                 </div>
             </div>

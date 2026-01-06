@@ -60,7 +60,7 @@ export default async function SmartLinkPage({ params }: { params: Promise<{ slug
     }
 
     // 5. Desktop Fallback (The Landing Page)
-    const smartLinkUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://passify.io'}/start/${slug}`
+    const smartLinkUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://qard.io'}/start/${slug}`
 
     return (
         <div
@@ -124,7 +124,7 @@ export default async function SmartLinkPage({ params }: { params: Promise<{ slug
 
             {/* Footer */}
             <div className="relative z-10 mt-8 text-gray-500 text-sm">
-                <p>Powered by <span className="font-semibold">Passify</span></p>
+                <p>Powered by <span className="font-semibold">QARD</span></p>
             </div>
         </div>
     )

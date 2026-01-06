@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "Passify - The Wallet Agency Engine",
-    description: "Create premium wallet passes for your customers.",
+    title: "QARD - The Wallet Agency Engine",
+    description: "Create premium wallet passes for your customers with QARD.",
 };
 
 export default function RootLayout({

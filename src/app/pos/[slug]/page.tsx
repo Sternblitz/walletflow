@@ -253,7 +253,7 @@ export default function POSPage() {
                             <Zap className="w-12 h-12 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-extrabold tracking-tight">Passify POS</h1>
+                            <h1 className="text-3xl font-extrabold tracking-tight">QARD POS</h1>
                             <p className="text-emerald-500 font-medium mt-1 uppercase tracking-widest text-xs">{slug}</p>
                         </div>
                     </div>
@@ -443,8 +443,8 @@ export default function POSPage() {
                                         <div key={activity.id} className="flex items-center justify-between p-3 rounded-2xl bg-background/50 border border-border dark:border-white/5 hover:bg-background transition-colors">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.action === 'redeem'
-                                                        ? 'bg-purple-500/10 text-purple-500'
-                                                        : 'bg-emerald-500/10 text-emerald-500'
+                                                    ? 'bg-purple-500/10 text-purple-500'
+                                                    : 'bg-emerald-500/10 text-emerald-500'
                                                     }`}>
                                                     {activity.action === 'redeem' ? <Users size={18} /> : <Check size={18} />}
                                                 </div>
@@ -703,7 +703,7 @@ export default function POSPage() {
 
             {/* Footer */}
             <footer className="relative z-10 p-4 border-t border-white/5 text-center">
-                <p className="text-[10px] text-zinc-600 uppercase tracking-widest">Passify Point of Sale</p>
+                <p className="text-[10px] text-zinc-600 uppercase tracking-widest">QARD Point of Sale</p>
             </footer>
         </div>
     )
