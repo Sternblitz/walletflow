@@ -17,6 +17,11 @@ export interface PersonalizationConfig {
     allow_skip: boolean
     onboarding_title?: string
     onboarding_description?: string
+    // Design Overrides
+    design_bg?: string
+    design_text?: string
+    design_accent?: string
+    design_border?: string
 }
 
 export interface BrandingConfig {
@@ -88,6 +93,14 @@ export function PersonalizationEditor({ config, onChange, branding }: Personaliz
     }
 
     const hasAnyField = current.ask_name || current.ask_birthday || current.ask_email || current.ask_phone
+
+    // Helper for color logic
+    const getColors = () => ({
+        bg: current.design_bg || branding?.colors?.backgroundColor || '#000000',
+        text: current.design_text || branding?.colors?.foregroundColor || '#FFFFFF',
+        accent: current.design_accent || branding?.colors?.labelColor || '#3b82f6',
+        border: current.design_border || branding?.colors?.labelColor || '#3b82f6',
+    })
 
     return (
         <div className="space-y-6">
@@ -172,6 +185,34 @@ export function PersonalizationEditor({ config, onChange, branding }: Personaliz
                                 />
                             </div>
                         </div>
+
+                        {/* Color Customization */}
+                        <div className="pt-2 border-t border-white/5 space-y-3">
+                            <Label className="text-xs text-zinc-500 uppercase tracking-wider">Farben anpassen</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <ColorPicker
+                                    label="Hintergrund"
+                                    value={current.design_bg || (branding?.colors?.backgroundColor || '#000000')}
+                                    onChange={(v) => update({ design_bg: v })}
+                                />
+                                <ColorPicker
+                                    label="Text"
+                                    value={current.design_text || (branding?.colors?.foregroundColor || '#FFFFFF')}
+                                    onChange={(v) => update({ design_text: v })}
+                                />
+                                <ColorPicker
+                                    label="Akzent"
+                                    value={current.design_accent || (branding?.colors?.labelColor || '#3b82f6')}
+                                    onChange={(v) => update({ design_accent: v })}
+                                />
+                                <ColorPicker
+                                    label="Rahmen/Effekt"
+                                    value={current.design_border || (branding?.colors?.labelColor || '#3b82f6')}
+                                    onChange={(v) => update({ design_border: v })}
+                                />
+                            </div>
+                        </div>
+
                     </div>
 
                     {/* Name */}
@@ -281,9 +322,11 @@ function FieldToggle({ icon, label, description, checked, required, onToggle, on
 }
 
 function OnboardingPreview({ config, branding }: { config: PersonalizationConfig, branding?: BrandingConfig }) {
-    const bgColor = branding?.colors?.backgroundColor || '#1A1A1A'
-    const fgColor = branding?.colors?.foregroundColor || '#FFFFFF'
-    const accentColor = branding?.colors?.labelColor || '#888888'
+    // Prioritize manual design overrides, fallback to branding
+    const bgColor = config.design_bg || branding?.colors?.backgroundColor || '#1A1A1A'
+    const fgColor = config.design_text || branding?.colors?.foregroundColor || '#FFFFFF'
+    const accentColor = config.design_accent || branding?.colors?.labelColor || '#888888'
+    const borderColor = config.design_border || accentColor
     const logoUrl = branding?.logoUrl
 
     const title = config.onboarding_title || (config.ask_name ? 'Personalisiere deine Karte' : 'Deine digitale Treuekarte')
@@ -293,11 +336,19 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
             className="w-full aspect-[9/19] rounded-[40px] overflow-hidden relative shadow-2xl flex flex-col items-center justify-center p-6 border-[8px] border-zinc-900"
             style={{ backgroundColor: bgColor, color: fgColor }}
         >
-            {/* Animated background blobs (Simulated) */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
-                <div className="absolute top-0 left-0 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl" />
-                <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl" />
-            </div>
+            {/* Border Beam Animation Preview */}
+            < div className="absolute inset-0 pointer-events-none" >
+                <div className="absolute inset-0 opacity-20"
+                    style={{
+                        background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, ${borderColor} 360deg)`,
+                        animation: 'spin 4s linear infinite',
+                        maskImage: 'linear-gradient(black, black), linear-gradient(black, black)',
+                        maskClip: 'content-box, border-box',
+                        maskComposite: 'exclude',
+                        padding: '1px' // Thin border
+                    }}
+                />
+            </div >
 
             <div className="relative z-10 w-full text-center space-y-6">
                 {/* Logo */}
@@ -316,7 +367,6 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
                     )}
                 </div>
 
-                {/* Simulated Form */}
                 <div className="space-y-3 opacity-90">
                     {config.ask_name && (
                         <div className="h-10 rounded-lg border border-white/20 bg-black/10 w-full" />
@@ -327,11 +377,38 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
 
                     <div
                         className="h-12 rounded-lg w-full flex items-center justify-center text-xs font-bold shadow-lg mt-4"
-                        style={{ background: `linear-gradient(135deg, ${bgColor}, ${accentColor})`, color: fgColor, filter: 'brightness(1.2)' }}
+                        style={{ background: accentColor, color: fgColor, filter: 'brightness(1.1)' }}
                     >
                         Zu Apple Wallet
                     </div>
                 </div>
+            </div>
+
+            <style jsx>{`
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
+        </div >
+    )
+}
+
+function ColorPicker({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) {
+    return (
+        <div className="bg-black/20 rounded-lg p-2 flex items-center gap-2 border border-white/5">
+            <div className="relative w-8 h-8 rounded-md overflow-hidden shrink-0 border border-white/10">
+                <div className="absolute inset-0" style={{ backgroundColor: value }} />
+                <input
+                    type="color"
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                />
+            </div>
+            <div className="flex flex-col min-w-0">
+                <span className="text-[10px] text-zinc-400">{label}</span>
+                <span className="text-xs font-mono text-zinc-300 truncate">{value}</span>
             </div>
         </div>
     )

@@ -15,6 +15,10 @@ interface PersonalizationConfig {
     allow_skip?: boolean
     onboarding_title?: string
     onboarding_description?: string
+    design_bg?: string
+    design_text?: string
+    design_accent?: string
+    design_border?: string
 }
 
 interface OnboardingFormProps {
@@ -100,47 +104,68 @@ export function OnboardingForm({
     // Check if any fields are configured
     const hasFields = p.ask_name || p.ask_birthday || p.ask_email || p.ask_phone
 
+    // Colors - Prioritize Design Override -> Brand Color -> Default
+    const finalBgColor = p.design_bg || bgColor
+    const finalFgColor = p.design_text || fgColor
+    const finalAccentColor = p.design_accent || accentColor
+    const finalBorderColor = p.design_border || finalAccentColor
+
     // Derive gradient colors for button
-    const buttonGradient = `linear-gradient(135deg, ${bgColor}, ${adjustColor(bgColor, 20)})`
+    const buttonGradient = `linear-gradient(135deg, ${finalBgColor}, ${adjustColor(finalBgColor, 20)})`
 
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
-            style={{ backgroundColor: bgColor, color: fgColor }}
+            style={{ backgroundColor: finalBgColor, color: finalFgColor }}
         >
-            {/* Animated background blobs */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                <div
-                    className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse opacity-20"
-                    style={{ backgroundColor: fgColor }}
-                />
-                <div
-                    className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse opacity-20"
-                    style={{ backgroundColor: accentColor, animationDelay: '1s' }}
+            {/* Border Beam Animation */}
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute inset-0 opacity-100"
+                    style={{
+                        background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, ${finalBorderColor} 360deg)`,
+                        animation: 'spin 4s linear infinite',
+                        maskImage: 'linear-gradient(black, black), linear-gradient(black, black)',
+                        maskClip: 'content-box, border-box',
+                        maskComposite: 'exclude',
+                        padding: '3px' // Thickness of the border beam
+                    }}
                 />
             </div>
 
-            <div className="relative z-10 w-full max-w-md p-4">
+            <style jsx global>{`
+                @keyframes spin {
+                    from { --tw-rotate: 0deg; transform: rotate(0deg); }
+                    to { --tw-rotate: 360deg; transform: rotate(360deg); }
+                }
+            `}</style>
+
+            {/* Background gradient overlay for depth */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/20 pointer-events-none" />
+
+            <div className="relative z-10 w-full max-w-md p-6 bg-black/20 backdrop-blur-sm rounded-3xl border border-white/5 shadow-2xl">
                 {/* Logo & Business Name */}
-                <div className="text-center mb-8">
+                <div className="text-center mb-10 flex flex-col items-center">
                     {logoUrl ? (
-                        <img
-                            src={logoUrl}
-                            alt={clientName}
-                            className="w-24 h-24 mx-auto mb-4 rounded-2xl object-cover shadow-2xl"
-                        />
+                        <div className="relative mb-6 group">
+                            <div className="absolute -inset-4 bg-gradient-to-r from-transparent via-white/5 to-transparent blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <img
+                                src={logoUrl}
+                                alt={clientName}
+                                className="w-24 h-24 rounded-2xl object-cover shadow-2xl relative z-10"
+                            />
+                        </div>
                     ) : (
                         <div
-                            className="w-24 h-24 mx-auto mb-4 rounded-2xl shadow-2xl flex items-center justify-center text-4xl font-bold"
-                            style={{ backgroundColor: `${fgColor}20`, color: fgColor }}
+                            className="w-24 h-24 mx-auto mb-6 rounded-2xl shadow-2xl flex items-center justify-center text-3xl font-bold relative z-10"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: finalFgColor }}
                         >
                             {clientName.charAt(0).toUpperCase()}
                         </div>
                     )}
-                    <h1 className="text-3xl font-bold mb-2" style={{ color: fgColor }}>
+                    <h1 className="text-3xl font-bold mb-2" style={{ color: finalFgColor }}>
                         {p.onboarding_title || clientName}
                     </h1>
-                    <p style={{ color: accentColor }}>
+                    <p style={{ color: finalAccentColor }}>
                         {p.onboarding_description || (hasFields ? 'Personalisiere deine Karte' : 'Deine digitale Treuekarte')}
                     </p>
                 </div>
@@ -149,8 +174,8 @@ export function OnboardingForm({
                 <div
                     className="backdrop-blur-xl rounded-3xl p-6 shadow-2xl border"
                     style={{
-                        backgroundColor: `${fgColor}10`,
-                        borderColor: `${fgColor}20`
+                        backgroundColor: `${finalFgColor}05`,
+                        borderColor: `${finalFgColor}15`
                     }}
                 >
                     <form onSubmit={handleSubmit} className="space-y-5">
@@ -164,8 +189,8 @@ export function OnboardingForm({
                                 onChange={setName}
                                 error={errors.name}
                                 placeholder="Max Mustermann"
-                                accentColor={accentColor}
-                                fgColor={fgColor}
+                                accentColor={finalAccentColor}
+                                fgColor={finalFgColor}
                             />
                         )}
 
@@ -180,8 +205,8 @@ export function OnboardingForm({
                                 error={errors.birthday}
                                 type="date"
                                 hint="Für Geburtstagsüberraschungen 🎂"
-                                accentColor={accentColor}
-                                fgColor={fgColor}
+                                accentColor={finalAccentColor}
+                                fgColor={finalFgColor}
                             />
                         )}
 
@@ -197,8 +222,8 @@ export function OnboardingForm({
                                 type="email"
                                 placeholder="max@beispiel.de"
                                 hint="Für exklusive Angebote"
-                                accentColor={accentColor}
-                                fgColor={fgColor}
+                                accentColor={finalAccentColor}
+                                fgColor={finalFgColor}
                             />
                         )}
 
@@ -213,8 +238,8 @@ export function OnboardingForm({
                                 error={errors.phone}
                                 type="tel"
                                 placeholder="+49 123 456789"
-                                accentColor={accentColor}
-                                fgColor={fgColor}
+                                accentColor={finalAccentColor}
+                                fgColor={finalFgColor}
                             />
                         )}
 
@@ -225,7 +250,7 @@ export function OnboardingForm({
                             className="w-full py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
                             style={{
                                 background: buttonGradient,
-                                color: fgColor
+                                color: finalFgColor
                             }}
                         >
                             {isLoading ? (
@@ -246,7 +271,7 @@ export function OnboardingForm({
                         <button
                             onClick={handleSkip}
                             className="w-full mt-4 py-3 text-sm transition-colors hover:opacity-80"
-                            style={{ color: accentColor }}
+                            style={{ color: finalAccentColor }}
                         >
                             Ohne Angaben fortfahren →
                         </button>
@@ -256,13 +281,13 @@ export function OnboardingForm({
                 {/* Privacy Note */}
                 <p
                     className="text-center text-xs mt-6 px-4"
-                    style={{ color: accentColor }}
+                    style={{ color: finalAccentColor }}
                 >
                     Deine Daten werden sicher gespeichert und nicht weitergegeben.
                 </p>
 
                 {/* Powered by QARD */}
-                <div className="text-center mt-8" style={{ color: `${fgColor}40` }}>
+                <div className="text-center mt-8" style={{ color: `${finalFgColor}40` }}>
                     <p className="text-[10px] font-medium tracking-widest uppercase">
                         Powered by <span className="font-bold">QARD</span>
                     </p>
