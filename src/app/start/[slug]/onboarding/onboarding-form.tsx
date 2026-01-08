@@ -165,25 +165,23 @@ export function OnboardingForm({
 
                 {/* Form Card */}
                 <div
-                    className="backdrop-blur-xl rounded-3xl p-6 shadow-2xl border relative"
+                    className="rounded-3xl p-6 shadow-2xl relative z-10"
                     style={{
-                        backgroundColor: `${finalFgColor}05`,
-                        borderColor: `${finalFgColor}15`
+                        backgroundColor: finalBgColor, // Solid background to block inner glow
                     }}
                 >
-                    {/* Glow Animation */}
-                    <div className="absolute -inset-1 z-[-1] rounded-3xl blur-xl opacity-50 transition-all duration-1000"
-                        style={{
-                            background: `linear-gradient(135deg, ${finalAccentColor}, ${finalBorderColor}, ${finalAccentColor})`,
-                            backgroundSize: '200% 200%',
-                            animation: 'gradient-xy 6s ease infinite'
-                        }}
-                    />
-
-                    {/* Additional outer glow for depth */}
-                    <div className="absolute -inset-4 z-[-2] rounded-[2rem] blur-3xl opacity-30"
-                        style={{ backgroundColor: finalBorderColor }}
-                    />
+                    {/* Rotating Glow Border (Comet Style) */}
+                    <div className="absolute -inset-[3px] z-[-1] rounded-3xl overflow-hidden pointer-events-none">
+                        <div className="absolute inset-[-50%] animate-[spin_4s_linear_infinite]"
+                            style={{
+                                background: `conic-gradient(from 0deg, transparent 0deg, ${finalBorderColor} 60deg, transparent 120deg)`,
+                                // Larger area to ensure smooth rotation
+                                filter: 'blur(10px)',
+                            }}
+                        />
+                    </div>
+                    {/* Thin Sharp Border on top for definition */}
+                    <div className="absolute inset-0 rounded-3xl pointer-events-none border border-white/10" />
 
 
 

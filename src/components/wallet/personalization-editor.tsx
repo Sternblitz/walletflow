@@ -355,15 +355,18 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
                     )}
                 </div>
 
-                <div className="relative p-4 rounded-3xl border border-white/5 bg-white/5">
-                    {/* Glow Animation Preview */}
-                    <div className="absolute -inset-1 z-0 rounded-3xl blur-lg opacity-40"
-                        style={{
-                            background: `linear-gradient(135deg, ${accentColor}, ${borderColor}, ${accentColor})`,
-                            backgroundSize: '200% 200%',
-                            animation: 'gradient-xy 6s ease infinite'
-                        }}
-                    />
+                <div className="relative p-4 rounded-3xl z-10" style={{ backgroundColor: bgColor }}>
+                    {/* Rotating Glow Border (Comet Style) */}
+                    <div className="absolute -inset-[2px] z-[-1] rounded-3xl overflow-hidden pointer-events-none">
+                        <div className="absolute inset-[-50%] animate-[spin_4s_linear_infinite]"
+                            style={{
+                                background: `conic-gradient(from 0deg, transparent 0deg, ${borderColor} 60deg, transparent 120deg)`,
+                                filter: 'blur(5px)',
+                            }}
+                        />
+                    </div>
+                    {/* Thin Sharp Border */}
+                    <div className="absolute inset-0 rounded-3xl pointer-events-none border border-white/10" />
 
                     {/* Content */}
                     <div className="relative z-10 space-y-3 opacity-90">
@@ -385,10 +388,9 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
             </div>
 
             <style jsx>{`
-                @keyframes gradient-xy {
-                    0% { background-position: 0% 50%; opacity: 0.5; }
-                    50% { background-position: 100% 50%; opacity: 0.8; }
-                    100% { background-position: 0% 50%; opacity: 0.5; }
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
                 }
             `}</style>
         </div >
