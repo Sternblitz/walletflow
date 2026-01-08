@@ -22,6 +22,7 @@ export interface PersonalizationConfig {
     design_text?: string
     design_accent?: string
     design_border?: string
+    design_form_bg?: string
 }
 
 export interface BrandingConfig {
@@ -191,9 +192,14 @@ export function PersonalizationEditor({ config, onChange, branding }: Personaliz
                             <Label className="text-xs text-zinc-500 uppercase tracking-wider">Farben anpassen</Label>
                             <div className="grid grid-cols-2 gap-3">
                                 <ColorPicker
-                                    label="Hintergrund"
+                                    label="Hintergrund (Seite)"
                                     value={current.design_bg || (branding?.colors?.backgroundColor || '#000000')}
                                     onChange={(v) => update({ design_bg: v })}
+                                />
+                                <ColorPicker
+                                    label="Hintergrund (Form)"
+                                    value={current.design_form_bg || current.design_bg || (branding?.colors?.backgroundColor || '#000000')}
+                                    onChange={(v) => update({ design_form_bg: v })}
                                 />
                                 <ColorPicker
                                     label="Text"
@@ -355,7 +361,7 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
                     )}
                 </div>
 
-                <div className="relative p-4 rounded-3xl z-10" style={{ backgroundColor: bgColor }}>
+                <div className="relative p-4 rounded-3xl z-10" style={{ backgroundColor: config.design_form_bg || bgColor }}>
                     {/* Rotating Glow Border (Comet Style) */}
                     <div className="absolute -inset-[2px] z-[-1] rounded-3xl overflow-hidden pointer-events-none">
                         <div className="absolute inset-[-50%] animate-[spin_4s_linear_infinite]"

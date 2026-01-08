@@ -19,6 +19,7 @@ interface PersonalizationConfig {
     design_text?: string
     design_accent?: string
     design_border?: string
+    design_form_bg?: string
 }
 
 interface OnboardingFormProps {
@@ -167,7 +168,7 @@ export function OnboardingForm({
                 <div
                     className="rounded-3xl p-6 shadow-2xl relative z-10"
                     style={{
-                        backgroundColor: finalBgColor, // Solid background to block inner glow
+                        backgroundColor: p.design_form_bg || finalBgColor, // Use specific form bg or fallback to page bg
                     }}
                 >
                     {/* Rotating Glow Border (Comet Style) */}
