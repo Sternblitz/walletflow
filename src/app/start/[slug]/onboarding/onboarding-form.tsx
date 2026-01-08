@@ -160,25 +160,33 @@ export function OnboardingForm({
 
                 {/* Form Card */}
                 <div
-                    className="backdrop-blur-xl rounded-3xl p-6 shadow-2xl border relative overflow-hidden"
+                    className="backdrop-blur-xl rounded-3xl p-6 shadow-2xl border relative"
                     style={{
                         backgroundColor: `${finalFgColor}05`,
                         borderColor: `${finalFgColor}15`
                     }}
                 >
-                    {/* Border Beam Animation (Scoped to Card) */}
-                    <div className="absolute inset-0 pointer-events-none z-0">
-                        <div className="absolute inset-0 opacity-100"
-                            style={{
-                                background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, ${finalBorderColor} 360deg)`,
-                                animation: 'spin 4s linear infinite',
-                                maskImage: 'linear-gradient(black, black), linear-gradient(black, black)',
-                                maskClip: 'content-box, border-box',
-                                maskComposite: 'exclude',
-                                padding: '2px'
-                            }}
-                        />
-                    </div>
+                    {/* Glow Animation */}
+                    <div className="absolute -inset-1 z-[-1] rounded-3xl blur-xl opacity-50 transition-all duration-1000"
+                        style={{
+                            background: `linear-gradient(135deg, ${finalAccentColor}, ${finalBorderColor}, ${finalAccentColor})`,
+                            backgroundSize: '200% 200%',
+                            animation: 'gradient-xy 6s ease infinite'
+                        }}
+                    />
+
+                    {/* Additional outer glow for depth */}
+                    <div className="absolute -inset-4 z-[-2] rounded-[2rem] blur-3xl opacity-30"
+                        style={{ backgroundColor: finalBorderColor }}
+                    />
+
+                    <style jsx>{`
+                        @keyframes gradient-xy {
+                            0% { background-position: 0% 50%; opacity: 0.5; }
+                            50% { background-position: 100% 50%; opacity: 0.8; }
+                            100% { background-position: 0% 50%; opacity: 0.5; }
+                        }
+                    `}</style>
 
                     <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
                         {/* Name Field */}

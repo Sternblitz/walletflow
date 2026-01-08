@@ -355,22 +355,18 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
                     )}
                 </div>
 
-                <div className="relative p-4 rounded-3xl border border-white/5 bg-white/5 overflow-hidden">
-                    {/* Border Beam Animation Preview */}
-                    <div className="absolute inset-0 pointer-events-none z-0">
-                        <div className="absolute inset-0 opacity-20"
-                            style={{
-                                background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, ${borderColor} 360deg)`,
-                                animation: 'spin 4s linear infinite',
-                                maskImage: 'linear-gradient(black, black), linear-gradient(black, black)',
-                                maskClip: 'content-box, border-box',
-                                maskComposite: 'exclude',
-                                padding: '2px'
-                            }}
-                        />
-                    </div>
+                <div className="relative p-4 rounded-3xl border border-white/5 bg-white/5">
+                    {/* Glow Animation Preview */}
+                    <div className="absolute -inset-1 z-0 rounded-3xl blur-lg opacity-40"
+                        style={{
+                            background: `linear-gradient(135deg, ${accentColor}, ${borderColor}, ${accentColor})`,
+                            backgroundSize: '200% 200%',
+                            animation: 'gradient-xy 6s ease infinite'
+                        }}
+                    />
 
-                    <div className="space-y-3 opacity-90 relative z-10">
+                    {/* Content */}
+                    <div className="relative z-10 space-y-3 opacity-90">
                         {config.ask_name && (
                             <div className="h-10 rounded-lg border border-white/20 bg-black/10 w-full" />
                         )}
@@ -389,9 +385,10 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
             </div>
 
             <style jsx>{`
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
+                @keyframes gradient-xy {
+                    0% { background-position: 0% 50%; opacity: 0.5; }
+                    50% { background-position: 100% 50%; opacity: 0.8; }
+                    100% { background-position: 0% 50%; opacity: 0.5; }
                 }
             `}</style>
         </div >
