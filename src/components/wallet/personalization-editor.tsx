@@ -15,6 +15,17 @@ export interface PersonalizationConfig {
     ask_phone: boolean
     phone_required: boolean
     allow_skip: boolean
+    onboarding_title?: string
+    onboarding_description?: string
+}
+
+export interface BrandingConfig {
+    logoUrl?: string
+    colors?: {
+        backgroundColor: string
+        foregroundColor: string
+        labelColor: string
+    }
 }
 
 const defaultConfig: PersonalizationConfig = {
@@ -33,6 +44,7 @@ const defaultConfig: PersonalizationConfig = {
 interface PersonalizationEditorProps {
     config: Partial<PersonalizationConfig>
     onChange: (config: PersonalizationConfig) => void
+    branding?: BrandingConfig
 }
 
 // Simple Toggle component without Radix
@@ -54,8 +66,11 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
     )
 }
 
-export function PersonalizationEditor({ config, onChange }: PersonalizationEditorProps) {
+import { Eye, X } from 'lucide-react'
+
+export function PersonalizationEditor({ config, onChange, branding }: PersonalizationEditorProps) {
     const current: PersonalizationConfig = { ...defaultConfig, ...config }
+    const [showPreview, setShowPreview] = useState(false)
 
     const update = (patch: Partial<PersonalizationConfig>) => {
         const newConfig = { ...current, ...patch }
@@ -76,6 +91,21 @@ export function PersonalizationEditor({ config, onChange }: PersonalizationEdito
 
     return (
         <div className="space-y-6">
+            {/* Preview Modal */}
+            {showPreview && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-sm bg-zinc-900 rounded-[48px] border border-white/10 shadow-2xl overflow-hidden">
+                        <button
+                            onClick={() => setShowPreview(false)}
+                            className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                        <OnboardingPreview config={current} branding={branding} />
+                    </div>
+                </div>
+            )}
+
             {/* Master Toggle */}
             <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl">
                 <div className="flex items-center gap-3">
@@ -104,6 +134,46 @@ export function PersonalizationEditor({ config, onChange }: PersonalizationEdito
             {/* Field Toggles - Only show when enabled */}
             {current.enabled && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+
+                    {/* Design Texts */}
+                    <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-4">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-white font-medium">Onboarding Design</Label>
+
+                            {/* Preview Button */}
+                            <button
+                                onClick={() => setShowPreview(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-cyan-400 bg-cyan-500/10 rounded-lg hover:bg-cyan-500/20 transition-colors"
+                            >
+                                <Eye className="w-3.5 h-3.5" />
+                                Vorschau
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-zinc-400">Überschrift</Label>
+                                <input
+                                    type="text"
+                                    value={current.onboarding_title || ''}
+                                    placeholder="Deine digitale Treuekarte"
+                                    onChange={(e) => update({ onboarding_title: e.target.value })}
+                                    className="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-cyan-500/50"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-zinc-400">Beschreibung</Label>
+                                <input
+                                    type="text"
+                                    value={current.onboarding_description || ''}
+                                    placeholder="Registriere dich um Punkte zu sammeln"
+                                    onChange={(e) => update({ onboarding_description: e.target.value })}
+                                    className="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-cyan-500/50"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Name */}
                     <FieldToggle
                         icon={<User className="w-4 h-4" />}
@@ -206,6 +276,63 @@ function FieldToggle({ icon, label, description, checked, required, onToggle, on
                     />
                 </div>
             )}
+        </div>
+    )
+}
+
+function OnboardingPreview({ config, branding }: { config: PersonalizationConfig, branding?: BrandingConfig }) {
+    const bgColor = branding?.colors?.backgroundColor || '#1A1A1A'
+    const fgColor = branding?.colors?.foregroundColor || '#FFFFFF'
+    const accentColor = branding?.colors?.labelColor || '#888888'
+    const logoUrl = branding?.logoUrl
+
+    const title = config.onboarding_title || (config.ask_name ? 'Personalisiere deine Karte' : 'Deine digitale Treuekarte')
+
+    return (
+        <div
+            className="w-full aspect-[9/19] rounded-[40px] overflow-hidden relative shadow-2xl flex flex-col items-center justify-center p-6 border-[8px] border-zinc-900"
+            style={{ backgroundColor: bgColor, color: fgColor }}
+        >
+            {/* Animated background blobs (Simulated) */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+                <div className="absolute top-0 left-0 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl" />
+                <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl" />
+            </div>
+
+            <div className="relative z-10 w-full text-center space-y-6">
+                {/* Logo */}
+                {logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="w-20 h-20 mx-auto rounded-xl shadow-lg object-cover" />
+                ) : (
+                    <div className="w-20 h-20 mx-auto rounded-xl shadow-lg bg-white/10 flex items-center justify-center text-2xl font-bold">
+                        L
+                    </div>
+                )}
+
+                <div className="space-y-2">
+                    <h3 className="text-xl font-bold leading-tight" style={{ color: fgColor }}>{title}</h3>
+                    {config.onboarding_description && (
+                        <p className="text-xs opacity-70" style={{ color: fgColor }}>{config.onboarding_description}</p>
+                    )}
+                </div>
+
+                {/* Simulated Form */}
+                <div className="space-y-3 opacity-90">
+                    {config.ask_name && (
+                        <div className="h-10 rounded-lg border border-white/20 bg-black/10 w-full" />
+                    )}
+                    {config.ask_email && (
+                        <div className="h-10 rounded-lg border border-white/20 bg-black/10 w-full" />
+                    )}
+
+                    <div
+                        className="h-12 rounded-lg w-full flex items-center justify-center text-xs font-bold shadow-lg mt-4"
+                        style={{ background: `linear-gradient(135deg, ${bgColor}, ${accentColor})`, color: fgColor, filter: 'brightness(1.2)' }}
+                    >
+                        Zu Apple Wallet
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }

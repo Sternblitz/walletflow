@@ -13,6 +13,8 @@ interface PersonalizationConfig {
     ask_phone?: boolean
     phone_required?: boolean
     allow_skip?: boolean
+    onboarding_title?: string
+    onboarding_description?: string
 }
 
 interface OnboardingFormProps {
@@ -107,7 +109,7 @@ export function OnboardingForm({
             style={{ backgroundColor: bgColor, color: fgColor }}
         >
             {/* Animated background blobs */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
                 <div
                     className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse opacity-20"
                     style={{ backgroundColor: fgColor }}
@@ -118,7 +120,7 @@ export function OnboardingForm({
                 />
             </div>
 
-            <div className="relative z-10 w-full max-w-md">
+            <div className="relative z-10 w-full max-w-md p-4">
                 {/* Logo & Business Name */}
                 <div className="text-center mb-8">
                     {logoUrl ? (
@@ -136,10 +138,10 @@ export function OnboardingForm({
                         </div>
                     )}
                     <h1 className="text-3xl font-bold mb-2" style={{ color: fgColor }}>
-                        {clientName}
+                        {p.onboarding_title || clientName}
                     </h1>
                     <p style={{ color: accentColor }}>
-                        {hasFields ? 'Personalisiere deine Karte' : 'Deine digitale Treuekarte'}
+                        {p.onboarding_description || (hasFields ? 'Personalisiere deine Karte' : 'Deine digitale Treuekarte')}
                     </p>
                 </div>
 

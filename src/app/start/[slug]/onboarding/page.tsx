@@ -38,13 +38,17 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
     const fgColor = designAssets.colors?.foregroundColor || '#FFFFFF'
     const accentColor = designAssets.colors?.labelColor || '#888888'
 
+    // Extract logo (Campaign logo > Client logo)
+    const campaignLogo = designAssets.images?.logo?.url
+    const logoUrl = campaignLogo || client.logo_url
+
     return (
         <OnboardingForm
             slug={slug}
             campaignId={campaign.id}
             platform={platform}
             clientName={client.name}
-            logoUrl={client.logo_url}
+            logoUrl={logoUrl}
             bgColor={bgColor}
             fgColor={fgColor}
             accentColor={accentColor}

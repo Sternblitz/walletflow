@@ -366,6 +366,10 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                                 <PersonalizationEditor
                                     config={personalization}
                                     onChange={handlePersonalizationChange}
+                                    branding={{
+                                        logoUrl: draft?.images?.logo?.url,
+                                        colors: draft?.colors
+                                    }}
                                 />
                             </section>
 
