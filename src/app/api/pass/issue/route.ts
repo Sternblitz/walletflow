@@ -341,6 +341,8 @@ async function generateApplePass(
     // Pass ID for barcode
     if (passRecord?.id) {
         initialState.id = passRecord.id
+    } else {
+        initialState.id = serialNumber
     }
 
     // Extract locations from campaign config for GPS notifications
@@ -381,11 +383,13 @@ async function generateApplePass(
     })
 
     // Set cookie to remember this pass (expires in 1 year)
-    response.cookies.set(`pass_${campaign.id}`, passRecord.id, {
-        maxAge: 60 * 60 * 24 * 365, // 1 year
-        httpOnly: true,
-        sameSite: 'lax'
-    })
+    if (passRecord?.id) {
+        response.cookies.set(`pass_${campaign.id}`, passRecord.id, {
+            maxAge: 60 * 60 * 24 * 365, // 1 year
+            httpOnly: true,
+            sameSite: 'lax'
+        })
+    }
 
     return response
 }

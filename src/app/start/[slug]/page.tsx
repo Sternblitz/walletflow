@@ -42,7 +42,12 @@ export default async function SmartLinkPage({ params }: { params: Promise<{ slug
 
     // 3. Check if personalization is required
     const personalization = campaignConfig.personalization || {}
-    const requiresOnboarding = personalization.ask_name || personalization.ask_birthday
+    const requiresOnboarding = personalization.enabled && (
+        personalization.ask_name ||
+        personalization.ask_birthday ||
+        personalization.ask_email ||
+        personalization.ask_phone
+    )
 
     // 4. Auto-Redirect Logic for Mobile
     if (isIOS) {

@@ -121,12 +121,19 @@ export function OnboardingForm({
             <div className="relative z-10 w-full max-w-md">
                 {/* Logo & Business Name */}
                 <div className="text-center mb-8">
-                    {logoUrl && (
+                    {logoUrl ? (
                         <img
                             src={logoUrl}
                             alt={clientName}
                             className="w-24 h-24 mx-auto mb-4 rounded-2xl object-cover shadow-2xl"
                         />
+                    ) : (
+                        <div
+                            className="w-24 h-24 mx-auto mb-4 rounded-2xl shadow-2xl flex items-center justify-center text-4xl font-bold"
+                            style={{ backgroundColor: `${fgColor}20`, color: fgColor }}
+                        >
+                            {clientName.charAt(0).toUpperCase()}
+                        </div>
                     )}
                     <h1 className="text-3xl font-bold mb-2" style={{ color: fgColor }}>
                         {clientName}
@@ -312,9 +319,10 @@ function FormField({
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
-                className="w-full px-4 py-3 rounded-xl transition-all text-white placeholder-gray-500 focus:outline-none focus:ring-2"
+                className="w-full px-4 py-3 rounded-xl transition-all placeholder-gray-500 focus:outline-none focus:ring-2"
                 style={{
-                    backgroundColor: 'rgba(0,0,0,0.3)',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    color: fgColor,
                     borderColor: error ? '#ef4444' : `${fgColor}20`,
                     borderWidth: '1px',
                     borderStyle: 'solid'
