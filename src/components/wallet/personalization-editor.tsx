@@ -347,9 +347,9 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
             <div className="relative z-10 w-full text-center space-y-6">
                 {/* Logo */}
                 {logoUrl ? (
-                    <img src={logoUrl} alt="Logo" className="w-20 h-20 mx-auto rounded-xl shadow-lg object-cover" />
+                    <img src={logoUrl} alt="Logo" className="h-16 max-w-[140px] object-contain mx-auto" />
                 ) : (
-                    <div className="w-20 h-20 mx-auto rounded-xl shadow-lg bg-white/10 flex items-center justify-center text-2xl font-bold">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-white/10 flex items-center justify-center text-xl font-bold">
                         L
                     </div>
                 )}
@@ -361,33 +361,38 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
                     )}
                 </div>
 
-                <div className="relative p-4 rounded-3xl z-10" style={{ backgroundColor: config.design_form_bg || bgColor }}>
-                    {/* Rotating Glow Border (Comet Style) */}
-                    <div className="absolute -inset-[2px] z-[-1] rounded-3xl overflow-hidden pointer-events-none">
-                        <div className="absolute inset-[-50%] animate-[spin_4s_linear_infinite]"
+                {/* Form Card Wrapper */}
+                <div className="relative">
+                    {/* Rotating Glow Border - BEHIND */}
+                    <div className="absolute -inset-[2px] rounded-2xl overflow-hidden pointer-events-none">
+                        <div className="absolute inset-[-50%] animate-[spin_2s_linear_infinite]"
                             style={{
                                 background: `conic-gradient(from 0deg, transparent 0deg, ${borderColor} 60deg, transparent 120deg)`,
-                                filter: 'blur(5px)',
+                                filter: 'blur(4px)',
                             }}
                         />
                     </div>
-                    {/* Thin Sharp Border */}
-                    <div className="absolute inset-0 rounded-3xl pointer-events-none border border-white/10" />
 
-                    {/* Content */}
-                    <div className="relative z-10 space-y-3 opacity-90">
-                        {config.ask_name && (
-                            <div className="h-10 rounded-lg border border-white/20 bg-black/10 w-full" />
-                        )}
-                        {config.ask_email && (
-                            <div className="h-10 rounded-lg border border-white/20 bg-black/10 w-full" />
-                        )}
+                    {/* Form Card - ON TOP */}
+                    <div className="relative p-3 rounded-2xl" style={{ backgroundColor: config.design_form_bg || '#FFFFFF' }}>
+                        {/* Thin Border */}
+                        <div className="absolute inset-0 rounded-2xl pointer-events-none border border-black/5" />
 
-                        <div
-                            className="h-12 rounded-lg w-full flex items-center justify-center text-xs font-bold shadow-lg mt-4"
-                            style={{ background: accentColor, color: fgColor, filter: 'brightness(1.1)' }}
-                        >
-                            Zu Apple Wallet
+                        {/* Content */}
+                        <div className="relative z-10 space-y-2">
+                            {config.ask_name && (
+                                <div className="h-8 rounded-lg border border-gray-200 bg-gray-50 w-full" />
+                            )}
+                            {config.ask_email && (
+                                <div className="h-8 rounded-lg border border-gray-200 bg-gray-50 w-full" />
+                            )}
+
+                            <div
+                                className="h-10 rounded-lg w-full flex items-center justify-center text-[10px] font-bold shadow-md mt-2"
+                                style={{ background: accentColor, color: '#FFFFFF' }}
+                            >
+                                Zu Apple Wallet
+                            </div>
                         </div>
                     </div>
                 </div>

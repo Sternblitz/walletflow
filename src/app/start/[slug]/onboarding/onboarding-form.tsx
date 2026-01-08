@@ -136,22 +136,19 @@ export function OnboardingForm({
             {/* Background gradient overlay for depth */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/20 pointer-events-none" />
 
-            <div className="relative z-10 w-full max-w-md p-6 bg-black/20 backdrop-blur-sm rounded-3xl border border-white/5 shadow-2xl">
+            <div className="relative z-10 w-full max-w-md">
                 {/* Logo & Business Name */}
                 <div className="text-center mb-10 flex flex-col items-center">
                     {logoUrl ? (
-                        <div className="relative mb-6 group">
-                            <div className="absolute -inset-4 bg-gradient-to-r from-transparent via-white/5 to-transparent blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <img
-                                src={logoUrl}
-                                alt={clientName}
-                                className="w-24 h-24 rounded-2xl object-cover shadow-2xl relative z-10"
-                            />
-                        </div>
+                        <img
+                            src={logoUrl}
+                            alt={clientName}
+                            className="h-20 max-w-[180px] object-contain mx-auto mb-6"
+                        />
                     ) : (
                         <div
-                            className="w-24 h-24 mx-auto mb-6 rounded-2xl shadow-2xl flex items-center justify-center text-3xl font-bold relative z-10"
-                            style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: finalFgColor }}
+                            className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/10 flex items-center justify-center text-3xl font-bold"
+                            style={{ color: finalFgColor }}
                         >
                             {clientName.charAt(0).toUpperCase()}
                         </div>
@@ -164,126 +161,129 @@ export function OnboardingForm({
                     </p>
                 </div>
 
-                {/* Form Card */}
-                <div
-                    className="rounded-3xl p-6 shadow-2xl relative z-10"
-                    style={{
-                        backgroundColor: p.design_form_bg || finalBgColor, // Use specific form bg or fallback to page bg
-                    }}
-                >
-                    {/* Rotating Glow Border (Comet Style) */}
-                    <div className="absolute -inset-[3px] z-[-1] rounded-3xl overflow-hidden pointer-events-none">
-                        <div className="absolute inset-[-50%] animate-[spin_4s_linear_infinite]"
+                {/* Form Card - Wrapper for animation */}
+                <div className="relative">
+                    {/* Rotating Glow Border - BEHIND the card */}
+                    <div className="absolute -inset-[3px] rounded-3xl overflow-hidden pointer-events-none">
+                        <div className="absolute inset-[-50%] animate-[spin_2s_linear_infinite]"
                             style={{
                                 background: `conic-gradient(from 0deg, transparent 0deg, ${finalBorderColor} 60deg, transparent 120deg)`,
-                                // Larger area to ensure smooth rotation
-                                filter: 'blur(10px)',
+                                filter: 'blur(8px)',
                             }}
                         />
                     </div>
-                    {/* Thin Sharp Border on top for definition */}
-                    <div className="absolute inset-0 rounded-3xl pointer-events-none border border-white/10" />
+
+                    {/* Actual Form Card - ON TOP of animation */}
+                    <div
+                        className="rounded-3xl p-6 shadow-2xl relative"
+                        style={{
+                            backgroundColor: p.design_form_bg || '#FFFFFF',
+                        }}
+                    >
+                        {/* Thin Border for definition */}
+                        <div className="absolute inset-0 rounded-3xl pointer-events-none border border-black/5" />
 
 
 
-                    <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
-                        {/* Name Field */}
-                        {p.ask_name && (
-                            <FormField
-                                id="name"
-                                label="Dein Name"
-                                required={p.name_required}
-                                value={name}
-                                onChange={setName}
-                                error={errors.name}
-                                placeholder="Max Mustermann"
-                                accentColor={finalAccentColor}
-                                fgColor={finalFgColor}
-                            />
-                        )}
-
-                        {/* Birthday Field */}
-                        {p.ask_birthday && (
-                            <FormField
-                                id="birthday"
-                                label="Geburtstag"
-                                required={p.birthday_required}
-                                value={birthday}
-                                onChange={setBirthday}
-                                error={errors.birthday}
-                                type="date"
-                                hint="Für Geburtstagsüberraschungen 🎂"
-                                accentColor={finalAccentColor}
-                                fgColor={finalFgColor}
-                            />
-                        )}
-
-                        {/* Email Field */}
-                        {p.ask_email && (
-                            <FormField
-                                id="email"
-                                label="E-Mail"
-                                required={p.email_required}
-                                value={email}
-                                onChange={setEmail}
-                                error={errors.email}
-                                type="email"
-                                placeholder="max@beispiel.de"
-                                hint="Für exklusive Angebote"
-                                accentColor={finalAccentColor}
-                                fgColor={finalFgColor}
-                            />
-                        )}
-
-                        {/* Phone Field */}
-                        {p.ask_phone && (
-                            <FormField
-                                id="phone"
-                                label="Telefon"
-                                required={p.phone_required}
-                                value={phone}
-                                onChange={setPhone}
-                                error={errors.phone}
-                                type="tel"
-                                placeholder="+49 123 456789"
-                                accentColor={finalAccentColor}
-                                fgColor={finalFgColor}
-                            />
-                        )}
-
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
-                            style={{
-                                background: buttonGradient,
-                                color: finalFgColor
-                            }}
-                        >
-                            {isLoading ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <Spinner />
-                                    Karte wird erstellt...
-                                </span>
-                            ) : (
-                                <span className="flex items-center justify-center gap-2">
-                                    {platform === 'android' ? '📱 Zu Google Wallet' : '📱 Zu Apple Wallet'}
-                                </span>
+                        <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
+                            {/* Name Field */}
+                            {p.ask_name && (
+                                <FormField
+                                    id="name"
+                                    label="Dein Name"
+                                    required={p.name_required}
+                                    value={name}
+                                    onChange={setName}
+                                    error={errors.name}
+                                    placeholder="Max Mustermann"
+                                    accentColor={finalAccentColor}
+                                    fgColor={finalFgColor}
+                                />
                             )}
-                        </button>
-                    </form>
 
-                    {/* Skip Link - only if allowed */}
-                    {p.allow_skip !== false && hasFields && (
-                        <button
-                            onClick={handleSkip}
-                            className="w-full mt-4 py-3 text-sm transition-colors hover:opacity-80"
-                            style={{ color: finalAccentColor }}
-                        >
-                            Ohne Angaben fortfahren →
-                        </button>
-                    )}
+                            {/* Birthday Field */}
+                            {p.ask_birthday && (
+                                <FormField
+                                    id="birthday"
+                                    label="Geburtstag"
+                                    required={p.birthday_required}
+                                    value={birthday}
+                                    onChange={setBirthday}
+                                    error={errors.birthday}
+                                    type="date"
+                                    hint="Für Geburtstagsüberraschungen 🎂"
+                                    accentColor={finalAccentColor}
+                                    fgColor={finalFgColor}
+                                />
+                            )}
+
+                            {/* Email Field */}
+                            {p.ask_email && (
+                                <FormField
+                                    id="email"
+                                    label="E-Mail"
+                                    required={p.email_required}
+                                    value={email}
+                                    onChange={setEmail}
+                                    error={errors.email}
+                                    type="email"
+                                    placeholder="max@beispiel.de"
+                                    hint="Für exklusive Angebote"
+                                    accentColor={finalAccentColor}
+                                    fgColor={finalFgColor}
+                                />
+                            )}
+
+                            {/* Phone Field */}
+                            {p.ask_phone && (
+                                <FormField
+                                    id="phone"
+                                    label="Telefon"
+                                    required={p.phone_required}
+                                    value={phone}
+                                    onChange={setPhone}
+                                    error={errors.phone}
+                                    type="tel"
+                                    placeholder="+49 123 456789"
+                                    accentColor={finalAccentColor}
+                                    fgColor={finalFgColor}
+                                />
+                            )}
+
+                            {/* Submit Button */}
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg mt-2"
+                                style={{
+                                    background: finalAccentColor,
+                                    color: '#FFFFFF'
+                                }}
+                            >
+                                {isLoading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Spinner />
+                                        Karte wird erstellt...
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center justify-center gap-2">
+                                        {platform === 'android' ? '📱 Zu Google Wallet' : '📱 Zu Apple Wallet'}
+                                    </span>
+                                )}
+                            </button>
+                        </form>
+
+                        {/* Skip Link - only if allowed */}
+                        {p.allow_skip !== false && hasFields && (
+                            <button
+                                onClick={handleSkip}
+                                className="w-full mt-4 py-3 text-sm transition-colors hover:opacity-80"
+                                style={{ color: finalAccentColor }}
+                            >
+                                Ohne Angaben fortfahren →
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Privacy Note */}
@@ -339,13 +339,13 @@ function FormField({
             <label
                 htmlFor={id}
                 className="block text-sm font-medium mb-2"
-                style={{ color: `${fgColor}CC` }}
+                style={{ color: '#374151' }}
             >
                 {label}
                 {required ? (
-                    <span className="text-red-400 ml-1">*</span>
+                    <span className="text-red-500 ml-1">*</span>
                 ) : (
-                    <span className="ml-1 text-xs" style={{ color: accentColor }}>(optional)</span>
+                    <span className="ml-1 text-xs text-gray-400">(optional)</span>
                 )}
             </label>
             <input
@@ -354,11 +354,11 @@ function FormField({
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
-                className="w-full px-4 py-3 rounded-xl transition-all placeholder-gray-500 focus:outline-none focus:ring-2"
+                className="w-full px-4 py-3 rounded-xl transition-all placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 style={{
-                    backgroundColor: 'rgba(255,255,255,0.1)',
-                    color: fgColor,
-                    borderColor: error ? '#ef4444' : `${fgColor}20`,
+                    backgroundColor: 'rgba(0,0,0,0.03)',
+                    color: '#1a1a1a',
+                    borderColor: error ? '#ef4444' : 'rgba(0,0,0,0.1)',
                     borderWidth: '1px',
                     borderStyle: 'solid'
                 }}
@@ -367,7 +367,7 @@ function FormField({
                 <p className="text-red-400 text-xs mt-1">{error}</p>
             )}
             {hint && !error && (
-                <p className="text-xs mt-1" style={{ color: accentColor }}>{hint}</p>
+                <p className="text-xs mt-1 text-gray-500">{hint}</p>
             )}
         </div>
     )
