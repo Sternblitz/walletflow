@@ -125,6 +125,11 @@ export function OnboardingForm({
                     from { --tw-rotate: 0deg; transform: rotate(0deg); }
                     to { --tw-rotate: 360deg; transform: rotate(360deg); }
                 }
+                @keyframes gradient-xy {
+                    0% { background-position: 0% 50%; opacity: 0.5; }
+                    50% { background-position: 100% 50%; opacity: 0.8; }
+                    100% { background-position: 0% 50%; opacity: 0.5; }
+                }
             `}</style>
 
             {/* Background gradient overlay for depth */}
@@ -180,13 +185,7 @@ export function OnboardingForm({
                         style={{ backgroundColor: finalBorderColor }}
                     />
 
-                    <style jsx>{`
-                        @keyframes gradient-xy {
-                            0% { background-position: 0% 50%; opacity: 0.5; }
-                            50% { background-position: 100% 50%; opacity: 0.8; }
-                            100% { background-position: 0% 50%; opacity: 0.5; }
-                        }
-                    `}</style>
+
 
                     <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
                         {/* Name Field */}
