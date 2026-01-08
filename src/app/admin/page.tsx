@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Plus, Users, Clock, ChevronRight, Stamp, CreditCard, Gift, ArrowUpRight, Smartphone, Activity } from "lucide-react"
+import { Plus, Users, Clock, ChevronRight, Stamp, CreditCard, Gift, ArrowUpRight, Smartphone, Activity, Send } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 
 // Force dynamic rendering
@@ -102,11 +102,18 @@ export default async function DashboardPage() {
                     <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
                     <p className="text-zinc-400">Willkommen zurück. Hier ist der Überblick über deine Kampagnen.</p>
                 </div>
-                <Link href="/admin/create">
-                    <Button className="bg-white text-black hover:bg-zinc-200 h-11 px-6 rounded-full font-medium transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                        <Plus className="mr-2 h-4 w-4" /> Neue Kampagne
-                    </Button>
-                </Link>
+                <div className="flex gap-3">
+                    <Link href="/admin/push-requests">
+                        <Button className="bg-zinc-800 text-white hover:bg-zinc-700 h-11 px-6 rounded-full font-medium transition-all hover:scale-105 active:scale-95 border border-white/10">
+                            <Send className="mr-2 h-4 w-4" /> Push Requests
+                        </Button>
+                    </Link>
+                    <Link href="/admin/create">
+                        <Button className="bg-white text-black hover:bg-zinc-200 h-11 px-6 rounded-full font-medium transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                            <Plus className="mr-2 h-4 w-4" /> Neue Kampagne
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             {/* Stats Grid */}

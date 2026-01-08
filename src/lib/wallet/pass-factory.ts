@@ -166,12 +166,13 @@ export class PassFactory {
         headerFields.forEach(f => pkPass.headerFields.push(f))
 
         // Always add Customer Number to header (Top Right)
-        // User Request: "oben rechts soll bei der apple karte immer die mitgliednummer stehen"
-        if (!headerFields.some(f => f.key === 'customerNumber')) {
+        // NEW LOGIC: Show Name if available, otherwise fallback to Customer Number
+        if (!headerFields.some(f => f.key === 'customerNumber' || f.key === 'customerHeader')) {
+            const hasName = state.customer_name && state.customer_name.trim().length > 0
             pkPass.headerFields.push({
-                key: 'customerNumber',
-                label: 'Kunde',
-                value: state.customer_number || serialNumber.slice(0, 8),
+                key: 'customerHeader',
+                label: hasName ? 'Name' : 'Kunde',
+                value: hasName ? state.customer_name : (state.customer_number || serialNumber.slice(0, 8)),
                 textAlignment: 'PKTextAlignmentRight'
             })
         }

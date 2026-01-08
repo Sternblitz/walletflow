@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -12,7 +13,15 @@ import { ThemePicker } from '@/components/wallet/theme-picker'
 import { FieldsEditor } from '@/components/wallet/fields-editor'
 import { ImagesEditor } from '@/components/wallet/images-editor'
 import { LocationsEditor } from '@/components/wallet/locations-editor'
+import { PersonalizationConfig } from '@/components/wallet/personalization-editor'
 import { Location } from '@/components/ui/location-picker'
+
+// Dynamic import to avoid hydration mismatch
+const PersonalizationEditor = dynamic(
+    () => import('@/components/wallet/personalization-editor').then(mod => mod.PersonalizationEditor),
+    { ssr: false, loading: () => <div className="h-20 bg-white/5 rounded-xl animate-pulse" /> }
+)
+
 import {
     ArrowLeft,
     Loader2,
@@ -22,7 +31,8 @@ import {
     LayoutTemplate,
     Sparkles,
     Smartphone,
-    MapPin
+    MapPin,
+    Users
 } from 'lucide-react'
 
 interface Campaign {
@@ -44,6 +54,7 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
     const [campaign, setCampaign] = useState<Campaign | null>(null)
     const [draft, setDraft] = useState<WalletPassDraft | null>(null)
     const [locations, setLocations] = useState<Location[]>([])
+    const [personalization, setPersonalization] = useState<Partial<PersonalizationConfig>>({})
 
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -70,6 +81,9 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                     if (data.campaign.config?.locations) {
                         setLocations(data.campaign.config.locations)
                     }
+                    if (data.campaign.config?.personalization) {
+                        setPersonalization(data.campaign.config.personalization)
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching campaign:', error)
@@ -88,6 +102,11 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
 
     const handleLocationsChange = useCallback((newLocations: Location[]) => {
         setLocations(newLocations)
+        setSaveResult(null)
+    }, [])
+
+    const handlePersonalizationChange = useCallback((newPersonalization: PersonalizationConfig) => {
+        setPersonalization(newPersonalization)
         setSaveResult(null)
     }, [])
 
@@ -111,6 +130,7 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                     config: {
                         ...campaign?.config,
                         locations: locations,
+                        personalization: personalization,
                         stampEmoji: draft.stampConfig?.icon || '☕',
                         maxStamps: draft.stampConfig?.total || 10
                     }
@@ -140,6 +160,7 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                     config: {
                         ...campaign?.config,
                         locations: locations,
+                        personalization: personalization,
                         stampEmoji: draft.stampConfig?.icon || '☕',
                         maxStamps: draft.stampConfig?.total || 10
                     }
@@ -326,6 +347,25 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                                 <LocationsEditor
                                     locations={locations}
                                     onChange={handleLocationsChange}
+                                />
+                            </section>
+
+                            <div className="h-px bg-white/5" />
+
+                            {/* Personalization */}
+                            <section className="space-y-4">
+                                <div className="flex items-center gap-2 mb-6">
+                                    <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-500">
+                                        <Users className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-base font-bold text-white">Kundendaten</h2>
+                                        <p className="text-xs text-zinc-500">Daten vor dem Download abfragen.</p>
+                                    </div>
+                                </div>
+                                <PersonalizationEditor
+                                    config={personalization}
+                                    onChange={handlePersonalizationChange}
                                 />
                             </section>
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { Camera, X, RotateCcw, Zap, BarChart3, Send, Users, TrendingUp, Wallet, Settings, LogOut, ChevronRight, Check, Sparkles, LayoutDashboard, Bell, ArrowRight } from 'lucide-react'
+import { Camera, X, RotateCcw, Zap, BarChart3, Send, Users, TrendingUp, Wallet, Settings, LogOut, ChevronRight, Check, Sparkles, LayoutDashboard, Bell, ArrowRight, Search, Cake, Mail, Phone } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'sonner'
 import { ActivityChart, WalletDonut, RetentionGauge } from '@/components/pos/POSCharts'
@@ -33,7 +33,9 @@ export default function POSPage() {
 
     // Dashboard state
     const [stats, setStats] = useState<any>(null)
-    const [view, setView] = useState<'scanner' | 'dashboard' | 'push'>('scanner')
+    const [customers, setCustomers] = useState<any[]>([])
+    const [customersLoading, setCustomersLoading] = useState(false)
+    const [view, setView] = useState<'scanner' | 'dashboard' | 'push' | 'customers'>('scanner')
 
     // Push request state
     const [pushMessage, setPushMessage] = useState('')
@@ -49,6 +51,9 @@ export default function POSPage() {
     useEffect(() => {
         if (role === 'chef' && view === 'dashboard') {
             loadStats()
+        }
+        if (role === 'chef' && view === 'customers') {
+            loadCustomers()
         }
     }, [role, view])
 
@@ -73,6 +78,21 @@ export default function POSPage() {
             }
         } catch (e) {
             console.error('Failed to load stats:', e)
+        }
+    }
+
+    const loadCustomers = async () => {
+        setCustomersLoading(true)
+        try {
+            const res = await fetch(`/api/pos/customers?slug=${slug}`)
+            if (res.ok) {
+                const data = await res.json()
+                setCustomers(data.customers || [])
+            }
+        } catch (e) {
+            console.error('Failed to load customers:', e)
+        } finally {
+            setCustomersLoading(false)
         }
     }
 
@@ -329,6 +349,13 @@ export default function POSPage() {
                             <Camera className="w-5 h-5" />
                             Scanner
                         </button>
+                        <button
+                            onClick={() => setView('customers')}
+                            className="h-12 px-4 bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 rounded-full flex items-center justify-center hover:bg-cyan-500/20 transition-colors gap-2 text-sm font-semibold"
+                        >
+                            <Users className="w-5 h-5" />
+                            Kunden
+                        </button>
                     </div>
                 </header>
 
@@ -424,7 +451,7 @@ export default function POSPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
                         {/* Automation Manager */}
                         <div className="h-[400px]">
-                            <AutomationManager />
+                            <AutomationManager slug={slug} />
                         </div>
 
                         {/* Feed */}
@@ -545,6 +572,101 @@ export default function POSPage() {
                             )}
                         </button>
                     </form>
+                </main>
+            </div>
+        )
+    }
+
+    // ========================================
+    // RENDER: Customers View
+    // ========================================
+    if (role === 'chef' && view === 'customers') {
+        return (
+            <div className="min-h-screen bg-background text-foreground flex flex-col relative">
+                <Background />
+                <header className="relative z-10 p-6 flex items-center justify-between border-b border-border">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2 bg-cyan-500/10 rounded-xl">
+                            <Users className="w-6 h-6 text-cyan-500" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-bold">Kundenliste</h1>
+                            <p className="text-xs text-muted-foreground">{customers.length} Kunden</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setView('dashboard')}
+                        className="w-8 h-8 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-full"
+                    >
+                        <X size={16} />
+                    </button>
+                </header>
+
+                <main className="relative z-10 flex-1 p-6 overflow-y-auto max-w-4xl mx-auto w-full">
+                    {customersLoading ? (
+                        <div className="flex items-center justify-center py-20">
+                            <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                        </div>
+                    ) : customers.length === 0 ? (
+                        <div className="text-center py-20 text-muted-foreground">
+                            <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                            <p>Noch keine Kunden</p>
+                            <p className="text-sm mt-1">Kunden erscheinen hier, sobald sie ihre Karte scannen.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {customers.map((customer: any) => (
+                                <div
+                                    key={customer.id}
+                                    className="p-4 bg-card border border-border rounded-2xl hover:bg-accent/5 transition-colors"
+                                >
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-semibold truncate">
+                                                    {customer.name || `Kunde #${customer.customerNumber}`}
+                                                </h3>
+                                                <span className={`text-xs px-2 py-0.5 rounded-full ${customer.platform === 'apple'
+                                                        ? 'bg-white/10 text-white'
+                                                        : 'bg-zinc-700 text-zinc-300'
+                                                    }`}>
+                                                    {customer.platform === 'apple' ? 'Apple' : 'Google'}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                                {customer.birthday && (
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Cake className="w-3 h-3" />
+                                                        {new Date(customer.birthday).toLocaleDateString('de-DE')}
+                                                    </span>
+                                                )}
+                                                {customer.email && (
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Mail className="w-3 h-3" />
+                                                        {customer.email}
+                                                    </span>
+                                                )}
+                                                {customer.phone && (
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Phone className="w-3 h-3" />
+                                                        {customer.phone}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <div className="text-lg font-bold text-emerald-500">
+                                                {customer.stamps}/{customer.maxStamps}
+                                            </div>
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                                                Stempel
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </main>
             </div>
         )

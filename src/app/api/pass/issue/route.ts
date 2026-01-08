@@ -14,6 +14,8 @@ export async function GET(req: NextRequest) {
     // Personalization params (optional)
     const customerName = searchParams.get('name')
     const customerBirthday = searchParams.get('birthday')
+    const customerEmail = searchParams.get('email')
+    const customerPhone = searchParams.get('phone')
 
     if (!campaignId) {
         return NextResponse.json({ error: "Missing campaignId" }, { status: 400 })
@@ -180,15 +182,17 @@ export async function GET(req: NextRequest) {
             barcode: { format: 'PKBarcodeFormatQR', message: campaignId, messageEncoding: 'iso-8859-1' },
             content: { description: 'Loyalty Card', organizationName: campaign.client?.name || 'QARD' }
         }
-        return await generatePass(fallbackDraft, campaign, supabase, platform, { customerName, customerBirthday })
+        return await generatePass(fallbackDraft, campaign, supabase, platform, { customerName, customerBirthday, customerEmail, customerPhone })
     }
 
-    return await generatePass(draft, campaign, supabase, platform, { customerName, customerBirthday })
+    return await generatePass(draft, campaign, supabase, platform, { customerName, customerBirthday, customerEmail, customerPhone })
 }
 
 interface PersonalizationData {
     customerName?: string | null
     customerBirthday?: string | null
+    customerEmail?: string | null
+    customerPhone?: string | null
 }
 
 async function generatePass(
@@ -239,6 +243,12 @@ async function generatePass(
         if (personalization.customerBirthday) {
             initialState.customer_birthday = personalization.customerBirthday
         }
+        if (personalization.customerEmail) {
+            initialState.customer_email = personalization.customerEmail
+        }
+        if (personalization.customerPhone) {
+            initialState.customer_phone = personalization.customerPhone
+        }
 
         // PERSISTENCE: Save stamp icon to state
         const designAssets = campaign.design_assets || {}
@@ -274,7 +284,9 @@ async function generatePass(
                 is_installed_on_android: false,  // Will be set when first scan
                 verification_status: 'pending',  // Will become 'verified' on first real interaction
                 customer_name: personalization.customerName || null,
-                customer_birthday: personalization.customerBirthday || null
+                customer_birthday: personalization.customerBirthday || null,
+                customer_email: personalization.customerEmail || null,
+                customer_phone: personalization.customerPhone || null
             })
             .select()
             .single()

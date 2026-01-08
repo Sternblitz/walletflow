@@ -273,3 +273,4 @@ Ein Premium Wallet Pass sollte:
 **Letzte Aktualisierung:** 2024
 **Status:** 🚀 In Entwicklung
 
+

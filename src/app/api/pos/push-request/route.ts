@@ -68,17 +68,33 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const campaignId = searchParams.get('campaignId')
+    const slug = searchParams.get('slug')
 
-    if (!campaignId) {
-        return NextResponse.json({ error: 'Missing campaignId' }, { status: 400 })
+    if (!campaignId && !slug) {
+        return NextResponse.json({ error: 'Missing campaignId or slug' }, { status: 400 })
     }
 
     const supabase = await createClient()
 
+    let finalCampaignId = campaignId
+
+    if (slug) {
+        const { data: client, error: clientError } = await supabase
+            .from('clients')
+            .select('campaigns(id)')
+            .eq('slug', slug)
+            .single()
+
+        if (clientError || !client || !client.campaigns?.length) {
+            return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
+        }
+        finalCampaignId = client.campaigns[0].id
+    }
+
     const { data: requests, error } = await supabase
         .from('push_requests')
         .select('*')
-        .eq('campaign_id', campaignId)
+        .eq('campaign_id', finalCampaignId)
         .order('created_at', { ascending: false })
         .limit(20)
 

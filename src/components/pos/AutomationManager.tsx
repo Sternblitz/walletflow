@@ -1,43 +1,93 @@
 'use client'
 
-import { useState } from 'react'
-import { Clock, Calendar, MessageSquare, Plus, Trash2, CheckCircle2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Clock, Send, Plus, CheckCircle2, AlertCircle, XCircle, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
 
-interface Automation {
+interface PushRequest {
     id: string
-    day: string
-    time: string
     message: string
-    active: boolean
+    scheduled_at: string | null
+    status: 'pending' | 'approved' | 'rejected' | 'sent' | 'failed'
+    created_at: string
+    rejection_reason?: string
 }
 
-export function AutomationManager() {
-    // Mock Data
-    const [automations, setAutomations] = useState<Automation[]>([
-        { id: '1', day: 'Thursday', time: '18:00', message: '🎉 Thirsty Thursday! 2-für-1 Drinks bis 20 Uhr.', active: true }
-    ])
+interface AutomationManagerProps {
+    slug: string
+}
 
+export function AutomationManager({ slug }: AutomationManagerProps) {
+    const [requests, setRequests] = useState<PushRequest[]>([])
+    const [loading, setLoading] = useState(true)
     const [isCreating, setIsCreating] = useState(false)
-    const [newAuto, setNewAuto] = useState({ day: 'Friday', time: '12:00', message: '' })
+    const [newMessage, setNewMessage] = useState('')
+    const [submitting, setSubmitting] = useState(false)
 
-    const addAutomation = () => {
-        if (!newAuto.message) return
-        setAutomations([...automations, {
-            id: Math.random().toString(),
-            ...newAuto,
-            active: true
-        }])
-        setIsCreating(false)
-        setNewAuto({ day: 'Friday', time: '12:00', message: '' })
+    useEffect(() => {
+        if (slug) fetchRequests()
+    }, [slug])
+
+    const fetchRequests = async () => {
+        try {
+            const res = await fetch(`/api/pos/push-request?slug=${slug}`)
+            if (res.ok) {
+                const data = await res.json()
+                setRequests(data.requests || [])
+            }
+        } catch (e) {
+            console.error('Failed to fetch requests:', e)
+        } finally {
+            setLoading(false)
+        }
     }
 
-    const deleteAutomation = (id: string) => {
-        setAutomations(automations.filter(a => a.id !== id))
+    const createRequest = async () => {
+        if (!newMessage.trim()) return
+
+        setSubmitting(true)
+        try {
+            const res = await fetch('/api/pos/push-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    slug,
+                    message: newMessage,
+                    scheduledAt: null // Immediate for now
+                })
+            })
+
+            const data = await res.json()
+
+            if (res.ok) {
+                toast.success('Anfrage gesendet!')
+                setNewMessage('')
+                setIsCreating(false)
+                fetchRequests() // Refresh list
+            } else {
+                toast.error(data.error || 'Fehler beim Senden')
+            }
+        } catch (e) {
+            toast.error('Netzwerkfehler')
+        } finally {
+            setSubmitting(false)
+        }
     }
 
-    const toggleAutomation = (id: string) => {
-        setAutomations(automations.map(a => a.id === id ? { ...a, active: !a.active } : a))
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'pending':
+                return <span className="text-xs font-bold bg-amber-500/10 text-amber-500 px-2 py-1 rounded-md border border-amber-500/20 flex items-center gap-1"><Clock size={12} /> Warten auf Genehmigung</span>
+            case 'approved':
+                return <span className="text-xs font-bold bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-md border border-emerald-500/20 flex items-center gap-1"><CheckCircle2 size={12} /> Genehmigt</span>
+            case 'sent':
+                return <span className="text-xs font-bold bg-blue-500/10 text-blue-500 px-2 py-1 rounded-md border border-blue-500/20 flex items-center gap-1"><Send size={12} /> Gesendet</span>
+            case 'rejected':
+                return <span className="text-xs font-bold bg-red-500/10 text-red-500 px-2 py-1 rounded-md border border-red-500/20 flex items-center gap-1"><XCircle size={12} /> Abgelehnt</span>
+            default:
+                return <span className="text-xs font-bold bg-zinc-700 text-zinc-400 px-2 py-1 rounded-md">{status}</span>
+        }
     }
 
     return (
@@ -45,10 +95,10 @@ export function AutomationManager() {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-blue-400" />
-                        Automatisierungen
+                        <Send className="w-5 h-5 text-blue-400" />
+                        Push-Nachrichten
                     </h3>
-                    <p className="text-xs text-zinc-400">Automatische Push-Nachrichten planen</p>
+                    <p className="text-xs text-zinc-400">Updates an alle Kunden senden</p>
                 </div>
                 <button
                     onClick={() => setIsCreating(true)}
@@ -58,56 +108,48 @@ export function AutomationManager() {
                 </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">
-                <AnimatePresence>
-                    {automations.map(auto => (
-                        <motion.div
-                            key={auto.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className={`p-4 rounded-2xl border transition-all ${auto.active
-                                    ? 'bg-blue-500/5 border-blue-500/20'
-                                    : 'bg-zinc-900/50 border-white/5 opacity-60'
-                                }`}
-                        >
-                            <div className="flex justify-between items-start gap-3">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-md ${auto.active ? 'bg-blue-500 text-white' : 'bg-zinc-700 text-zinc-400'
-                                            }`}>
-                                            {auto.day} • {auto.time}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-zinc-300 line-clamp-2">{auto.message}</p>
-                                </div>
+            <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-2">
+                {loading ? (
+                    <div className="flex justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+                    </div>
+                ) : (
+                    <AnimatePresence>
+                        {requests.map(req => (
+                            <motion.div
+                                key={req.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="p-4 rounded-2xl bg-zinc-900/50 border border-white/5 hover:border-white/10 transition-colors"
+                            >
                                 <div className="flex flex-col gap-2">
-                                    <button
-                                        onClick={() => toggleAutomation(auto.id)}
-                                        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${auto.active ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-800 text-zinc-500'
-                                            }`}
-                                    >
-                                        <CheckCircle2 size={16} />
-                                    </button>
-                                    <button
-                                        onClick={() => deleteAutomation(auto.id)}
-                                        className="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div className="flex justify-between items-start">
+                                        <span className="text-xs text-zinc-500 font-mono">
+                                            {new Date(req.created_at).toLocaleDateString()}
+                                        </span>
+                                        {getStatusBadge(req.status)}
+                                    </div>
+                                    <p className="text-sm text-zinc-200">{req.message}</p>
+
+                                    {req.rejection_reason && (
+                                        <div className="mt-2 text-xs bg-red-500/5 text-red-400 p-2 rounded-lg border border-red-500/10 flex gap-2">
+                                            <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                                            <span>Grund: {req.rejection_reason}</span>
+                                        </div>
+                                    )}
                                 </div>
+                            </motion.div>
+                        ))}
+                        {requests.length === 0 && (
+                            <div className="text-center py-12 text-zinc-500 text-sm border border-dashed border-white/10 rounded-2xl">
+                                Keine Nachrichten bisher
                             </div>
-                        </motion.div>
-                    ))}
-                    {automations.length === 0 && (
-                        <div className="text-center py-8 text-zinc-500 text-sm border border-dashed border-white/10 rounded-2xl">
-                            Keine aktiven Regeln
-                        </div>
-                    )}
-                </AnimatePresence>
+                        )}
+                    </AnimatePresence>
+                )}
             </div>
 
-            {/* Creation Modal (Simplified Overlay for UI) */}
+            {/* Creation Modal */}
             {isCreating && (
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6 rounded-3xl">
                     <motion.div
@@ -115,39 +157,20 @@ export function AutomationManager() {
                         animate={{ scale: 1, opacity: 1 }}
                         className="bg-zinc-900 border border-white/10 w-full max-w-sm p-6 rounded-3xl space-y-4 shadow-2xl"
                     >
-                        <h4 className="font-bold text-lg">Neue Regel</h4>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-xs text-zinc-500 ml-1">Tag</label>
-                                <select
-                                    value={newAuto.day}
-                                    onChange={e => setNewAuto({ ...newAuto, day: e.target.value })}
-                                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm text-white outline-none"
-                                >
-                                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
-                                        <option key={d} value={d}>{d}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-xs text-zinc-500 ml-1">Uhrzeit</label>
-                                <input
-                                    type="time"
-                                    value={newAuto.time}
-                                    onChange={e => setNewAuto({ ...newAuto, time: e.target.value })}
-                                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm text-white outline-none"
-                                />
-                            </div>
-                        </div>
+                        <h4 className="font-bold text-lg">Neue Nachricht beantragen</h4>
+                        <p className="text-xs text-zinc-400">
+                            Deine Nachricht wird zur Überprüfung eingereicht. Nach Genehmigung wird sie an alle Kunden gesendet.
+                        </p>
+
                         <div>
-                            <label className="text-xs text-zinc-500 ml-1">Nachricht</label>
                             <textarea
-                                value={newAuto.message}
-                                onChange={e => setNewAuto({ ...newAuto, message: e.target.value })}
-                                placeholder="Nachricht eingeben..."
-                                className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm text-white outline-none h-20 resize-none"
+                                value={newMessage}
+                                onChange={e => setNewMessage(e.target.value)}
+                                placeholder="Deine Nachricht hier..."
+                                className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm text-white outline-none h-32 resize-none focus:border-blue-500/50 transition-colors"
                             />
                         </div>
+
                         <div className="flex gap-2 pt-2">
                             <button
                                 onClick={() => setIsCreating(false)}
@@ -156,10 +179,11 @@ export function AutomationManager() {
                                 Abbrechen
                             </button>
                             <button
-                                onClick={addAutomation}
-                                className="flex-1 py-3 bg-blue-600 rounded-xl font-bold text-white shadow-lg shadow-blue-900/20"
+                                onClick={createRequest}
+                                disabled={submitting || !newMessage.trim()}
+                                className="flex-1 py-3 bg-blue-600 rounded-xl font-bold text-white shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                Erstellen
+                                {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Beantragen'}
                             </button>
                         </div>
                     </motion.div>
