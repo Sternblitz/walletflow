@@ -118,19 +118,7 @@ export function OnboardingForm({
             className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
             style={{ backgroundColor: finalBgColor, color: finalFgColor }}
         >
-            {/* Border Beam Animation */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute inset-0 opacity-100"
-                    style={{
-                        background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, ${finalBorderColor} 360deg)`,
-                        animation: 'spin 4s linear infinite',
-                        maskImage: 'linear-gradient(black, black), linear-gradient(black, black)',
-                        maskClip: 'content-box, border-box',
-                        maskComposite: 'exclude',
-                        padding: '3px' // Thickness of the border beam
-                    }}
-                />
-            </div>
+
 
             <style jsx global>{`
                 @keyframes spin {
@@ -172,13 +160,27 @@ export function OnboardingForm({
 
                 {/* Form Card */}
                 <div
-                    className="backdrop-blur-xl rounded-3xl p-6 shadow-2xl border"
+                    className="backdrop-blur-xl rounded-3xl p-6 shadow-2xl border relative overflow-hidden"
                     style={{
                         backgroundColor: `${finalFgColor}05`,
                         borderColor: `${finalFgColor}15`
                     }}
                 >
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Border Beam Animation (Scoped to Card) */}
+                    <div className="absolute inset-0 pointer-events-none z-0">
+                        <div className="absolute inset-0 opacity-100"
+                            style={{
+                                background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, ${finalBorderColor} 360deg)`,
+                                animation: 'spin 4s linear infinite',
+                                maskImage: 'linear-gradient(black, black), linear-gradient(black, black)',
+                                maskClip: 'content-box, border-box',
+                                maskComposite: 'exclude',
+                                padding: '2px'
+                            }}
+                        />
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
                         {/* Name Field */}
                         {p.ask_name && (
                             <FormField

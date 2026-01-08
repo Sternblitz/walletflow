@@ -336,19 +336,7 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
             className="w-full aspect-[9/19] rounded-[40px] overflow-hidden relative shadow-2xl flex flex-col items-center justify-center p-6 border-[8px] border-zinc-900"
             style={{ backgroundColor: bgColor, color: fgColor }}
         >
-            {/* Border Beam Animation Preview */}
-            < div className="absolute inset-0 pointer-events-none" >
-                <div className="absolute inset-0 opacity-20"
-                    style={{
-                        background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, ${borderColor} 360deg)`,
-                        animation: 'spin 4s linear infinite',
-                        maskImage: 'linear-gradient(black, black), linear-gradient(black, black)',
-                        maskClip: 'content-box, border-box',
-                        maskComposite: 'exclude',
-                        padding: '1px' // Thin border
-                    }}
-                />
-            </div >
+
 
             <div className="relative z-10 w-full text-center space-y-6">
                 {/* Logo */}
@@ -367,19 +355,35 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
                     )}
                 </div>
 
-                <div className="space-y-3 opacity-90">
-                    {config.ask_name && (
-                        <div className="h-10 rounded-lg border border-white/20 bg-black/10 w-full" />
-                    )}
-                    {config.ask_email && (
-                        <div className="h-10 rounded-lg border border-white/20 bg-black/10 w-full" />
-                    )}
+                <div className="relative p-4 rounded-3xl border border-white/5 bg-white/5 overflow-hidden">
+                    {/* Border Beam Animation Preview */}
+                    <div className="absolute inset-0 pointer-events-none z-0">
+                        <div className="absolute inset-0 opacity-20"
+                            style={{
+                                background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, ${borderColor} 360deg)`,
+                                animation: 'spin 4s linear infinite',
+                                maskImage: 'linear-gradient(black, black), linear-gradient(black, black)',
+                                maskClip: 'content-box, border-box',
+                                maskComposite: 'exclude',
+                                padding: '2px'
+                            }}
+                        />
+                    </div>
 
-                    <div
-                        className="h-12 rounded-lg w-full flex items-center justify-center text-xs font-bold shadow-lg mt-4"
-                        style={{ background: accentColor, color: fgColor, filter: 'brightness(1.1)' }}
-                    >
-                        Zu Apple Wallet
+                    <div className="space-y-3 opacity-90 relative z-10">
+                        {config.ask_name && (
+                            <div className="h-10 rounded-lg border border-white/20 bg-black/10 w-full" />
+                        )}
+                        {config.ask_email && (
+                            <div className="h-10 rounded-lg border border-white/20 bg-black/10 w-full" />
+                        )}
+
+                        <div
+                            className="h-12 rounded-lg w-full flex items-center justify-center text-xs font-bold shadow-lg mt-4"
+                            style={{ background: accentColor, color: fgColor, filter: 'brightness(1.1)' }}
+                        >
+                            Zu Apple Wallet
+                        </div>
                     </div>
                 </div>
             </div>
