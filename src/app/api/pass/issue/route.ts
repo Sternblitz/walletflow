@@ -152,12 +152,29 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Campaign not found" }, { status: 404 })
     }
 
-    // 2. Check if personalization is required but not provided
+    // 2. Check if REQUIRED personalization fields are missing
+    // Only redirect to onboarding if:
+    // - A field is enabled AND required AND not provided
+    // - AND skip is not allowed (or if skip IS allowed, user should use skip button - not come here without data)
     const campaignConfig = campaign.config || {}
     const personalization = campaignConfig.personalization || {}
 
-    if (personalization.ask_name && !customerName) {
-        // Redirect to onboarding page
+    const hasRequiredFields = (
+        (personalization.ask_name && personalization.name_required) ||
+        (personalization.ask_birthday && personalization.birthday_required) ||
+        (personalization.ask_email && personalization.email_required) ||
+        (personalization.ask_phone && personalization.phone_required)
+    )
+
+    const missingRequiredData = (
+        (personalization.ask_name && personalization.name_required && !customerName) ||
+        (personalization.ask_birthday && personalization.birthday_required && !customerBirthday) ||
+        (personalization.ask_email && personalization.email_required && !customerEmail) ||
+        (personalization.ask_phone && personalization.phone_required && !customerPhone)
+    )
+
+    // Only redirect if there are missing REQUIRED fields AND skip is explicitly disabled
+    if (hasRequiredFields && missingRequiredData && personalization.allow_skip === false) {
         const onboardingUrl = `/start/${campaign.client?.slug}/onboarding?campaignId=${campaignId}&platform=${platform}`
         return NextResponse.redirect(new URL(onboardingUrl, req.url))
     }

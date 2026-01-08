@@ -20,6 +20,9 @@ interface PersonalizationConfig {
     design_accent?: string
     design_border?: string
     design_form_bg?: string
+    design_form_text?: string
+    design_button_bg?: string
+    design_button_text?: string
 }
 
 interface OnboardingFormProps {
@@ -165,7 +168,7 @@ export function OnboardingForm({
                 <div className="relative">
                     {/* Rotating Glow Border - BEHIND the card */}
                     <div className="absolute -inset-[3px] rounded-3xl overflow-hidden pointer-events-none">
-                        <div className="absolute inset-[-50%] animate-[spin_2s_linear_infinite]"
+                        <div className="absolute inset-[-50%] animate-[spin_3s_linear_infinite]"
                             style={{
                                 background: `conic-gradient(from 0deg, transparent 0deg, ${finalBorderColor} 60deg, transparent 120deg)`,
                                 filter: 'blur(8px)',
@@ -256,8 +259,8 @@ export function OnboardingForm({
                                 disabled={isLoading}
                                 className="w-full py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg mt-2"
                                 style={{
-                                    background: finalAccentColor,
-                                    color: '#FFFFFF'
+                                    background: p.design_button_bg || finalAccentColor,
+                                    color: p.design_button_text || '#FFFFFF'
                                 }}
                             >
                                 {isLoading ? (

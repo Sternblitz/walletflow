@@ -23,6 +23,9 @@ export interface PersonalizationConfig {
     design_accent?: string
     design_border?: string
     design_form_bg?: string
+    design_form_text?: string
+    design_button_bg?: string
+    design_button_text?: string
 }
 
 export interface BrandingConfig {
@@ -216,6 +219,21 @@ export function PersonalizationEditor({ config, onChange, branding }: Personaliz
                                     value={current.design_border || (branding?.colors?.labelColor || '#3b82f6')}
                                     onChange={(v) => update({ design_border: v })}
                                 />
+                                <ColorPicker
+                                    label="Formular Text"
+                                    value={current.design_form_text || '#374151'}
+                                    onChange={(v) => update({ design_form_text: v })}
+                                />
+                                <ColorPicker
+                                    label="Button Hintergrund"
+                                    value={current.design_button_bg || current.design_accent || '#3b82f6'}
+                                    onChange={(v) => update({ design_button_bg: v })}
+                                />
+                                <ColorPicker
+                                    label="Button Text"
+                                    value={current.design_button_text || '#FFFFFF'}
+                                    onChange={(v) => update({ design_button_text: v })}
+                                />
                             </div>
                         </div>
 
@@ -365,7 +383,7 @@ function OnboardingPreview({ config, branding }: { config: PersonalizationConfig
                 <div className="relative">
                     {/* Rotating Glow Border - BEHIND */}
                     <div className="absolute -inset-[2px] rounded-2xl overflow-hidden pointer-events-none">
-                        <div className="absolute inset-[-50%] animate-[spin_2s_linear_infinite]"
+                        <div className="absolute inset-[-50%] animate-[spin_3s_linear_infinite]"
                             style={{
                                 background: `conic-gradient(from 0deg, transparent 0deg, ${borderColor} 60deg, transparent 120deg)`,
                                 filter: 'blur(4px)',
