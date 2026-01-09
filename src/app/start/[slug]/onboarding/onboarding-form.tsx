@@ -204,20 +204,58 @@ export function OnboardingForm({
                                 />
                             )}
 
-                            {/* Birthday Field */}
+                            {/* Birthday Field - Month/Day Picker */}
                             {p.ask_birthday && (
-                                <FormField
-                                    id="birthday"
-                                    label="Geburtstag"
-                                    required={p.birthday_required}
-                                    value={birthday}
-                                    onChange={setBirthday}
-                                    error={errors.birthday}
-                                    type="date"
-                                    hint="Für Geburtstagsüberraschungen 🎂"
-                                    accentColor={finalAccentColor}
-                                    fgColor={finalFgColor}
-                                />
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium" style={{ color: '#374151' }}>
+                                        Geburtstag
+                                        {p.birthday_required ? (
+                                            <span className="text-red-500 ml-1">*</span>
+                                        ) : (
+                                            <span className="ml-1 text-xs text-gray-400">(optional)</span>
+                                        )}
+                                    </label>
+                                    <div className="flex gap-3">
+                                        {/* Day Picker */}
+                                        <select
+                                            value={birthday.split('-')[2] || ''}
+                                            onChange={(e) => {
+                                                const month = birthday.split('-')[1] || '01'
+                                                setBirthday(e.target.value ? `2000-${month}-${e.target.value}` : '')
+                                            }}
+                                            className="flex-1 px-4 py-3 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/30 appearance-none bg-white/80 border"
+                                            style={{ borderColor: finalBorderColor + '40', color: finalFgColor }}
+                                        >
+                                            <option value="">Tag</option>
+                                            {[...Array(31)].map((_, i) => (
+                                                <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
+                                                    {i + 1}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {/* Month Picker */}
+                                        <select
+                                            value={birthday.split('-')[1] || ''}
+                                            onChange={(e) => {
+                                                const day = birthday.split('-')[2] || '01'
+                                                setBirthday(e.target.value ? `2000-${e.target.value}-${day}` : '')
+                                            }}
+                                            className="flex-1 px-4 py-3 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/30 appearance-none bg-white/80 border"
+                                            style={{ borderColor: finalBorderColor + '40', color: finalFgColor }}
+                                        >
+                                            <option value="">Monat</option>
+                                            {['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'].map((month, i) => (
+                                                <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
+                                                    {month}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    {errors.birthday && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.birthday}</p>
+                                    )}
+                                    <p className="text-xs text-gray-400">Für Geburtstagsüberraschungen 🎂</p>
+                                </div>
                             )}
 
                             {/* Email Field */}
