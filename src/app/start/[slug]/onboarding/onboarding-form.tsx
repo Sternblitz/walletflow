@@ -101,10 +101,6 @@ export function OnboardingForm({
         window.location.href = `/api/pass/issue?${params.toString()}`
     }
 
-    const handleSkip = () => {
-        window.location.href = `/api/pass/issue?campaignId=${campaignId}&platform=${platform}`
-    }
-
     // Check if any fields are configured
     const hasFields = p.ask_name || p.ask_birthday || p.ask_email || p.ask_phone
 
@@ -113,9 +109,6 @@ export function OnboardingForm({
     const finalFgColor = p.design_text || fgColor
     const finalAccentColor = p.design_accent || accentColor
     const finalBorderColor = p.design_border || finalAccentColor
-
-    // Derive gradient colors for button
-    const buttonGradient = `linear-gradient(135deg, ${finalBgColor}, ${adjustColor(finalBgColor, 20)})`
 
     return (
         <div
@@ -253,39 +246,32 @@ export function OnboardingForm({
                                 />
                             )}
 
-                            {/* Submit Button */}
+                            {/* Submit Button - Wallet Badge */}
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg mt-2"
-                                style={{
-                                    background: p.design_button_bg || finalAccentColor,
-                                    color: p.design_button_text || '#FFFFFF'
-                                }}
+                                className="w-full flex items-center justify-center py-3 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none mt-4"
                             >
                                 {isLoading ? (
-                                    <span className="flex items-center justify-center gap-2">
+                                    <span className="flex items-center justify-center gap-2 text-gray-600">
                                         <Spinner />
                                         Karte wird erstellt...
                                     </span>
+                                ) : platform === 'android' ? (
+                                    <img
+                                        src="/de_add_to_google_wallet_add-wallet-badge.png"
+                                        alt="Zu Google Wallet hinzufügen"
+                                        className="h-14 object-contain"
+                                    />
                                 ) : (
-                                    <span className="flex items-center justify-center gap-2">
-                                        {platform === 'android' ? '📱 Zu Google Wallet' : '📱 Zu Apple Wallet'}
-                                    </span>
+                                    <img
+                                        src="/DE_Add_to_Apple_Wallet_RGB_101421.svg"
+                                        alt="Zu Apple Wallet hinzufügen"
+                                        className="h-14 object-contain"
+                                    />
                                 )}
                             </button>
                         </form>
-
-                        {/* Skip Link - only if allowed */}
-                        {p.allow_skip !== false && hasFields && (
-                            <button
-                                onClick={handleSkip}
-                                className="w-full mt-4 py-3 text-sm transition-colors hover:opacity-80"
-                                style={{ color: finalAccentColor }}
-                            >
-                                Ohne Angaben fortfahren →
-                            </button>
-                        )}
                     </div>
                 </div>
 
