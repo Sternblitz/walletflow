@@ -275,7 +275,7 @@ export function OnboardingForm({
                                         </span>
                                     ) : platform === 'android' ? (
                                         <img
-                                            src="/de_add_to_google_wallet_add-wallet-badge.png"
+                                            src="/pass-assets/de_add_to_google_wallet_add-wallet-badge.svg"
                                             alt="Zu Google Wallet hinzufügen"
                                             className="w-full max-w-[280px] h-auto object-contain"
                                         />
