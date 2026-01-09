@@ -42,7 +42,11 @@ export async function GET(
             wallet_type,
             is_installed_on_ios,
             is_installed_on_android,
-            verification_status
+            verification_status,
+            customer_name,
+            customer_birthday,
+            customer_email,
+            customer_phone
         `)
         .eq('campaign_id', id)
         .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true')

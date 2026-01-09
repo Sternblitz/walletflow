@@ -49,6 +49,11 @@ interface Pass {
     is_installed_on_ios?: boolean
     is_installed_on_android?: boolean
     verification_status?: 'pending' | 'verified'
+    // Personalization fields
+    customer_name?: string | null
+    customer_birthday?: string | null
+    customer_email?: string | null
+    customer_phone?: string | null
 }
 
 interface Campaign {
@@ -527,7 +532,8 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         <table className="w-full">
                             <thead className="bg-white/5">
                                 <tr className="text-left text-xs text-zinc-400">
-                                    <th className="px-4 py-3 font-medium">Kunden-Nr.</th>
+                                    <th className="px-4 py-3 font-medium">Kunde</th>
+                                    <th className="px-4 py-3 font-medium">Kontakt</th>
                                     <th className="px-4 py-3 font-medium">Status</th>
                                     <th className="px-4 py-3 font-medium">Letzte Aktivität</th>
                                 </tr>
@@ -537,26 +543,53 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                                     <tr key={pass.id} className="hover:bg-white/5 transition-colors">
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-2">
-                                                {/* Platform Icon - check wallet_type or is_installed flags */}
+                                                {/* Platform Icon */}
                                                 {(pass.wallet_type === 'google' || (pass.is_installed_on_android && !pass.is_installed_on_ios)) ? (
                                                     <span title="Google Wallet" className="text-lg">🤖</span>
                                                 ) : (
                                                     <span title="Apple Wallet" className="text-lg">🍎</span>
                                                 )}
-                                                <span className="font-mono text-sm text-white">
-                                                    {pass.current_state?.customer_number || pass.serial_number.slice(0, 8)}
-                                                </span>
+                                                <div>
+                                                    <span className="font-medium text-white block">
+                                                        {pass.customer_name || `Kunde #${pass.current_state?.customer_number || pass.serial_number.slice(0, 6)}`}
+                                                    </span>
+                                                    <span className="text-xs text-zinc-500">
+                                                        #{pass.current_state?.customer_number || pass.serial_number.slice(0, 8)}
+                                                    </span>
+                                                </div>
                                                 {/* Verification Badge */}
                                                 {(pass.verification_status === 'verified' || pass.is_installed_on_ios || pass.is_installed_on_android) ? (
                                                     <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 font-medium">
                                                         <CheckCircle2 className="w-3 h-3" />
-                                                        Verifiziert
+                                                        ✓
                                                     </span>
                                                 ) : (
                                                     <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 font-medium">
                                                         <Clock className="w-3 h-3" />
-                                                        Pending
+                                                        ?
                                                     </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="space-y-1 text-xs text-zinc-400">
+                                                {pass.customer_email && (
+                                                    <div className="flex items-center gap-1.5">
+                                                        📧 {pass.customer_email}
+                                                    </div>
+                                                )}
+                                                {pass.customer_phone && (
+                                                    <div className="flex items-center gap-1.5">
+                                                        📱 {pass.customer_phone}
+                                                    </div>
+                                                )}
+                                                {pass.customer_birthday && (
+                                                    <div className="flex items-center gap-1.5">
+                                                        🎂 {new Date(pass.customer_birthday).toLocaleDateString('de-DE')}
+                                                    </div>
+                                                )}
+                                                {!pass.customer_email && !pass.customer_phone && !pass.customer_birthday && (
+                                                    <span className="text-zinc-500">–</span>
                                                 )}
                                             </div>
                                         </td>
