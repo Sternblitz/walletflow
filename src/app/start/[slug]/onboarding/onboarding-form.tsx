@@ -87,10 +87,13 @@ export function OnboardingForm({
 
         setIsLoading(true)
 
+        // Get selected platform from hidden input (set by button click)
+        const selectedPlatform = (document.getElementById('platform-input') as HTMLInputElement)?.value || platform
+
         // Build redirect URL with personalization params
         const params = new URLSearchParams({
             campaignId,
-            platform,
+            platform: selectedPlatform,
             ...(name && { name }),
             ...(birthday && { birthday }),
             ...(email && { email }),
@@ -126,6 +129,13 @@ export function OnboardingForm({
                     0% { background-position: 0% 50%; opacity: 0.5; }
                     50% { background-position: 100% 50%; opacity: 0.8; }
                     100% { background-position: 0% 50%; opacity: 0.5; }
+                }
+                @keyframes pulse-subtle {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.02); opacity: 0.9; }
+                }
+                .animate-pulse-subtle {
+                    animation: pulse-subtle 2s ease-in-out infinite;
                 }
             `}</style>
 
@@ -246,31 +256,65 @@ export function OnboardingForm({
                                 />
                             )}
 
-                            {/* Submit Button - Wallet Badge */}
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className="w-full flex items-center justify-center py-3 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none mt-4"
-                            >
-                                {isLoading ? (
-                                    <span className="flex items-center justify-center gap-2 text-gray-600">
-                                        <Spinner />
-                                        Karte wird erstellt...
-                                    </span>
-                                ) : platform === 'android' ? (
-                                    <img
-                                        src="/de_add_to_google_wallet_add-wallet-badge.png"
-                                        alt="Zu Google Wallet hinzufügen"
-                                        className="h-14 object-contain"
-                                    />
-                                ) : (
-                                    <img
-                                        src="/DE_Add_to_Apple_Wallet_RGB_101421.svg"
-                                        alt="Zu Apple Wallet hinzufügen"
-                                        className="h-14 object-contain"
-                                    />
-                                )}
-                            </button>
+                            {/* Wallet Buttons with Pulse Animation */}
+                            <div className="mt-6 space-y-3">
+                                {/* Arrow indicator */}
+                                <div className="flex justify-center animate-bounce">
+                                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                    </svg>
+                                </div>
+
+                                {/* Apple Wallet Button */}
+                                <button
+                                    type="submit"
+                                    name="wallet"
+                                    value="apple"
+                                    disabled={isLoading}
+                                    onClick={() => { (document.getElementById('platform-input') as HTMLInputElement).value = 'ios' }}
+                                    className="w-full flex items-center justify-center py-2 transition-all transform hover:scale-[1.03] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed animate-pulse-subtle"
+                                >
+                                    {isLoading ? (
+                                        <span className="flex items-center justify-center gap-2 text-gray-600">
+                                            <Spinner />
+                                            Karte wird erstellt...
+                                        </span>
+                                    ) : (
+                                        <img
+                                            src="/DE_Add_to_Apple_Wallet_RGB_101421.svg"
+                                            alt="Zu Apple Wallet hinzufügen"
+                                            className="h-12 object-contain"
+                                        />
+                                    )}
+                                </button>
+
+                                {/* Google Wallet Button */}
+                                <button
+                                    type="submit"
+                                    name="wallet"
+                                    value="google"
+                                    disabled={isLoading}
+                                    onClick={() => { (document.getElementById('platform-input') as HTMLInputElement).value = 'android' }}
+                                    className="w-full flex items-center justify-center py-2 transition-all transform hover:scale-[1.03] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed animate-pulse-subtle"
+                                    style={{ animationDelay: '0.5s' }}
+                                >
+                                    {isLoading ? (
+                                        <span className="flex items-center justify-center gap-2 text-gray-600">
+                                            <Spinner />
+                                            Karte wird erstellt...
+                                        </span>
+                                    ) : (
+                                        <img
+                                            src="/de_add_to_google_wallet_add-wallet-badge.png"
+                                            alt="Zu Google Wallet hinzufügen"
+                                            className="h-12 object-contain"
+                                        />
+                                    )}
+                                </button>
+
+                                {/* Hidden input for platform */}
+                                <input type="hidden" id="platform-input" name="platform" defaultValue={platform} />
+                            </div>
                         </form>
                     </div>
                 </div>
