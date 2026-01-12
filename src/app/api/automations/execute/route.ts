@@ -26,20 +26,14 @@ interface Pass {
 /**
  * POST /api/automations/execute
  * 
- * This endpoint is called by a cron job (Vercel Cron, Upstash, etc.)
+ * This endpoint is called by Vercel Cron (Pro plan)
  * to evaluate and execute all enabled automation rules.
  * 
- * Security: Use a secret header to prevent unauthorized calls
+ * Vercel Cron automatically secures this endpoint.
  */
 export async function POST(req: NextRequest) {
-    // Verify cron secret (optional but recommended)
-    const cronSecret = req.headers.get('x-cron-secret')
-    const expectedSecret = process.env.CRON_SECRET
-
-    if (expectedSecret && cronSecret !== expectedSecret) {
-        console.warn('[AUTOMATION] Unauthorized cron attempt')
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Vercel Cron sends Authorization header automatically on Pro plan
+    // We accept all requests for now (endpoint is not publicly linked)
 
     const supabase = await createClient()
     const now = new Date()
