@@ -203,16 +203,24 @@ async function executeRule(
 
             // Update the pass to trigger a push notification
             // Use latest_news field which PassFactory checks for displaying on pass
+            const stateUpdate: Record<string, any> = {
+                ...pass.current_state,
+                latest_news: message,
+                last_message_at: new Date().toISOString(),
+                last_automation_at: new Date().toISOString()
+            }
+
+            // For inactivity rules, track when we sent the reminder
+            // This prevents spamming - only sends every X days
+            if (rule.rule_type === 'inactivity') {
+                stateUpdate.last_inactivity_push_at = new Date().toISOString()
+            }
+
             const { error: updateError } = await supabase
                 .from('passes')
                 .update({
                     last_updated_at: new Date().toISOString(),
-                    current_state: {
-                        ...pass.current_state,
-                        latest_news: message,
-                        last_message_at: new Date().toISOString(),
-                        last_automation_at: new Date().toISOString()
-                    }
+                    current_state: stateUpdate
                 })
                 .eq('id', pass.id)
 
@@ -363,19 +371,42 @@ async function getInactivePasses(
         .eq('campaign_id', campaignId)
         .is('deleted_at', null)
 
-    // Filter to passes with no recent scans
+    // Filter to passes with no recent scans AND no recent inactivity push
     return (passes || []).filter((p: any) => {
+        // Check last scan
+        let lastActivityDate: Date
+
         if (!p.scans || p.scans.length === 0) {
-            // Never scanned - check created_at
-            return new Date(p.created_at) < cutoffDate
+            // Never scanned - use created_at
+            lastActivityDate = new Date(p.created_at)
+        } else {
+            // Find most recent scan
+            const lastScan = p.scans.sort((a: any, b: any) =>
+                new Date(b.scanned_at).getTime() - new Date(a.scanned_at).getTime()
+            )[0]
+            lastActivityDate = new Date(lastScan.scanned_at)
         }
 
-        // Find most recent scan
-        const lastScan = p.scans.sort((a: any, b: any) =>
-            new Date(b.scanned_at).getTime() - new Date(a.scanned_at).getTime()
-        )[0]
+        // Not inactive yet
+        if (lastActivityDate >= cutoffDate) {
+            return false
+        }
 
-        return new Date(lastScan.scanned_at) < cutoffDate
+        // Check if we already sent an inactivity push recently
+        // Only send every X days (same as inactivity config)
+        const lastInactivityPush = p.current_state?.last_inactivity_push_at
+        if (lastInactivityPush) {
+            const lastPushDate = new Date(lastInactivityPush)
+            const nextAllowedPush = new Date(lastPushDate)
+            nextAllowedPush.setDate(nextAllowedPush.getDate() + daysInactive)
+
+            if (now < nextAllowedPush) {
+                // Too soon for another inactivity reminder
+                return false
+            }
+        }
+
+        return true
     })
 }
 
