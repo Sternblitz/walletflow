@@ -202,14 +202,15 @@ async function executeRule(
             const message = replacePlaceholders(rule.message_template, pass)
 
             // Update the pass to trigger a push notification
-            // This works by updating the pass's current_state which triggers APNs
+            // Use latest_news field which PassFactory checks for displaying on pass
             const { error: updateError } = await supabase
                 .from('passes')
                 .update({
                     last_updated_at: new Date().toISOString(),
                     current_state: {
                         ...pass.current_state,
-                        last_automation_message: message,
+                        latest_news: message,
+                        last_message_at: new Date().toISOString(),
                         last_automation_at: new Date().toISOString()
                     }
                 })
