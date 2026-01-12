@@ -1,0 +1,1 @@
+{"crons":[{"path":"/api/cron/push-processor","schedule":"* * * * *"},{"path":"/api/admin/push-requests/send-scheduled","schedule":"* * * * *"},{"path":"/api/automations/execute","schedule":"*/5 * * * *"}]}
