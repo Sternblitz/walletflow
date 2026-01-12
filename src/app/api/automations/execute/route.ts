@@ -36,13 +36,18 @@ export async function POST(req: NextRequest) {
     // We accept all requests for now (endpoint is not publicly linked)
 
     const supabase = await createClient()
-    const now = new Date()
-    const currentHour = now.getHours()
-    const currentMinute = now.getMinutes()
-    const currentWeekday = now.getDay() // 0 = Sunday, 1 = Monday, etc.
-    const today = now.toISOString().split('T')[0]
 
-    console.log(`[AUTOMATION] Executing at ${now.toISOString()}, weekday=${currentWeekday}, hour=${currentHour}`)
+    // IMPORTANT: Convert to German timezone (Europe/Berlin)
+    // Vercel runs on UTC, but users configure times in their local timezone
+    const nowUTC = new Date()
+    const germanTime = new Date(nowUTC.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }))
+
+    const currentHour = germanTime.getHours()
+    const currentMinute = germanTime.getMinutes()
+    const currentWeekday = germanTime.getDay() // 0 = Sunday, 1 = Monday, etc.
+    const today = germanTime.toISOString().split('T')[0]
+
+    console.log(`[AUTOMATION] Executing at ${nowUTC.toISOString()} (UTC), German time: ${currentHour}:${currentMinute}, weekday=${currentWeekday}`)
 
     // Fetch all enabled automation rules
     const { data: rules, error: rulesError } = await supabase
@@ -76,7 +81,7 @@ export async function POST(req: NextRequest) {
                 currentMinute,
                 currentWeekday,
                 today,
-                now
+                now: germanTime
             })
 
             results.details.push(ruleResult)
