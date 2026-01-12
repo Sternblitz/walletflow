@@ -24,7 +24,9 @@ import {
     Shield,
     Eye,
     EyeOff,
-    Save
+    Save,
+    UserMinus,
+    UserCheck
 } from "lucide-react"
 
 interface PosCredential {
@@ -54,6 +56,8 @@ interface Pass {
     customer_birthday?: string | null
     customer_email?: string | null
     customer_phone?: string | null
+    // Deletion tracking (Apple Wallet only)
+    deleted_at?: string | null
 }
 
 interface Campaign {
@@ -249,7 +253,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                     <div>
                         <h1 className="text-2xl font-bold">{campaign.client?.name || campaign.name}</h1>
                         <p className="text-sm text-zinc-400">
-                            {campaign.passes?.length || 0} Kunden • Erstellt am {new Date(campaign.created_at).toLocaleDateString('de-DE')}
+                            {campaign.passes?.length || 0} Kunden • {campaign.passes?.filter(p => p.deleted_at).length || 0} gelöscht • Erstellt am {new Date(campaign.created_at).toLocaleDateString('de-DE')}
                         </p>
                     </div>
                 </div>
@@ -305,6 +309,43 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                     </div>
                 </div>
             )}
+
+            {/* Customer Stats Overview */}
+            <div className="grid grid-cols-3 gap-4">
+                <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                            <Users className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-white">{campaign.passes?.length || 0}</p>
+                            <p className="text-xs text-zinc-400">Gesamt Kunden</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                            <UserCheck className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-emerald-400">{campaign.passes?.filter(p => !p.deleted_at).length || 0}</p>
+                            <p className="text-xs text-zinc-400">Aktive Karten</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center">
+                            <UserMinus className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-red-400">{campaign.passes?.filter(p => p.deleted_at).length || 0}</p>
+                            <p className="text-xs text-zinc-400">Gelöscht (🍎 nur Apple)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Distribution Card & Message Card Grid */}
             <div className="grid md:grid-cols-2 gap-4">
@@ -540,7 +581,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {campaign.passes?.map((pass) => (
-                                    <tr key={pass.id} className="hover:bg-white/5 transition-colors">
+                                    <tr key={pass.id} className={`hover:bg-white/5 transition-colors ${pass.deleted_at ? 'bg-red-500/5 opacity-60' : ''}`}>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-2">
                                                 {/* Platform Icon */}
@@ -550,15 +591,20 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                                                     <span title="Apple Wallet" className="text-lg">🍎</span>
                                                 )}
                                                 <div>
-                                                    <span className="font-medium text-white block">
+                                                    <span className={`font-medium block ${pass.deleted_at ? 'text-zinc-400 line-through' : 'text-white'}`}>
                                                         {pass.customer_name || `Kunde #${pass.current_state?.customer_number || pass.serial_number.slice(0, 6)}`}
                                                     </span>
                                                     <span className="text-xs text-zinc-500">
                                                         #{pass.current_state?.customer_number || pass.serial_number.slice(0, 8)}
                                                     </span>
                                                 </div>
-                                                {/* Verification Badge */}
-                                                {(pass.verification_status === 'verified' || pass.is_installed_on_ios || pass.is_installed_on_android) ? (
+                                                {/* Status Badge - Deleted, Verified, or Pending */}
+                                                {pass.deleted_at ? (
+                                                    <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 font-medium" title={`Gelöscht am ${new Date(pass.deleted_at).toLocaleDateString('de-DE')}`}>
+                                                        <UserMinus className="w-3 h-3" />
+                                                        Gelöscht
+                                                    </span>
+                                                ) : (pass.verification_status === 'verified' || pass.is_installed_on_ios || pass.is_installed_on_android) ? (
                                                     <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 font-medium">
                                                         <CheckCircle2 className="w-3 h-3" />
                                                         ✓

@@ -122,7 +122,16 @@ export async function DELETE(
         .eq('device_library_identifier', deviceLibraryIdentifier)
         .eq('serial_number', serialNumber)
 
-    console.log(`[UNREGISTER] Device ${deviceLibraryIdentifier} unregistered from pass ${serialNumber}`)
+    // Mark the pass as deleted (user removed it from their wallet)
+    await supabase
+        .from('passes')
+        .update({
+            deleted_at: new Date().toISOString(),
+            is_installed_on_ios: false
+        })
+        .eq('id', pass.id)
+
+    console.log(`[UNREGISTER] 🗑️ Pass ${serialNumber} marked as deleted - user removed from wallet`)
 
     return new NextResponse(null, { status: 200 })
 }
