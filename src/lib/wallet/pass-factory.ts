@@ -210,8 +210,17 @@ export class PassFactory {
         processFields(draft.fields.backFields).forEach(f => pkPass.backFields.push(f))
 
         // Add notification message field to back (for push messaging)
-        // Check both notification_message (legacy) and latest_news (new PushService)
-        const newsMessage = state.notification_message || state.latest_news
+        // Priority: latest_news (from push requests) > notification_message (from direct campaign push)
+        // Use the most recent one based on timestamp, or latest_news if both exist
+        let newsMessage = state.latest_news || state.notification_message
+
+        // If both exist, compare timestamps to use the most recent
+        if (state.latest_news && state.notification_message) {
+            const latestTime = new Date(state.last_message_at || 0).getTime()
+            const notifTime = new Date(state.notification_updated_at || 0).getTime()
+            newsMessage = latestTime >= notifTime ? state.latest_news : state.notification_message
+        }
+
         if (newsMessage) {
             pkPass.backFields.push({
                 key: 'news',
