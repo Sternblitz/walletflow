@@ -148,8 +148,8 @@ async function executeRule(
             break
 
         case 'inactivity':
-            // Inactivity runs once per day at a fixed time (default: 10:00)
-            const inactivityHour = rule.config.check_hour ?? 10
+            // Inactivity runs once per day at a fixed time (default: 12:00)
+            const inactivityHour = rule.config.check_hour ?? 12
             shouldRun = currentHour === inactivityHour && currentMinute < 30
             if (shouldRun) {
                 targetPasses = await getInactivePasses(supabase, rule.campaign_id, rule.config, now)
