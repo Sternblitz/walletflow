@@ -6,7 +6,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { sendPassUpdatePush, sendBatchPush } from '@/lib/wallet/apns'
+import { sendPassUpdatePush } from '@/lib/wallet/apns'
 import { GoogleWalletService } from '@/lib/wallet/google'
 
 export interface PushResult {
@@ -80,24 +80,30 @@ export class PushService {
         let sentCount = 0
         let failCount = 0
 
+        // Helper for batched execution
+        const processInBatches = async <T>(items: T[], size: number, processor: (item: T) => Promise<boolean>) => {
+            let success = 0
+            let fail = 0
+            for (let i = 0; i < items.length; i += size) {
+                const batch = items.slice(i, i + size)
+                const results = await Promise.all(batch.map(item => processor(item)))
+                success += results.filter(r => r).length
+                fail += results.filter(r => !r).length
+            }
+            return { success, fail }
+        }
+
         // ═══════════════════════════════════════════════════════════════
-        // APPLE WALLET
+        // APPLE WALLET (Process in batches of 20)
         // ═══════════════════════════════════════════════════════════════
         if (applePasses.length > 0) {
             console.log(`[PushService] Processing ${applePasses.length} Apple passes`)
 
-            // Update all Apple passes with the message first (batch DB update)
-            const passIds = applePasses.map((p: any) => p.id)
-            const now = new Date().toISOString()
-
-            // Process in batches for DB updates
-            for (let i = 0; i < passIds.length; i += batchSize) {
-                const batch = passIds.slice(i, i + batchSize)
-
-                // Update each pass's current_state with the message
-                for (const passId of batch) {
-                    const pass = applePasses.find((p: any) => p.id === passId)
-                    const currentState = pass?.current_state || {}
+            const { success, fail } = await processInBatches(applePasses, batchSize, async (pass: any) => {
+                try {
+                    // Update DB State with the message
+                    const currentState = pass.current_state || {}
+                    const now = new Date().toISOString()
 
                     await this.supabase
                         .from('passes')
@@ -109,19 +115,24 @@ export class PushService {
                             },
                             last_updated_at: now
                         })
-                        .eq('id', passId)
-                }
+                        .eq('id', pass.id)
 
-                // Send APNs push notifications for this batch
-                const result = await sendBatchPush(batch)
-                sentCount += result.sent
-                failCount += result.failed
-                errors.push(...result.errors.slice(0, 5)) // Limit errors to prevent spam
-            }
+                    // Send APNS Push using the working function
+                    await sendPassUpdatePush(pass.id)
+                    return true
+                } catch (e: any) {
+                    console.error(`[PushService] Apple send failed for ${pass.id}:`, e.message)
+                    errors.push(`Apple ${pass.id}: ${e.message}`)
+                    return false
+                }
+            })
+
+            sentCount += success
+            failCount += fail
         }
 
         // ═══════════════════════════════════════════════════════════════
-        // GOOGLE WALLET
+        // GOOGLE WALLET (Process in batches of 10)
         // ═══════════════════════════════════════════════════════════════
         if (googlePasses.length > 0 && notifyGoogle) {
             console.log(`[PushService] Processing ${googlePasses.length} Google passes`)
@@ -129,31 +140,24 @@ export class PushService {
             try {
                 const googleService = this.getGoogleService()
 
-                // Process in batches
-                for (let i = 0; i < googlePasses.length; i += batchSize) {
-                    const batch = googlePasses.slice(i, i + batchSize)
+                const { success, fail } = await processInBatches(googlePasses, 10, async (pass: any) => {
+                    try {
+                        const googleObjectId = pass.id.replace(/-/g, '_')
+                        await googleService.addMessage(
+                            googleObjectId,
+                            'Neuigkeit',
+                            message,
+                            true // notify
+                        )
+                        return true
+                    } catch (e: any) {
+                        console.error(`[PushService] Google push failed for ${pass.id}:`, e.message)
+                        return false
+                    }
+                })
 
-                    const results = await Promise.all(
-                        batch.map(async (pass: any) => {
-                            try {
-                                const googleObjectId = pass.id.replace(/-/g, '_')
-                                await googleService.addMessage(
-                                    googleObjectId,
-                                    'Neuigkeit',
-                                    message,
-                                    true // notify
-                                )
-                                return true
-                            } catch (e: any) {
-                                console.error(`[PushService] Google push failed for ${pass.id}:`, e.message)
-                                return false
-                            }
-                        })
-                    )
-
-                    sentCount += results.filter(r => r).length
-                    failCount += results.filter(r => !r).length
-                }
+                sentCount += success
+                failCount += fail
             } catch (e: any) {
                 console.error('[PushService] Google service error:', e)
                 errors.push(`Google service error: ${e.message}`)
@@ -183,26 +187,21 @@ export class PushService {
             .single()
 
         if (reqError || !request) {
+            console.error('[PushService] Request not found:', reqError)
             return { sentCount: 0, failCount: 0, totalCount: 0, errors: ['Request not found'] }
         }
 
         // Use edited message if available, otherwise original
+        // Note: edited_message column may not exist yet if migration hasn't run
         const message = request.edited_message || request.message
 
-        // Mark as processing
-        await this.supabase
-            .from('push_requests')
-            .update({
-                status: 'processing',
-                processing_started_at: new Date().toISOString()
-            })
-            .eq('id', requestId)
+        console.log(`[PushService] Processing request ${requestId} for campaign ${request.campaign?.id}`)
 
         try {
             // Send to all passes
             const result = await this.sendToAllPasses(request.campaign.id, message)
 
-            // Update final status
+            // Update final status (using only existing columns)
             await this.supabase
                 .from('push_requests')
                 .update({
@@ -210,24 +209,21 @@ export class PushService {
                     sent_at: new Date().toISOString(),
                     recipients_count: result.totalCount,
                     success_count: result.sentCount,
-                    failure_count: result.failCount,
-                    last_error: result.errors.length > 0 ? result.errors.join('; ').substring(0, 500) : null,
-                    processing_started_at: null
+                    failure_count: result.failCount
                 })
                 .eq('id', requestId)
+
+            console.log(`[PushService] Request ${requestId} completed: sent=${result.sentCount}, failed=${result.failCount}`)
 
             return result
 
         } catch (e: any) {
-            // Update with error
+            console.error(`[PushService] Request ${requestId} failed:`, e)
+
+            // Update with error status
             await this.supabase
                 .from('push_requests')
-                .update({
-                    status: 'failed',
-                    last_error: e.message,
-                    retry_count: (request.retry_count || 0) + 1,
-                    processing_started_at: null
-                })
+                .update({ status: 'failed' })
                 .eq('id', requestId)
 
             return { sentCount: 0, failCount: 0, totalCount: 0, errors: [e.message] }
@@ -247,7 +243,6 @@ export class PushService {
             .select('id')
             .eq('status', 'scheduled')
             .lte('scheduled_at', now)
-            .is('processing_started_at', null) // Not already being processed
             .limit(10) // Process max 10 at a time
 
         if (error) {
@@ -269,18 +264,6 @@ export class PushService {
                 errors.push(`Request ${request.id}: ${e.message}`)
             }
         }
-
-        // Cleanup: Reset stale processing requests (stuck for > 10 minutes)
-        const staleTime = new Date(Date.now() - 10 * 60 * 1000).toISOString()
-        await this.supabase
-            .from('push_requests')
-            .update({
-                status: 'scheduled', // Reset to scheduled
-                processing_started_at: null,
-                last_error: 'Processing timeout - reset for retry'
-            })
-            .eq('status', 'processing')
-            .lt('processing_started_at', staleTime)
 
         return { processed, errors }
     }
