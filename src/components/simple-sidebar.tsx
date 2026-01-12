@@ -45,7 +45,7 @@ const navItems = [
     { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/admin/create", icon: Plus, label: "Neue Kampagne", highlight: true },
     { href: "/admin/clients", icon: Users, label: "Clients" },
-    { href: "/admin/push", icon: Send, label: "Push Requests" },
+    { href: "/admin/push-requests", icon: Send, label: "Push Requests" },
 ]
 
 const systemItems = [

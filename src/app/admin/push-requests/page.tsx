@@ -1,17 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Check, X, Clock, Send, AlertTriangle, ArrowLeft } from 'lucide-react'
+import { Check, X, Clock, Send, AlertTriangle, ArrowLeft, Calendar, Users, PlayCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
 
 interface PushRequest {
     id: string
     message: string
-    status: 'pending' | 'approved' | 'rejected' | 'sent' | 'failed'
+    status: 'pending' | 'approved' | 'scheduled' | 'rejected' | 'sent' | 'failed'
     created_at: string
     scheduled_at: string | null
+    sent_at: string | null
+    recipients_count: number
+    success_count: number
+    failure_count: number
     campaign: {
         name: string
         client: {
@@ -51,11 +54,36 @@ export default function PushRequestsPage() {
             const res = await fetch(`/api/admin/push-requests/${id}/approve`, {
                 method: 'POST'
             })
+            const data = await res.json()
             if (res.ok) {
-                toast.success('Nachricht genehmigt und gesendet!')
-                fetchRequests() // Refresh
+                if (data.scheduled) {
+                    toast.success('Nachricht genehmigt und für später eingeplant!')
+                } else {
+                    toast.success(`Nachricht an ${data.sent || 0} Kunden gesendet!`)
+                }
+                fetchRequests()
             } else {
                 toast.error('Fehler beim Genehmigen')
+            }
+        } catch (e) {
+            toast.error('Netzwerkfehler')
+        } finally {
+            setProcessingId(null)
+        }
+    }
+
+    const handleSendNow = async (id: string) => {
+        setProcessingId(id)
+        try {
+            const res = await fetch(`/api/admin/push-requests/${id}/send-now`, {
+                method: 'POST'
+            })
+            const data = await res.json()
+            if (res.ok) {
+                toast.success(`Nachricht an ${data.sent || 0} Kunden gesendet!`)
+                fetchRequests()
+            } else {
+                toast.error('Fehler beim Senden')
             }
         } catch (e) {
             toast.error('Netzwerkfehler')
@@ -90,9 +118,41 @@ export default function PushRequestsPage() {
         }
     }
 
+    const formatDateTime = (dateString: string) => {
+        return new Date(dateString).toLocaleString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+    }
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString('de-DE')
+    }
+
     // Filter into groups
     const pendingRequests = requests.filter(r => r.status === 'pending')
-    const historyRequests = requests.filter(r => r.status !== 'pending')
+    const scheduledRequests = requests.filter(r => r.status === 'scheduled' || (r.status === 'approved' && r.scheduled_at && new Date(r.scheduled_at) > new Date()))
+    const historyRequests = requests.filter(r => ['sent', 'rejected', 'failed'].includes(r.status))
+
+    const getStatusBadge = (req: PushRequest) => {
+        const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+            sent: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', label: 'Gesendet' },
+            rejected: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Abgelehnt' },
+            failed: { bg: 'bg-orange-500/20', text: 'text-orange-400', label: 'Fehlgeschlagen' },
+            scheduled: { bg: 'bg-violet-500/20', text: 'text-violet-400', label: 'Geplant' },
+            approved: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Genehmigt' },
+            pending: { bg: 'bg-amber-500/20', text: 'text-amber-400', label: 'Wartend' }
+        }
+        const config = statusConfig[req.status] || statusConfig.pending
+        return (
+            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${config.bg} ${config.text}`}>
+                {config.label}
+            </span>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-black text-white p-8">
@@ -124,41 +184,49 @@ export default function PushRequestsPage() {
                         ) : (
                             <div className="grid grid-cols-1 gap-4">
                                 {pendingRequests.map(req => (
-                                    <div key={req.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="bg-zinc-800 text-zinc-300 px-2 py-1 rounded text-xs font-bold uppercase">
-                                                    {req.campaign?.client?.name || 'Unknown'}
-                                                </span>
-                                                <span className="text-zinc-500 text-xs">
-                                                    {new Date(req.created_at).toLocaleString()}
-                                                </span>
+                                    <div key={req.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                                        <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                    <span className="bg-zinc-800 text-zinc-300 px-2 py-1 rounded text-xs font-bold uppercase">
+                                                        {req.campaign?.client?.name || 'Unknown'}
+                                                    </span>
+                                                    <span className="text-zinc-500 text-xs">
+                                                        {formatDateTime(req.created_at)}
+                                                    </span>
+                                                    {req.scheduled_at && (
+                                                        <span className="bg-violet-500/20 text-violet-400 px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
+                                                            <Calendar size={12} />
+                                                            Geplant für {formatDateTime(req.scheduled_at)}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-lg font-medium text-white p-4 bg-black/30 rounded-xl border border-white/5">
+                                                    "{req.message}"
+                                                </p>
                                             </div>
-                                            <p className="text-lg font-medium text-white p-4 bg-black/30 rounded-xl border border-white/5">
-                                                "{req.message}"
-                                            </p>
-                                        </div>
 
-                                        <div className="flex gap-3">
-                                            <button
-                                                onClick={() => setRejectingId(req.id)}
-                                                disabled={!!processingId}
-                                                className="px-4 py-2 bg-red-500/10 text-red-400 rounded-xl font-medium hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50"
-                                            >
-                                                Ablehnen
-                                            </button>
-                                            <button
-                                                onClick={() => handleApprove(req.id)}
-                                                disabled={!!processingId}
-                                                className="px-6 py-2 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-900/20 disabled:opacity-50 flex items-center gap-2"
-                                            >
-                                                {processingId === req.id ? (
-                                                    <span className="animate-spin text-xl">⟳</span>
-                                                ) : (
-                                                    <Check size={18} />
-                                                )}
-                                                Genehmigen & Senden
-                                            </button>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    onClick={() => setRejectingId(req.id)}
+                                                    disabled={!!processingId}
+                                                    className="px-4 py-2 bg-red-500/10 text-red-400 rounded-xl font-medium hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50"
+                                                >
+                                                    Ablehnen
+                                                </button>
+                                                <button
+                                                    onClick={() => handleApprove(req.id)}
+                                                    disabled={!!processingId}
+                                                    className="px-6 py-2 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-900/20 disabled:opacity-50 flex items-center gap-2"
+                                                >
+                                                    {processingId === req.id ? (
+                                                        <span className="animate-spin text-xl">⟳</span>
+                                                    ) : (
+                                                        <Check size={18} />
+                                                    )}
+                                                    {req.scheduled_at ? 'Genehmigen' : 'Genehmigen & Senden'}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -166,6 +234,54 @@ export default function PushRequestsPage() {
                         )}
                     </div>
                 </section>
+
+                {/* Scheduled Section */}
+                {scheduledRequests.length > 0 && (
+                    <section className="mb-12">
+                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                            <Calendar className="text-violet-500" />
+                            Geplant ({scheduledRequests.length})
+                        </h2>
+
+                        <div className="grid grid-cols-1 gap-4">
+                            {scheduledRequests.map(req => (
+                                <div key={req.id} className="bg-zinc-900 border border-violet-500/20 rounded-2xl p-6">
+                                    <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                <span className="bg-zinc-800 text-zinc-300 px-2 py-1 rounded text-xs font-bold uppercase">
+                                                    {req.campaign?.client?.name || 'Unknown'}
+                                                </span>
+                                                {req.scheduled_at && (
+                                                    <span className="bg-violet-500/20 text-violet-400 px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
+                                                        <Calendar size={12} />
+                                                        {formatDateTime(req.scheduled_at)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-lg font-medium text-white p-4 bg-black/30 rounded-xl border border-white/5">
+                                                "{req.message}"
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={() => handleSendNow(req.id)}
+                                            disabled={!!processingId}
+                                            className="px-6 py-2 bg-violet-500 text-white rounded-xl font-bold hover:bg-violet-600 transition-colors shadow-lg shadow-violet-900/20 disabled:opacity-50 flex items-center gap-2"
+                                        >
+                                            {processingId === req.id ? (
+                                                <span className="animate-spin text-xl">⟳</span>
+                                            ) : (
+                                                <PlayCircle size={18} />
+                                            )}
+                                            Jetzt senden
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
 
                 {/* History Section */}
                 <section>
@@ -177,6 +293,7 @@ export default function PushRequestsPage() {
                                     <th className="p-4">Datum</th>
                                     <th className="p-4">Kunde</th>
                                     <th className="p-4">Nachricht</th>
+                                    <th className="p-4">Empfänger</th>
                                     <th className="p-4">Status</th>
                                 </tr>
                             </thead>
@@ -184,7 +301,7 @@ export default function PushRequestsPage() {
                                 {historyRequests.map(req => (
                                     <tr key={req.id} className="hover:bg-white/5">
                                         <td className="p-4 whitespace-nowrap">
-                                            {new Date(req.created_at).toLocaleDateString()}
+                                            {formatDate(req.sent_at || req.created_at)}
                                         </td>
                                         <td className="p-4 font-medium text-white">
                                             {req.campaign?.client?.name}
@@ -193,18 +310,23 @@ export default function PushRequestsPage() {
                                             {req.message}
                                         </td>
                                         <td className="p-4">
-                                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${req.status === 'sent' ? 'bg-blue-500/20 text-blue-400' :
-                                                    req.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                                                        'bg-zinc-700 text-zinc-400'
-                                                }`}>
-                                                {req.status}
-                                            </span>
+                                            {req.status === 'sent' && req.recipients_count > 0 ? (
+                                                <span className="flex items-center gap-1 text-emerald-400">
+                                                    <Users size={14} />
+                                                    {req.success_count}/{req.recipients_count}
+                                                </span>
+                                            ) : (
+                                                <span className="text-zinc-600">—</span>
+                                            )}
+                                        </td>
+                                        <td className="p-4">
+                                            {getStatusBadge(req)}
                                         </td>
                                     </tr>
                                 ))}
                                 {historyRequests.length === 0 && (
                                     <tr>
-                                        <td colSpan={4} className="p-8 text-center text-zinc-600">
+                                        <td colSpan={5} className="p-8 text-center text-zinc-600">
                                             Keine Einträge im Verlauf
                                         </td>
                                     </tr>

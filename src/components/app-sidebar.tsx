@@ -11,6 +11,7 @@ import {
     Plus,
     LayoutDashboard,
     Users,
+    Zap,
 } from "lucide-react"
 
 import {
@@ -86,9 +87,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
                         <SidebarMenuItem>
                             <SidebarMenuButton tooltip="Push Inbox" asChild className="hover:bg-white/5 hover:text-white transition-colors">
-                                <Link href="/admin/push">
+                                <Link href="/admin/push-requests">
                                     <Send className="text-zinc-400 group-hover:text-white transition-colors" />
                                     <span className="font-medium text-zinc-400 group-hover:text-white">Push Requests</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+
+                        <SidebarMenuItem>
+                            <SidebarMenuButton tooltip="Automations" asChild className="hover:bg-white/5 hover:text-white transition-colors">
+                                <Link href="/admin/automations">
+                                    <Zap className="text-yellow-400" />
+                                    <span className="font-medium text-zinc-400 group-hover:text-white">Automations</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

@@ -5,9 +5,12 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
     try {
+        const { searchParams } = new URL(req.url)
+        const campaignId = searchParams.get('campaignId')
+
         const supabase = await createClient()
 
-        const { data: requests, error } = await supabase
+        let query = supabase
             .from('push_requests')
             .select(`
                 *,
@@ -19,6 +22,12 @@ export async function GET(req: NextRequest) {
             `)
             .order('created_at', { ascending: false })
             .limit(50)
+
+        if (campaignId) {
+            query = query.eq('campaign_id', campaignId)
+        }
+
+        const { data: requests, error } = await query
 
         if (error) {
             console.error('Error fetching push requests:', error)

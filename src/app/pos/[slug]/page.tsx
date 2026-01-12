@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'sonner'
 import { ActivityChart, WalletDonut, RetentionGauge } from '@/components/pos/POSCharts'
 import { AutomationManager } from '@/components/pos/AutomationManager'
+import { AutomationRulesManager } from '@/components/pos/AutomationRulesManager'
 import { ThemeToggle } from '@/components/pos/ThemeToggle'
 
 type Role = 'none' | 'staff' | 'chef'
@@ -41,6 +42,7 @@ export default function POSPage() {
     const [pushMessage, setPushMessage] = useState('')
     const [pushSchedule, setPushSchedule] = useState('')
     const [pushSubmitting, setPushSubmitting] = useState(false)
+    const [isScheduled, setIsScheduled] = useState(false)
 
     // Load campaign data
     useEffect(() => {
@@ -449,9 +451,9 @@ export default function POSPage() {
 
                     {/* Bottom Row: Automation & Feed */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-                        {/* Automation Manager */}
+                        {/* Automation Rules Manager (new) */}
                         <div className="h-[400px]">
-                            <AutomationManager slug={slug} />
+                            <AutomationRulesManager slug={slug} />
                         </div>
 
                         {/* Feed */}
@@ -557,20 +559,95 @@ export default function POSPage() {
                             </p>
                         </div>
 
+                        {/* Scheduling Toggle */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsScheduled(false)
+                                        setPushSchedule('')
+                                    }}
+                                    className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all ${!isScheduled
+                                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                                            : 'bg-card border border-border text-muted-foreground hover:bg-accent'
+                                        }`}
+                                >
+                                    Sofort senden
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsScheduled(true)}
+                                    className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all ${isScheduled
+                                            ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/20'
+                                            : 'bg-card border border-border text-muted-foreground hover:bg-accent'
+                                        }`}
+                                >
+                                    Für später planen
+                                </button>
+                            </div>
+
+                            {/* DateTime Inputs (shown when scheduling) */}
+                            {isScheduled && (
+                                <div className="space-y-3 p-4 bg-card border border-border rounded-2xl animate-in slide-in-from-top-2">
+                                    <label className="text-sm text-muted-foreground font-medium">Wann soll die Nachricht gesendet werden?</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs text-muted-foreground ml-1">Datum</label>
+                                            <input
+                                                type="date"
+                                                value={pushSchedule.split('T')[0] || ''}
+                                                onChange={(e) => {
+                                                    const time = pushSchedule.split('T')[1] || '12:00'
+                                                    setPushSchedule(`${e.target.value}T${time}`)
+                                                }}
+                                                min={new Date().toISOString().split('T')[0]}
+                                                className="w-full px-4 py-3 bg-background border border-border rounded-xl text-sm focus:outline-none focus:border-violet-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-muted-foreground ml-1">Uhrzeit</label>
+                                            <input
+                                                type="time"
+                                                value={pushSchedule.split('T')[1] || '12:00'}
+                                                onChange={(e) => {
+                                                    const date = pushSchedule.split('T')[0] || new Date().toISOString().split('T')[0]
+                                                    setPushSchedule(`${date}T${e.target.value}`)
+                                                }}
+                                                className="w-full px-4 py-3 bg-background border border-border rounded-xl text-sm focus:outline-none focus:border-violet-500"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <button
                             type="submit"
-                            disabled={!pushMessage.trim() || pushSubmitting}
-                            className="w-full py-5 bg-gradient-to-r from-blue-600 to-violet-600 text-white hover:from-blue-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]"
+                            disabled={!pushMessage.trim() || pushSubmitting || (isScheduled && !pushSchedule)}
+                            className={`w-full py-5 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-[0.98] ${isScheduled
+                                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 shadow-violet-500/20'
+                                    : 'bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 shadow-blue-500/20'
+                                }`}
                         >
                             {pushSubmitting ? (
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : isScheduled ? (
+                                <>
+                                    <Bell className="w-5 h-5" />
+                                    Zur Genehmigung einreichen
+                                </>
                             ) : (
                                 <>
                                     <Send className="w-5 h-5" />
-                                    Jetzt Senden
+                                    Zur Genehmigung einreichen
                                 </>
                             )}
                         </button>
+
+                        <p className="text-center text-xs text-muted-foreground">
+                            Nachrichten müssen von der Agentur genehmigt werden.
+                        </p>
                     </form>
                 </main>
             </div>
@@ -618,20 +695,26 @@ export default function POSPage() {
                             {customers.map((customer: any) => (
                                 <div
                                     key={customer.id}
-                                    className="p-4 bg-card border border-border rounded-2xl hover:bg-accent/5 transition-colors"
+                                    className={`p-4 bg-card border border-border rounded-2xl hover:bg-accent/5 transition-colors ${customer.deletedAt ? 'bg-red-500/5 border-red-500/20' : ''}`}
                                 >
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-semibold truncate">
+                                                <h3 className={`font-semibold truncate ${customer.deletedAt ? 'text-muted-foreground line-through' : ''}`}>
                                                     {customer.name || `Kunde #${customer.customerNumber}`}
                                                 </h3>
-                                                <span className={`text-xs px-2 py-0.5 rounded-full ${customer.platform === 'apple'
+                                                {customer.deletedAt ? (
+                                                    <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 font-medium border border-red-500/20">
+                                                        Gelöscht
+                                                    </span>
+                                                ) : (
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${customer.platform === 'apple'
                                                         ? 'bg-white/10 text-white'
                                                         : 'bg-zinc-700 text-zinc-300'
-                                                    }`}>
-                                                    {customer.platform === 'apple' ? 'Apple' : 'Google'}
-                                                </span>
+                                                        }`}>
+                                                        {customer.platform === 'apple' ? 'Apple' : 'Google'}
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                                                 {customer.birthday && (

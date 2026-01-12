@@ -43,7 +43,8 @@ export async function GET(req: NextRequest) {
             created_at,
             last_updated_at,
             is_installed_on_ios,
-            is_installed_on_android
+            is_installed_on_android,
+            deleted_at
         `)
         .eq('campaign_id', campaignId)
         .order('created_at', { ascending: false })
@@ -62,6 +63,7 @@ export async function GET(req: NextRequest) {
         email: pass.customer_email || null,
         phone: pass.customer_phone || null,
         stamps: pass.current_state?.stamps || 0,
+        deletedAt: pass.deleted_at || null,
         maxStamps: pass.current_state?.max_stamps || 10,
         customerNumber: pass.current_state?.customer_number || pass.serial_number?.slice(-6),
         platform: pass.wallet_type || 'apple',

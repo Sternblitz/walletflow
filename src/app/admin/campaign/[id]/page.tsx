@@ -26,7 +26,15 @@ import {
     EyeOff,
     Save,
     UserMinus,
-    UserCheck
+    UserCheck,
+    Zap,
+    Cake,
+    Calendar,
+    ChevronDown,
+    ChevronUp,
+    History,
+    Play,
+    Pause
 } from "lucide-react"
 
 interface PosCredential {
@@ -73,6 +81,44 @@ interface Campaign {
     passes: Pass[]
 }
 
+interface AutomationRule {
+    id: string
+    name: string
+    rule_type: 'birthday' | 'weekday_schedule' | 'inactivity' | 'custom'
+    config: Record<string, any>
+    message_template: string
+    is_enabled: boolean
+    created_at: string
+    updated_at: string
+}
+
+interface AutomationExecution {
+    id: string
+    rule_id: string
+    pass_id: string
+    executed_at: string
+    status: 'sent' | 'failed' | 'skipped'
+    sent_message?: string
+}
+
+interface PushRequest {
+    id: string
+    message: string
+    status: 'pending' | 'scheduled' | 'approved' | 'rejected' | 'sent' | 'failed'
+    created_at: string
+    scheduled_at: string | null
+    sent_at: string | null
+    recipients_count: number
+    success_count: number
+}
+
+const RULE_TYPE_LABELS: Record<string, { icon: string; label: string; color: string }> = {
+    birthday: { icon: '🎂', label: 'Geburtstag', color: 'text-pink-400' },
+    weekday_schedule: { icon: '📅', label: 'Wochentag', color: 'text-blue-400' },
+    inactivity: { icon: '👋', label: 'Inaktivität', color: 'text-amber-400' },
+    custom: { icon: '⚡', label: 'Benutzerdefiniert', color: 'text-purple-400' },
+}
+
 export default function CampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const [campaign, setCampaign] = useState<Campaign | null>(null)
     const [loading, setLoading] = useState(true)
@@ -89,6 +135,16 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     const [showPins, setShowPins] = useState<Record<string, boolean>>({})
     const [savingPins, setSavingPins] = useState(false)
 
+    // Automation State
+    const [automations, setAutomations] = useState<AutomationRule[]>([])
+    const [loadingAutomations, setLoadingAutomations] = useState(false)
+    const [recentExecutions, setRecentExecutions] = useState<AutomationExecution[]>([])
+    const [expandedAutomation, setExpandedAutomation] = useState<string | null>(null)
+
+    // Push History State
+    const [pushHistory, setPushHistory] = useState<PushRequest[]>([])
+    const [loadingPushHistory, setLoadingPushHistory] = useState(false)
+
     useEffect(() => {
         params.then(p => setCampaignId(p.id))
     }, [params])
@@ -97,6 +153,8 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
         if (campaignId) {
             fetchCampaign()
             fetchPosCredentials()
+            fetchAutomations()
+            fetchPushHistory()
         }
     }, [campaignId])
 
@@ -121,6 +179,55 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
             console.error('Failed to fetch credentials:', e)
         } finally {
             setLoadingCredentials(false)
+        }
+    }
+
+    const fetchAutomations = async () => {
+        if (!campaignId) return
+        setLoadingAutomations(true)
+        try {
+            const res = await fetch(`/api/automations?campaignId=${campaignId}`)
+            const data = await res.json()
+            if (data.rules) {
+                setAutomations(data.rules)
+            }
+        } catch (e) {
+            console.error('Failed to fetch automations:', e)
+        } finally {
+            setLoadingAutomations(false)
+        }
+    }
+
+    const fetchPushHistory = async () => {
+        if (!campaignId) return
+        setLoadingPushHistory(true)
+        try {
+            const res = await fetch(`/api/admin/push-requests?campaignId=${campaignId}`)
+            const data = await res.json()
+            if (data.requests) {
+                setPushHistory(data.requests.slice(0, 5)) // Last 5
+            }
+        } catch (e) {
+            console.error('Failed to fetch push history:', e)
+        } finally {
+            setLoadingPushHistory(false)
+        }
+    }
+
+    const toggleAutomation = async (rule: AutomationRule) => {
+        try {
+            const res = await fetch('/api/automations', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: rule.id, isEnabled: !rule.is_enabled })
+            })
+            if (res.ok) {
+                setAutomations(prev => prev.map(r =>
+                    r.id === rule.id ? { ...r, is_enabled: !r.is_enabled } : r
+                ))
+            }
+        } catch (e) {
+            console.error('Failed to toggle automation:', e)
         }
     }
 
@@ -341,7 +448,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-red-400">{campaign.passes?.filter(p => p.deleted_at).length || 0}</p>
-                            <p className="text-xs text-zinc-400">Gelöscht (🍎 nur Apple)</p>
+                            <p className="text-xs text-zinc-400">Gelöscht</p>
                         </div>
                     </div>
                 </div>
@@ -454,6 +561,65 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 </div>
             </div>
 
+            {/* Push History Section */}
+            <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                            <History className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h2 className="font-semibold text-white">Push Verlauf</h2>
+                            <p className="text-xs text-zinc-400">Letzte Push-Nachrichten dieser Kampagne</p>
+                        </div>
+                    </div>
+                    <Link href="/admin/push-requests">
+                        <Button variant="outline" size="sm" className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+                            <Send className="w-4 h-4 mr-2" />
+                            Alle anzeigen
+                        </Button>
+                    </Link>
+                </div>
+
+                {loadingPushHistory ? (
+                    <div className="flex justify-center py-4">
+                        <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                    </div>
+                ) : pushHistory.length === 0 ? (
+                    <div className="text-center py-6 border border-dashed border-white/10 rounded-xl">
+                        <Send className="w-6 h-6 mx-auto mb-2 text-zinc-600" />
+                        <p className="text-sm text-zinc-400">Noch keine Push-Nachrichten gesendet</p>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {pushHistory.map(req => (
+                            <div key={req.id} className="flex items-center justify-between p-3 bg-black/30 rounded-xl border border-white/5">
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-white truncate">"{req.message}"</p>
+                                    <p className="text-xs text-zinc-500">
+                                        {new Date(req.sent_at || req.created_at).toLocaleDateString('de-DE')}
+                                        {req.status === 'sent' && req.recipients_count > 0 && (
+                                            <span className="ml-2 text-emerald-400">• {req.success_count}/{req.recipients_count} Empfänger</span>
+                                        )}
+                                    </p>
+                                </div>
+                                <span className={`ml-3 px-2 py-1 text-xs font-medium rounded ${req.status === 'sent' ? 'bg-emerald-500/20 text-emerald-400' :
+                                        req.status === 'scheduled' ? 'bg-violet-500/20 text-violet-400' :
+                                            req.status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
+                                                req.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                                                    'bg-zinc-700 text-zinc-400'
+                                    }`}>
+                                    {req.status === 'sent' ? 'Gesendet' :
+                                        req.status === 'scheduled' ? 'Geplant' :
+                                            req.status === 'pending' ? 'Wartend' :
+                                                req.status === 'rejected' ? 'Abgelehnt' : req.status}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
 
             {/* POS System Section */}
             <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-6 space-y-6">
@@ -545,6 +711,117 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         </ul>
                     </div>
                 </div>
+            </div>
+
+
+            {/* Automations Section */}
+            <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-6 space-y-6">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-yellow-500/10 text-yellow-500 flex items-center justify-center">
+                            <Zap className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h2 className="font-semibold text-white">Automatisierungen</h2>
+                            <p className="text-xs text-zinc-400">Automatische Push-Nachrichten vom Kunden konfiguriert</p>
+                        </div>
+                    </div>
+                    <Link href={`/admin/automations?campaignId=${campaignId}`}>
+                        <Button variant="outline" size="sm" className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10">
+                            <Zap className="w-4 h-4 mr-2" />
+                            Alle verwalten
+                        </Button>
+                    </Link>
+                </div>
+
+                {loadingAutomations ? (
+                    <div className="flex justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-yellow-500" />
+                    </div>
+                ) : automations.length === 0 ? (
+                    <div className="text-center py-8 border border-dashed border-white/10 rounded-xl">
+                        <Zap className="w-8 h-8 mx-auto mb-2 text-zinc-600" />
+                        <p className="text-zinc-400 text-sm">Noch keine Automatisierungen eingerichtet</p>
+                        <p className="text-xs text-zinc-500 mt-1">Der Kunde kann diese im POS-Dashboard konfigurieren</p>
+                    </div>
+                ) : (
+                    <div className="grid gap-3">
+                        {automations.map(rule => {
+                            const typeInfo = RULE_TYPE_LABELS[rule.rule_type] || RULE_TYPE_LABELS.custom
+                            const isExpanded = expandedAutomation === rule.id
+
+                            return (
+                                <div
+                                    key={rule.id}
+                                    className={`rounded-xl border transition-all ${rule.is_enabled
+                                        ? 'bg-zinc-900/50 border-white/10'
+                                        : 'bg-zinc-900/30 border-white/5 opacity-60'
+                                        }`}
+                                >
+                                    <div
+                                        className="p-4 flex items-center gap-3 cursor-pointer"
+                                        onClick={() => setExpandedAutomation(isExpanded ? null : rule.id)}
+                                    >
+                                        <span className="text-2xl">{typeInfo.icon}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium text-white truncate">{rule.name}</span>
+                                                <span className={`text-xs ${typeInfo.color}`}>{typeInfo.label}</span>
+                                            </div>
+                                            <p className="text-xs text-zinc-400 truncate">{rule.message_template}</p>
+                                        </div>
+
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); toggleAutomation(rule) }}
+                                            className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${rule.is_enabled ? 'bg-green-500' : 'bg-zinc-700'
+                                                }`}
+                                        >
+                                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${rule.is_enabled ? 'left-7' : 'left-1'
+                                                }`} />
+                                        </button>
+
+                                        {isExpanded ? <ChevronUp size={16} className="text-zinc-500" /> : <ChevronDown size={16} className="text-zinc-500" />}
+                                    </div>
+
+                                    {isExpanded && (
+                                        <div className="px-4 pb-4 border-t border-white/5 pt-3 space-y-3">
+                                            <div className="bg-black/30 rounded-lg p-3">
+                                                <p className="text-xs text-zinc-500 mb-1">Konfiguration</p>
+                                                <pre className="text-xs text-zinc-300 overflow-auto">
+                                                    {JSON.stringify(rule.config, null, 2)}
+                                                </pre>
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs text-zinc-500">
+                                                <span>Erstellt: {new Date(rule.created_at).toLocaleDateString('de-DE')}</span>
+                                                <span>Aktualisiert: {new Date(rule.updated_at).toLocaleDateString('de-DE')}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                )}
+
+
+
+                {/* Quick Stats */}
+                {automations.length > 0 && (
+                    <div className="grid grid-cols-3 gap-3 pt-2 border-t border-white/5">
+                        <div className="text-center py-2">
+                            <p className="text-2xl font-bold text-white">{automations.length}</p>
+                            <p className="text-[10px] text-zinc-500 uppercase">Regeln</p>
+                        </div>
+                        <div className="text-center py-2">
+                            <p className="text-2xl font-bold text-green-400">{automations.filter(a => a.is_enabled).length}</p>
+                            <p className="text-[10px] text-zinc-500 uppercase">Aktiv</p>
+                        </div>
+                        <div className="text-center py-2">
+                            <p className="text-2xl font-bold text-zinc-400">{automations.filter(a => !a.is_enabled).length}</p>
+                            <p className="text-[10px] text-zinc-500 uppercase">Pausiert</p>
+                        </div>
+                    </div>
+                )}
             </div>
 
 
