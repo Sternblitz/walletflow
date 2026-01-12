@@ -270,12 +270,24 @@ function shouldRunBirthday(config: Record<string, any>, hour: number, minute: nu
 
 function shouldRunWeekday(config: Record<string, any>, weekday: number, hour: number, minute: number): boolean {
     const weekdays = config.weekdays || []
-    if (!weekdays.includes(weekday)) return false
+
+    console.log(`[WEEKDAY CHECK] Config weekdays: ${JSON.stringify(weekdays)}, Current weekday: ${weekday}`)
+
+    if (!weekdays.includes(weekday)) {
+        console.log(`[WEEKDAY CHECK] Today (${weekday}) not in configured weekdays - SKIPPING`)
+        return false
+    }
 
     const sendHour = parseInt(config.time?.split(':')[0] ?? '12')
     const sendMinute = parseInt(config.time?.split(':')[1] ?? '0')
 
-    return hour === sendHour && minute >= sendMinute && minute < sendMinute + 30
+    console.log(`[WEEKDAY CHECK] Config time: ${sendHour}:${sendMinute}, Current time: ${hour}:${minute}`)
+    console.log(`[WEEKDAY CHECK] Window: ${sendHour}:${sendMinute} to ${sendHour}:${sendMinute + 30}`)
+
+    const inWindow = hour === sendHour && minute >= sendMinute && minute < sendMinute + 30
+    console.log(`[WEEKDAY CHECK] In window: ${inWindow}`)
+
+    return inWindow
 }
 
 function evaluateCustomCondition(config: Record<string, any>, context: any): boolean {
