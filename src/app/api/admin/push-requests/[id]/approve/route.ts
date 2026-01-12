@@ -48,7 +48,30 @@ export async function POST(
             })
         }
 
-        // 3. IMMEDIATE SEND - Use PushService
+        // 3. IMMEDIATE SEND - Check if should use queue (adaptive scaling)
+        const pushService = await createPushService()
+        const useQueue = await pushService.shouldUseQueue(request.campaign.id)
+
+        if (useQueue) {
+            // Large campaign → Queue for background processing
+            await supabase
+                .from('push_requests')
+                .update({
+                    status: 'queued',
+                    approved_at: new Date().toISOString()
+                })
+                .eq('id', id)
+
+            console.log(`[PUSH] Request ${id} queued (large campaign)`)
+
+            return NextResponse.json({
+                success: true,
+                queued: true,
+                message: 'Push wird im Hintergrund verarbeitet'
+            })
+        }
+
+        // Small campaign → Direct send
         await supabase
             .from('push_requests')
             .update({
@@ -57,8 +80,6 @@ export async function POST(
             })
             .eq('id', id)
 
-        // Use centralized PushService
-        const pushService = await createPushService()
         const result = await pushService.processPushRequest(id)
 
         return NextResponse.json({

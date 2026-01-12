@@ -267,6 +267,88 @@ export class PushService {
 
         return { processed, errors }
     }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ADAPTIVE SCALING - Queue for large campaigns
+    // ════════════════════════════════════════════════════════════════════════
+
+    /** Threshold: campaigns with more passes use background queue */
+    static QUEUE_THRESHOLD = 100
+
+    /**
+     * Get pass count for a campaign
+     */
+    async getPassCount(campaignId: string): Promise<number> {
+        const { count, error } = await this.supabase
+            .from('passes')
+            .select('*', { count: 'exact', head: true })
+            .eq('campaign_id', campaignId)
+            .is('deleted_at', null)
+
+        if (error) return 0
+        return count || 0
+    }
+
+    /**
+     * Check if a campaign should use background queue
+     */
+    async shouldUseQueue(campaignId: string): Promise<boolean> {
+        const count = await this.getPassCount(campaignId)
+        return count > PushService.QUEUE_THRESHOLD
+    }
+
+    /**
+     * Queue a push request for background processing
+     */
+    async queuePushRequest(requestId: string): Promise<void> {
+        await this.supabase
+            .from('push_requests')
+            .update({ status: 'queued' })
+            .eq('id', requestId)
+
+        console.log(`[PushService] Request ${requestId} queued for background processing`)
+    }
+
+    /**
+     * Process queued push requests (called by cron)
+     * Processes in chunks to avoid timeout
+     */
+    async processQueuedPushes(): Promise<{ processed: number; passesHandled: number; errors: string[] }> {
+        const errors: string[] = []
+        let totalProcessed = 0
+        let totalPasses = 0
+
+        // Get queued requests
+        const { data: queuedRequests, error } = await this.supabase
+            .from('push_requests')
+            .select('id, campaign:campaigns(id)')
+            .eq('status', 'queued')
+            .limit(5) // Max 5 requests per cron run
+
+        if (error) {
+            return { processed: 0, passesHandled: 0, errors: [error.message] }
+        }
+
+        if (!queuedRequests || queuedRequests.length === 0) {
+            return { processed: 0, passesHandled: 0, errors: [] }
+        }
+
+        console.log(`[PushService] Processing ${queuedRequests.length} queued requests`)
+
+        for (const request of queuedRequests) {
+            try {
+                const result = await this.processPushRequest(request.id)
+                totalProcessed++
+                totalPasses += result.totalCount
+            } catch (e: any) {
+                errors.push(`Request ${request.id}: ${e.message}`)
+            }
+        }
+
+        console.log(`[PushService] Queued processing complete: ${totalProcessed} requests, ${totalPasses} passes`)
+
+        return { processed: totalProcessed, passesHandled: totalPasses, errors }
+    }
 }
 
 /**
