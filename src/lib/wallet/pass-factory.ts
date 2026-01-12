@@ -210,11 +210,13 @@ export class PassFactory {
         processFields(draft.fields.backFields).forEach(f => pkPass.backFields.push(f))
 
         // Add notification message field to back (for push messaging)
-        if (state.notification_message) {
+        // Check both notification_message (legacy) and latest_news (new PushService)
+        const newsMessage = state.notification_message || state.latest_news
+        if (newsMessage) {
             pkPass.backFields.push({
                 key: 'news',
                 label: 'AKTUELLE NEWS',
-                value: state.notification_message,
+                value: newsMessage,
                 changeMessage: '%@'  // Shows the message in notification
             })
         }
