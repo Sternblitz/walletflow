@@ -1,20 +1,23 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Check, X, Clock, Send, AlertTriangle, ArrowLeft, Calendar, Users, PlayCircle } from 'lucide-react'
+import { Check, X, Clock, Send, AlertTriangle, ArrowLeft, Calendar, Users, PlayCircle, Edit2, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
 interface PushRequest {
     id: string
     message: string
-    status: 'pending' | 'approved' | 'scheduled' | 'rejected' | 'sent' | 'failed'
+    edited_message: string | null
+    edited_at: string | null
+    status: 'pending' | 'approved' | 'scheduled' | 'processing' | 'rejected' | 'sent' | 'failed'
     created_at: string
     scheduled_at: string | null
     sent_at: string | null
     recipients_count: number
     success_count: number
     failure_count: number
+    last_error: string | null
     campaign: {
         name: string
         client: {
@@ -29,6 +32,11 @@ export default function PushRequestsPage() {
     const [processingId, setProcessingId] = useState<string | null>(null)
     const [rejectingId, setRejectingId] = useState<string | null>(null)
     const [rejectionReason, setRejectionReason] = useState('')
+
+    // Edit Modal State
+    const [editingId, setEditingId] = useState<string | null>(null)
+    const [editMessage, setEditMessage] = useState('')
+    const [originalMessage, setOriginalMessage] = useState('')
 
     useEffect(() => {
         fetchRequests()
@@ -118,6 +126,62 @@ export default function PushRequestsPage() {
         }
     }
 
+    // Open edit modal
+    const openEditModal = (req: PushRequest) => {
+        setEditingId(req.id)
+        setOriginalMessage(req.message)
+        setEditMessage(req.edited_message || req.message)
+    }
+
+    // Save edit and optionally approve
+    const handleSaveEdit = async (approve: boolean = false) => {
+        if (!editingId) return
+        setProcessingId(editingId)
+
+        try {
+            // Save edit
+            const editRes = await fetch(`/api/admin/push-requests/${editingId}/edit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: editMessage })
+            })
+
+            if (!editRes.ok) {
+                toast.error('Fehler beim Speichern')
+                return
+            }
+
+            // Approve if requested
+            if (approve) {
+                const approveRes = await fetch(`/api/admin/push-requests/${editingId}/approve`, {
+                    method: 'POST'
+                })
+                const data = await approveRes.json()
+
+                if (approveRes.ok) {
+                    if (data.scheduled) {
+                        toast.success('Bearbeitet und für später eingeplant!')
+                    } else {
+                        toast.success(`Bearbeitet und an ${data.sent || 0} Kunden gesendet!`)
+                    }
+                } else {
+                    toast.error('Genehmigung fehlgeschlagen')
+                }
+            } else {
+                toast.success('Änderungen gespeichert')
+            }
+
+            setEditingId(null)
+            setEditMessage('')
+            setOriginalMessage('')
+            fetchRequests()
+        } catch (e) {
+            toast.error('Netzwerkfehler')
+        } finally {
+            setProcessingId(null)
+        }
+    }
+
     const formatDateTime = (dateString: string) => {
         return new Date(dateString).toLocaleString('de-DE', {
             day: '2-digit',
@@ -200,10 +264,21 @@ export default function PushRequestsPage() {
                                                             Geplant für {formatDateTime(req.scheduled_at)}
                                                         </span>
                                                     )}
+                                                    {req.edited_at && (
+                                                        <span className="bg-blue-500/20 text-blue-400 px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
+                                                            <Edit2 size={12} />
+                                                            Bearbeitet
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <p className="text-lg font-medium text-white p-4 bg-black/30 rounded-xl border border-white/5">
-                                                    "{req.message}"
+                                                    "{req.edited_message || req.message}"
                                                 </p>
+                                                {req.edited_message && req.edited_message !== req.message && (
+                                                    <p className="text-xs text-zinc-500 mt-2 line-through">
+                                                        Original: "{req.message}"
+                                                    </p>
+                                                )}
                                             </div>
 
                                             <div className="flex gap-3">
@@ -213,6 +288,14 @@ export default function PushRequestsPage() {
                                                     className="px-4 py-2 bg-red-500/10 text-red-400 rounded-xl font-medium hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50"
                                                 >
                                                     Ablehnen
+                                                </button>
+                                                <button
+                                                    onClick={() => openEditModal(req)}
+                                                    disabled={!!processingId}
+                                                    className="px-4 py-2 bg-blue-500/10 text-blue-400 rounded-xl font-medium hover:bg-blue-500 hover:text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+                                                >
+                                                    <Edit2 size={16} />
+                                                    Bearbeiten
                                                 </button>
                                                 <button
                                                     onClick={() => handleApprove(req.id)}
@@ -365,7 +448,83 @@ export default function PushRequestsPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Edit Modal */}
+                {editingId && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-lg w-full space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-500/20 rounded-lg">
+                                    <Edit2 className="text-blue-400" size={20} />
+                                </div>
+                                <h3 className="text-lg font-bold">Nachricht bearbeiten</h3>
+                            </div>
+
+                            {/* Original Message (readonly) */}
+                            {originalMessage !== editMessage && (
+                                <div className="space-y-2">
+                                    <label className="text-xs text-zinc-500 uppercase font-bold">Original</label>
+                                    <p className="text-sm text-zinc-400 p-3 bg-black/30 rounded-lg border border-white/5 line-through">
+                                        {originalMessage}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Editable Message */}
+                            <div className="space-y-2">
+                                <label className="text-xs text-zinc-500 uppercase font-bold">Bearbeitete Nachricht</label>
+                                <textarea
+                                    value={editMessage}
+                                    onChange={e => setEditMessage(e.target.value)}
+                                    placeholder="Nachricht eingeben..."
+                                    className="w-full bg-black/50 border border-zinc-700 rounded-xl p-4 text-white min-h-[120px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-2 pt-2">
+                                <button
+                                    onClick={() => {
+                                        setEditingId(null)
+                                        setEditMessage('')
+                                        setOriginalMessage('')
+                                    }}
+                                    disabled={!!processingId}
+                                    className="flex-1 py-3 bg-zinc-800 rounded-xl hover:bg-zinc-700 font-medium disabled:opacity-50"
+                                >
+                                    Abbrechen
+                                </button>
+                                <button
+                                    onClick={() => handleSaveEdit(false)}
+                                    disabled={!!processingId || !editMessage.trim()}
+                                    className="py-3 px-6 bg-blue-600 rounded-xl hover:bg-blue-500 font-medium text-white disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {processingId === editingId ? (
+                                        <span className="animate-spin">⟳</span>
+                                    ) : (
+                                        <Save size={16} />
+                                    )}
+                                    Speichern
+                                </button>
+                                <button
+                                    onClick={() => handleSaveEdit(true)}
+                                    disabled={!!processingId || !editMessage.trim()}
+                                    className="py-3 px-6 bg-emerald-600 rounded-xl hover:bg-emerald-500 font-bold text-white disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {processingId === editingId ? (
+                                        <span className="animate-spin">⟳</span>
+                                    ) : (
+                                        <Check size={16} />
+                                    )}
+                                    Speichern & Senden
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )
 }
+

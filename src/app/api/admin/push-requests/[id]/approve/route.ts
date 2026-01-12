@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createPushService } from '@/lib/push/push-service'
 
 export async function POST(
     req: NextRequest,
@@ -12,7 +13,7 @@ export async function POST(
         // 1. Get Request Details
         const { data: request, error: reqError } = await supabase
             .from('push_requests')
-            .select('*, campaign:campaigns(id, design_assets, config, name, client:clients(name))')
+            .select('*, campaign:campaigns(id, name)')
             .eq('id', id)
             .single()
 
@@ -47,31 +48,24 @@ export async function POST(
             })
         }
 
-        // 3. IMMEDIATE SEND - Set status to approved (processing)
-        await supabase
-            .from('push_requests')
-            .update({ status: 'approved', approved_at: new Date().toISOString() })
-            .eq('id', id)
-
-        // Use shared send logic
-        const result = await sendPushToAllPasses(supabase, request)
-
-        // 4. Update Final Status
+        // 3. IMMEDIATE SEND - Use PushService
         await supabase
             .from('push_requests')
             .update({
-                status: result.sentCount > 0 ? 'sent' : 'failed',
-                sent_at: new Date().toISOString(),
-                recipients_count: result.totalCount,
-                success_count: result.sentCount,
-                failure_count: result.failCount
+                status: 'approved',
+                approved_at: new Date().toISOString()
             })
             .eq('id', id)
+
+        // Use centralized PushService
+        const pushService = await createPushService()
+        const result = await pushService.processPushRequest(id)
 
         return NextResponse.json({
             success: true,
             sent: result.sentCount,
-            failed: result.failCount
+            failed: result.failCount,
+            total: result.totalCount
         })
 
     } catch (e) {
@@ -79,6 +73,7 @@ export async function POST(
         return NextResponse.json({ error: 'Server error' }, { status: 500 })
     }
 }
+
 
 /**
  * Shared logic for sending push to all passes of a campaign
