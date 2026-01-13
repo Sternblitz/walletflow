@@ -167,7 +167,7 @@ export async function createCampaignAction(data: any) {
     // 6. Insert Campaign
     const { data: campaign, error: campaignError } = await supabase.from('campaigns').insert({
         client_id: client.id,
-        name: `${data.clientName} Kampagne`,
+        name: data.clientName,
         concept: data.concept,
         config: cleanConfig,
         design_assets: cleanDesignConfig,
