@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Plus, Users, Clock, ChevronRight, Stamp, CreditCard, Gift, ArrowUpRight, Smartphone, Activity, Send } from "lucide-react"
+import { Plus, Users, Clock, ChevronRight, Stamp, CreditCard, Gift, ArrowUpRight, Smartphone, Activity, Send, Zap, Bell, CheckCircle2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 
 // Force dynamic rendering
@@ -20,7 +20,30 @@ interface Campaign {
     _installedCount?: number
 }
 
-async function getCampaigns(): Promise<Campaign[]> {
+interface ActivityItem {
+    id: string
+    type: 'INSTALL' | 'PUSH' | 'CAMPAIGN'
+    title: string
+    subtitle: string
+    timestamp: string
+}
+
+function timeAgo(date: Date) {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
+    let interval = seconds / 31536000
+    if (interval > 1) return Math.floor(interval) + " Jahre"
+    interval = seconds / 2592000
+    if (interval > 1) return Math.floor(interval) + " Monate"
+    interval = seconds / 86400
+    if (interval > 1) return Math.floor(interval) + " Tage"
+    interval = seconds / 3600
+    if (interval > 1) return Math.floor(interval) + " Std"
+    interval = seconds / 60
+    if (interval > 1) return Math.floor(interval) + " Min"
+    return Math.floor(seconds) + " Sek"
+}
+
+async function getDashboardData() {
     const supabase = await createClient()
 
     // 1. Fetch campaigns
@@ -39,13 +62,13 @@ async function getCampaigns(): Promise<Campaign[]> {
 
     if (error) {
         console.error('Error fetching campaigns:', error)
-        return []
+        return { campaigns: [], stats: { total: 0, installs: 0, active: 0 }, activities: [] }
     }
 
-    // 2. Fetch active install counts
+    // 2. Fetch active install counts (Mocking exact count logic for speed if needed, but doing real count here)
     const campaignsWithCounts = await Promise.all(
         (campaigns || []).map(async (campaign: any) => {
-            const { count: installedCount } = await supabase
+            const { count } = await supabase
                 .from('passes')
                 .select('id', { count: 'exact', head: true })
                 .eq('campaign_id', campaign.id)
@@ -53,12 +76,102 @@ async function getCampaigns(): Promise<Campaign[]> {
 
             return {
                 ...campaign,
-                _installedCount: installedCount || 0
+                _installedCount: count || 0
             }
         })
     )
 
-    return campaignsWithCounts as unknown as Campaign[]
+    const totalInstalls = campaignsWithCounts.reduce((acc, curr) => acc + (curr._installedCount || 0), 0)
+    const activeCampaigns = campaignsWithCounts.filter(c => c.is_active).length
+
+    // 3. Fetch Recent Activities
+    const [clientsRes, campaignsRes, pushesRes, automationsRes] = await Promise.all([
+        supabase.from('clients')
+            .select('id, name, created_at')
+            .order('created_at', { ascending: false })
+            .limit(5),
+        supabase.from('campaigns')
+            .select('id, name, created_at, client:clients(name)')
+            .order('created_at', { ascending: false })
+            .limit(5),
+        supabase.from('push_requests')
+            .select('id, created_at, message, status, campaign:campaigns(client:clients(name))')
+            .order('created_at', { ascending: false })
+            .limit(5),
+        supabase.from('automation_rules')
+            .select('id, name, created_at, campaign:campaigns(client:clients(name))')
+            .order('created_at', { ascending: false })
+            .limit(5)
+    ])
+
+    let activities: any[] = []
+
+    // Map Clients
+    if (clientsRes.data) {
+        activities.push(...clientsRes.data.map((c: any) => ({
+            id: `client-${c.id}`,
+            type: 'CLIENT',
+            title: 'Neuer Kunde angelegt',
+            subtitle: c.name,
+            created_at: new Date(c.created_at)
+        })))
+    }
+
+    // Map Campaigns
+    if (campaignsRes.data) {
+        activities.push(...campaignsRes.data.map((c: any) => ({
+            id: `camp-${c.id}`,
+            type: 'CAMPAIGN',
+            title: 'Kampagne erstellt',
+            subtitle: `${c.client?.name}: ${c.name}`,
+            created_at: new Date(c.created_at)
+        })))
+    }
+
+    // Map Pushes
+    if (pushesRes.data) {
+        activities.push(...pushesRes.data.map((p: any) => ({
+            id: `push-${p.id}`,
+            type: 'PUSH',
+            title: 'Push Nachricht',
+            subtitle: `${p.campaign?.client?.name || 'System'}: "${p.message}"`,
+            created_at: new Date(p.created_at)
+        })))
+    }
+
+    // Map Automations
+    if (automationsRes.data) {
+        activities.push(...automationsRes.data.map((a: any) => ({
+            id: `auto-${a.id}`,
+            type: 'AUTOMATION',
+            title: 'Automation erstellt',
+            subtitle: `${a.campaign?.client?.name || 'System'}: ${a.name}`,
+            created_at: new Date(a.created_at)
+        })))
+    }
+
+    // Sort and format
+    const sortedActivities = activities
+        .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+        .slice(0, 10)
+        .map(a => ({
+            id: a.id,
+            type: a.type as any,
+            title: a.title,
+            subtitle: a.subtitle,
+            timestamp: `Vor ${timeAgo(a.created_at)}`
+        }))
+
+
+    return {
+        campaigns: campaignsWithCounts as unknown as Campaign[],
+        stats: {
+            total: campaigns.length,
+            installs: totalInstalls,
+            active: activeCampaigns
+        },
+        activities: sortedActivities
+    }
 }
 
 function getConceptIcon(concept: string) {
@@ -86,153 +199,221 @@ function getConceptLabel(concept: string) {
 }
 
 export default async function DashboardPage() {
-    const campaigns = await getCampaigns()
-
-    // Calculate Aggregate Stats
-    const totalCampaigns = campaigns.length
-    const totalInstalls = campaigns.reduce((acc, curr) => acc + (curr._installedCount || 0), 0)
-    const activeCampaigns = campaigns.filter(c => c.is_active).length
+    const { campaigns, stats, activities } = await getDashboardData()
 
     return (
-        <div className="max-w-[1600px] mx-auto space-y-8 p-6 md:p-8 pt-6">
+        <div className="max-w-[1600px] mx-auto p-6 md:p-8 pt-6 space-y-8">
 
-            {/* Hero Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
-                <div className="space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight text-white">Übersicht</h1>
-                    <p className="text-zinc-400">Willkommen zurück. Hier ist der Überblick über deine Kunden.</p>
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-white mb-1">Cockpit</h1>
+                    <p className="text-zinc-400">Übersicht über alle Aktivitäten und Kampagnen der Agency.</p>
                 </div>
-                <div className="flex gap-3">
-                    <Link href="/admin/push-requests">
-                        <Button className="bg-zinc-800 text-white hover:bg-zinc-700 h-11 px-6 rounded-full font-medium transition-all hover:scale-105 active:scale-95 border border-white/10">
-                            <Send className="mr-2 h-4 w-4" /> Push Requests
-                        </Button>
-                    </Link>
-                    <Link href="/admin/create">
-                        <Button className="bg-white text-black hover:bg-zinc-200 h-11 px-6 rounded-full font-medium transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                            <Plus className="mr-2 h-4 w-4" /> Neuer Kunde
-                        </Button>
-                    </Link>
+                <div className="flex items-center gap-3 bg-zinc-900/50 p-1 rounded-full border border-white/10 backdrop-blur-md">
+                    <span className="px-4 py-1.5 text-xs font-medium text-green-400 flex items-center gap-2">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        System Online
+                    </span>
                 </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-zinc-900/50 backdrop-blur-sm border border-white/5 p-6 rounded-2xl relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-2 text-purple-400">
-                            <Smartphone className="w-5 h-5" />
-                            <span className="text-sm font-medium uppercase tracking-wider">Installationen</span>
-                        </div>
-                        <div className="text-4xl font-bold text-white">{totalInstalls}</div>
-                        <div className="text-sm text-zinc-500 mt-1">Aktive Wallet Pässe</div>
-                    </div>
-                </div>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                {/* LEFT COLUMN: Stats & Quick Actions */}
+                <div className="xl:col-span-2 space-y-8">
 
-                <div className="bg-zinc-900/50 backdrop-blur-sm border border-white/5 p-6 rounded-2xl relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-2 text-green-400">
-                            <Activity className="w-5 h-5" />
-                            <span className="text-sm font-medium uppercase tracking-wider">Aktiv</span>
-                        </div>
-                        <div className="text-4xl font-bold text-white">{activeCampaigns}</div>
-                        <div className="text-sm text-zinc-500 mt-1">Laufende Kampagnen</div>
-                    </div>
-                </div>
-
-                <div className="bg-zinc-900/50 backdrop-blur-sm border border-white/5 p-6 rounded-2xl relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-2 text-blue-400">
-                            <Users className="w-5 h-5" />
-                            <span className="text-sm font-medium uppercase tracking-wider">Datenbank</span>
-                        </div>
-                        <div className="text-4xl font-bold text-white">{totalCampaigns}</div>
-                        <div className="text-sm text-zinc-500 mt-1">Gesamt Kampagnen</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Campaigns Grid */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-white">Deine Kampagnen</h2>
-                </div>
-
-                {campaigns.length === 0 ? (
-                    <div className="h-64 rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center text-center space-y-4 bg-white/5">
-                        <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center">
-                            <Plus className="w-8 h-8 text-zinc-500" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-medium text-white">Keine Kampagnen</h3>
-                            <p className="text-zinc-500 max-w-sm mt-1">Erstelle deine erste Wallet Kampagne und starte durch.</p>
-                        </div>
-                        <Link href="/admin/create">
-                            <Button className="bg-white text-black hover:bg-zinc-200">
-                                Erste Kampagne erstellen
-                            </Button>
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <Link href="/admin/create" className="group">
+                            <div className="bg-zinc-900 border border-white/10 hover:border-white/20 p-4 rounded-2xl transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/10 h-full flex flex-col justify-between">
+                                <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <Plus className="w-5 h-5" />
+                                </div>
+                                <div className="font-semibold text-white">Neuer Kunde</div>
+                                <div className="text-xs text-zinc-500 mt-1">Leg einen neuen Mandanten an.</div>
+                            </div>
                         </Link>
+                        <Link href="/admin/push-requests" className="group">
+                            <div className="bg-zinc-900 border border-white/10 hover:border-white/20 p-4 rounded-2xl transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/10 h-full flex flex-col justify-between">
+                                <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <Send className="w-5 h-5" />
+                                </div>
+                                <div className="font-semibold text-white">Push Senden</div>
+                                <div className="text-xs text-zinc-500 mt-1">Nachricht an alle Pässe.</div>
+                            </div>
+                        </Link>
+                        <Link href="/admin/automations" className="group">
+                            <div className="bg-zinc-900 border border-white/10 hover:border-white/20 p-4 rounded-2xl transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-yellow-500/10 h-full flex flex-col justify-between">
+                                <div className="w-10 h-10 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <Zap className="w-5 h-5" />
+                                </div>
+                                <div className="font-semibold text-white">Automation</div>
+                                <div className="text-xs text-zinc-500 mt-1">Workflows verwalten.</div>
+                            </div>
+                        </Link>
+                        <div className="bg-zinc-900/50 border border-white/5 p-4 rounded-2xl flex flex-col justify-center items-center text-center opacity-60">
+                            <div className="text-sm font-medium text-zinc-500">Mehr Aktionen</div>
+                            <div className="text-xs text-zinc-600">Bald verfügbar</div>
+                        </div>
                     </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {campaigns.map((campaign) => (
-                            <Link
-                                href={`/admin/campaign/${campaign.id}`}
-                                key={campaign.id}
-                                className="group block relative"
-                            >
-                                <div className="absolute -inset-0.5 bg-gradient-to-br from-transparent to-white/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
 
-                                <div className="relative bg-zinc-900 border border-white/10 rounded-2xl p-6 h-full transition-transform duration-300 group-hover:-translate-y-1">
-                                    {/* Header */}
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 sticky-icon transition-colors group-hover:bg-white/10 group-hover:border-white/20">
-                                                {getConceptIcon(campaign.concept)}
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-white group-hover:text-green-400 transition-colors">{campaign.name}</h3>
-                                                <p className="text-sm text-zinc-500">{campaign.client?.name || 'Unbekannter Kunde'}</p>
-                                            </div>
-                                        </div>
-                                        <div className={`w-2 h-2 rounded-full ${campaign.is_active ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 'bg-zinc-700'}`} />
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-white/10 p-6 rounded-3xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <Smartphone className="w-16 h-16 text-white" />
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="p-1.5 rounded-lg bg-green-500/20 text-green-400">
+                                    <Smartphone className="w-4 h-4" />
+                                </div>
+                                <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Installationen</span>
+                            </div>
+                            <div className="text-3xl font-bold text-white mb-1">{stats.installs}</div>
+                            <div className="flex items-center gap-1 text-xs text-green-500">
+                                <ArrowUpRight className="w-3 h-3" />
+                                <span>Alle aktiven Pässe</span>
+                            </div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-white/10 p-6 rounded-3xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <Activity className="w-16 h-16 text-white" />
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400">
+                                    <Activity className="w-4 h-4" />
+                                </div>
+                                <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Aktive Kampagnen</span>
+                            </div>
+                            <div className="text-3xl font-bold text-white mb-1">{stats.active}</div>
+                            <div className="text-xs text-zinc-500">von {stats.total} Gesamt</div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-white/10 p-6 rounded-3xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <Users className="w-16 h-16 text-white" />
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400">
+                                    <Users className="w-4 h-4" />
+                                </div>
+                                <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Kunden</span>
+                            </div>
+                            <div className="text-3xl font-bold text-white mb-1">{campaigns.length}</div>
+                            <div className="text-xs text-zinc-500">Agentur Bestand</div>
+                        </div>
+                    </div>
+
+                    {/* Recent Campaigns Table */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between px-1">
+                            <h2 className="text-lg font-semibold text-white">Letzte Kampagnen</h2>
+                            <Link href="/admin/clients" className="text-xs font-medium text-zinc-400 hover:text-white flex items-center transition-colors">
+                                Alle anzeigen <ChevronRight className="w-3 h-3 ml-1" />
+                            </Link>
+                        </div>
+
+                        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm">
+                            {campaigns.slice(0, 5).map((campaign, i) => (
+                                <div key={campaign.id} className={`flex items-center p-4 hover:bg-white/5 transition-colors ${i !== campaigns.length - 1 ? 'border-b border-white/5' : ''}`}>
+                                    <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center border border-white/5 mr-4">
+                                        {getConceptIcon(campaign.concept)}
                                     </div>
-
-                                    {/* Stats Row */}
-                                    <div className="grid grid-cols-2 gap-4 py-4 border-t border-white/5">
-                                        <div>
-                                            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Installationen</div>
-                                            <div className="text-xl font-bold text-white flex items-center gap-2">
-                                                {campaign._installedCount}
-                                                <Smartphone className="w-3 h-3 text-zinc-600" />
-                                            </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-sm font-medium text-white truncate">{campaign.name}</h3>
+                                            {campaign.is_active && (
+                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                                            )}
                                         </div>
-                                        <div>
-                                            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Typ</div>
-                                            <div className="text-sm font-medium text-zinc-300 bg-white/5 self-start inline-block px-2 py-1 rounded-md border border-white/5">
+                                        <p className="text-xs text-zinc-500 truncate">{campaign.client?.name}</p>
+                                    </div>
+                                    <div className="hidden md:flex items-center gap-6 mr-6">
+                                        <div className="text-right">
+                                            <div className="text-xs text-zinc-500 uppercase tracking-wider">Installiert</div>
+                                            <div className="text-sm font-bold text-white">{campaign._installedCount}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xs text-zinc-500 uppercase tracking-wider">Typ</div>
+                                            <div className="text-xs font-medium text-zinc-300 bg-white/5 px-2 py-0.5 rounded border border-white/5">
                                                 {getConceptLabel(campaign.concept)}
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Footer */}
-                                    <div className="flex items-center justify-between mt-2 pt-4 border-t border-white/5">
-                                        <div className="text-xs text-zinc-600 flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            {new Date(campaign.created_at).toLocaleDateString()}
-                                        </div>
-                                        <span className="text-xs font-medium text-zinc-500 group-hover:text-white transition-colors flex items-center gap-1">
-                                            Verwalten <ArrowUpRight className="w-3 h-3" />
-                                        </span>
-                                    </div>
+                                    <Link href={`/admin/campaign/${campaign.id}`}>
+                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-400 hover:text-white">
+                                            <ArrowUpRight className="w-4 h-4" />
+                                        </Button>
+                                    </Link>
                                 </div>
-                            </Link>
-                        ))}
+                            ))}
+                            {campaigns.length === 0 && (
+                                <div className="p-8 text-center text-zinc-500">
+                                    Keine Kampagnen gefunden.
+                                </div>
+                            )}
+                        </div>
                     </div>
-                )}
+                </div>
+
+                {/* RIGHT COLUMN: Activity Feed */}
+                <div className="space-y-6">
+                    <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 backdrop-blur-md sticky top-6">
+                        <div className="flex items-center gap-2 mb-6">
+                            <Bell className="w-5 h-5 text-zinc-400" />
+                            <h2 className="text-lg font-semibold text-white">Live Feed</h2>
+                        </div>
+
+                        {activities.length > 0 ? (
+                            <div className="space-y-6 relative">
+                                {/* Vertical Line */}
+                                <div className="absolute left-[19px] top-2 bottom-2 w-px bg-gradient-to-b from-white/10 via-white/5 to-transparent" />
+
+                                {activities.map((item) => (
+                                    <div key={item.id} className="relative flex gap-4 group">
+                                        <div className="relative z-10 w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform group-hover:border-white/30 shadow-lg">
+                                            {item.type === 'INSTALL' && <Smartphone className="w-4 h-4 text-green-400" />}
+                                            {item.type === 'PUSH' && <Send className="w-4 h-4 text-blue-400" />}
+                                            {item.type === 'CAMPAIGN' && <Plus className="w-4 h-4 text-purple-400" />}
+                                        </div>
+                                        <div className="flex-1 py-0.5">
+                                            <p className="text-sm font-medium text-white group-hover:text-zinc-200 transition-colors">{item.title}</p>
+                                            <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{item.subtitle}</p>
+                                            <p className="text-[10px] text-zinc-600 mt-1 font-mono">{item.timestamp}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-zinc-500 text-sm">
+                                Keine Aktivitäten verzeichnet.
+                            </div>
+                        )}
+
+                        <div className="mt-6 pt-6 border-t border-white/5">
+                            <Button variant="outline" className="w-full text-xs h-9 border-white/10 bg-white/5 hover:bg-white/10 hover:text-white">
+                                Alle Aktivitäten anzeigen
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* System Status / Mini Widget */}
+                    <div className="bg-gradient-to-br from-green-500/10 to-green-900/10 border border-green-500/10 rounded-2xl p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                                <CheckCircle2 className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <div className="text-sm font-medium text-green-100">Automation Engine</div>
+                                <div className="text-xs text-green-500/70">Running normally</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     )
