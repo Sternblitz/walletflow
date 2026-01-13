@@ -9,16 +9,9 @@ import {
     TableHeader,
     TableRow
 } from "@/components/ui/table"
-import { Plus, Search, MoreHorizontal, Building2, Calendar } from "lucide-react"
+import { Plus, Search, Building2, Calendar } from "lucide-react"
 import Link from "next/link"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { ClientActions } from "@/components/admin/ClientActions"
 
 export const dynamic = 'force-dynamic'
 
@@ -107,27 +100,11 @@ export default async function ClientsPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                                                    <span className="sr-only">Open menu</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-zinc-300">
-                                                <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
-                                                <DropdownMenuItem className="focus:bg-white/10 focus:text-white cursor-pointer">
-                                                    Bearbeiten
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem className="focus:bg-white/10 focus:text-white cursor-pointer">
-                                                    Details anzeigen
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator className="bg-white/10" />
-                                                <DropdownMenuItem className="text-red-400 focus:bg-red-500/10 focus:text-red-300 cursor-pointer">
-                                                    Löschen
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <ClientActions
+                                            clientId={client.id}
+                                            clientName={client.name}
+                                            slug={client.slug}
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ))

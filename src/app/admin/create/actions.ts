@@ -43,14 +43,25 @@ export async function createCampaignAction(data: any) {
         return { success: false, error: "Kritischer Fehler: Agentur existiert nicht." }
     }
 
-    // 4. Create Client with Unique Slug (Random Suffix)
-    const baseSlug = data.slug || (data.clientName ? data.clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'client') || 'client'
-    const uniqueSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`
+    // 4. Create Client with Clean Slug (only add suffix if needed)
+    const baseSlug = data.slug || (data.clientName ? data.clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : 'client') || 'client'
+
+    // Check if slug already exists
+    const { data: existingClient } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('slug', baseSlug)
+        .single()
+
+    // Only add suffix if slug is taken
+    const finalSlug = existingClient
+        ? `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`
+        : baseSlug
 
     const { data: client, error: clientError } = await supabase.from('clients').insert({
         agency_id: agency.id,
         name: data.clientName,
-        slug: uniqueSlug
+        slug: finalSlug
     }).select().single()
 
     if (clientError) {
@@ -156,7 +167,7 @@ export async function createCampaignAction(data: any) {
     // 6. Insert Campaign
     const { data: campaign, error: campaignError } = await supabase.from('campaigns').insert({
         client_id: client.id,
-        name: "Start Kampagne",
+        name: `${data.clientName} Kampagne`,
         concept: data.concept,
         config: cleanConfig,
         design_assets: cleanDesignConfig,
@@ -167,5 +178,5 @@ export async function createCampaignAction(data: any) {
         return { success: false, error: `Kampagne konnte nicht gespeichert werden: ${campaignError.message}` }
     }
 
-    return { success: true, slug: uniqueSlug, id: campaign.id }
+    return { success: true, slug: finalSlug, id: campaign.id }
 }

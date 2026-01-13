@@ -159,9 +159,6 @@ export default async function DashboardPage() {
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-white">Deine Kampagnen</h2>
-                    <Button variant="ghost" className="text-zinc-500 hover:text-white" size="sm">
-                        Alle anzeigen <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
                 </div>
 
                 {campaigns.length === 0 ? (

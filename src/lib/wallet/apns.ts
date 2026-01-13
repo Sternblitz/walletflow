@@ -147,10 +147,19 @@ export async function sendPassUpdatePush(passId: string): Promise<{ success: boo
                     const reason = result.failed[0].response?.reason || 'Unknown error'
                     errors.push(`Token ${token.substring(0, 8)}...: ${reason}`)
 
-                    // Handle invalid tokens - could clean up from DB
+                    // Handle invalid tokens - clean up from DB
                     if (reason === 'BadDeviceToken' || reason === 'Unregistered') {
-                        console.log(`[APNS] Invalid token detected: ${token.substring(0, 8)}...`)
-                        // TODO: Remove invalid tokens from device_registrations
+                        console.log(`[APNS] Invalid token detected, removing: ${token.substring(0, 8)}...`)
+                        try {
+                            const supabase = await createClient()
+                            await supabase
+                                .from('device_registrations')
+                                .delete()
+                                .eq('push_token', token)
+                            console.log(`[APNS] Removed invalid token from DB`)
+                        } catch (cleanupErr) {
+                            console.error('[APNS] Failed to cleanup invalid token:', cleanupErr)
+                        }
                     }
                 } else {
                     sent++
