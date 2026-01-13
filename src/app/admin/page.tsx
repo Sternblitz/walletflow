@@ -99,8 +99,8 @@ export default async function DashboardPage() {
             {/* Hero Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
                 <div className="space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
-                    <p className="text-zinc-400">Willkommen zurück. Hier ist der Überblick über deine Kampagnen.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-white">Übersicht</h1>
+                    <p className="text-zinc-400">Willkommen zurück. Hier ist der Überblick über deine Kunden.</p>
                 </div>
                 <div className="flex gap-3">
                     <Link href="/admin/push-requests">
@@ -110,7 +110,7 @@ export default async function DashboardPage() {
                     </Link>
                     <Link href="/admin/create">
                         <Button className="bg-white text-black hover:bg-zinc-200 h-11 px-6 rounded-full font-medium transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                            <Plus className="mr-2 h-4 w-4" /> Neue Kampagne
+                            <Plus className="mr-2 h-4 w-4" /> Neuer Kunde
                         </Button>
                     </Link>
                 </div>

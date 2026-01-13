@@ -42,9 +42,9 @@ export function SimpleSidebarProvider({ children }: SimpleSidebarProviderProps) 
 }
 
 const navItems = [
-    { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "/admin/create", icon: Plus, label: "Neue Kampagne", highlight: true },
-    { href: "/admin/clients", icon: Users, label: "Clients" },
+    { href: "/admin", icon: LayoutDashboard, label: "Übersicht" },
+    { href: "/admin/create", icon: Plus, label: "Neuer Kunde", highlight: true },
+    { href: "/admin/clients", icon: Users, label: "Kunden" },
     { href: "/admin/push-requests", icon: Send, label: "Push Requests" },
 ]
 

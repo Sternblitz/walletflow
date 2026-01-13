@@ -68,19 +68,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         </SidebarMenuItem>
 
                         <SidebarMenuItem>
-                            <SidebarMenuButton tooltip="Neue Kampagne" asChild className="hover:bg-white/5 hover:text-white transition-colors">
+                            <SidebarMenuButton tooltip="Neuer Kunde" asChild className="hover:bg-white/5 hover:text-white transition-colors">
                                 <Link href="/admin/create">
                                     <Plus className="text-green-500" />
-                                    <span className="font-bold text-white">Neue Kampagne</span>
+                                    <span className="font-bold text-white">Neuer Kunde</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
 
                         <SidebarMenuItem>
-                            <SidebarMenuButton tooltip="Clients" asChild className="hover:bg-white/5 hover:text-white transition-colors">
+                            <SidebarMenuButton tooltip="Kunden" asChild className="hover:bg-white/5 hover:text-white transition-colors">
                                 <Link href="/admin/clients">
                                     <Users className="text-zinc-400 group-hover:text-white transition-colors" />
-                                    <span className="font-medium text-zinc-400 group-hover:text-white">Clients</span>
+                                    <span className="font-medium text-zinc-400 group-hover:text-white">Kunden</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
