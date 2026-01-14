@@ -40,7 +40,7 @@ export default function KundenPage() {
     const selectedCampaignId = selectedClient?.campaigns?.[0]?.id || null
 
     return (
-        <div className="h-[calc(100vh-6rem)] max-w-[1800px] mx-auto p-4 md:p-6 space-y-4">
+        <div className="h-full max-w-[1800px] mx-auto space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
                 {/* Column 1: Client List (3 cols) */}
                 <div className="lg:col-span-3 h-full min-w-[300px]">
@@ -49,6 +49,7 @@ export default function KundenPage() {
                         selectedClientId={selectedClientId}
                         onSelectClient={setSelectedClientId}
                         loading={loading}
+                        onRefresh={fetchClients}
                     />
                 </div>
 
