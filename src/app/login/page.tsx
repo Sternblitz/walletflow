@@ -11,8 +11,8 @@ export default function LoginPage() {
     const [showLogin, setShowLogin] = useState(false)
 
     return (
-        <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#030303] selection:bg-indigo-500/30">
-            {/* Ambient Background Effects */}
+        <div className="dark relative min-h-screen w-full overflow-hidden bg-[#030303] text-zinc-100 flex items-center justify-center font-sans selection:bg-indigo-500/30">
+            {/* Background Ambience - Fixed Dark Mode */}
             <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-600/10 blur-[120px] animate-pulse-slow" />
                 <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-fuchsia-600/10 blur-[120px] animate-pulse-slow delay-1000" />

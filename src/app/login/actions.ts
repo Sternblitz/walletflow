@@ -1,23 +1,11 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 
 export async function login(formData: FormData) {
-    const supabase = await createClient()
+    // Simulate login delay
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    const data = {
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
-    }
-
-    const { error } = await supabase.auth.signInWithPassword(data)
-
-    if (error) {
-        return redirect('/login?error=Invalid credentials')
-    }
-
-    revalidatePath('/', 'layout')
-    return redirect('/admin')
+    // For demo/draft purposes, just redirect to admin
+    redirect('/admin')
 }

@@ -155,21 +155,21 @@ export function ThemePicker({ draft, onChange }: ThemePickerProps) {
                         <div className="h-px flex-1 bg-white/10" />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {THEMES.filter(t => t.category === category).map((theme) => {
                             const isActive = currentBg === theme.colors.backgroundColor
                             return (
                                 <button
                                     key={theme.id}
                                     onClick={() => onChange(theme.colors)}
-                                    className={`group relative flex items-center gap-3 p-2.5 rounded-xl border transition-all duration-300 ${isActive
-                                            ? 'bg-white/10 border-white/50 ring-1 ring-white/50'
-                                            : 'bg-zinc-900/30 border-white/5 hover:border-white/20 hover:bg-white/5'
+                                    className={`group relative flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-200 ${isActive
+                                        ? 'bg-white/10 border-white/40 shadow-lg shadow-white/5'
+                                        : 'bg-zinc-900/50 border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800/50'
                                         }`}
                                 >
                                     {/* Color Preview */}
                                     <div
-                                        className="w-10 h-10 rounded-lg shadow-lg border border-white/10 flex items-center justify-center shrink-0 relative overflow-hidden"
+                                        className="w-11 h-11 rounded-lg shadow-md border border-white/10 flex items-center justify-center shrink-0 relative overflow-hidden"
                                         style={{ background: theme.colors.backgroundColor }}
                                     >
                                         <div className="absolute inset-x-0 bottom-0 h-1/3 opacity-50" style={{ background: theme.colors.foregroundColor }} />
@@ -177,8 +177,8 @@ export function ThemePicker({ draft, onChange }: ThemePickerProps) {
                                     </div>
 
                                     {/* Info */}
-                                    <div className="text-left overflow-hidden">
-                                        <div className="font-medium text-xs text-zinc-300 truncate group-hover:text-white transition-colors">
+                                    <div className="text-left overflow-hidden flex-1">
+                                        <div className="font-medium text-sm text-zinc-200 truncate group-hover:text-white transition-colors">
                                             {theme.name}
                                         </div>
                                     </div>
