@@ -3,12 +3,48 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { login } from "./actions"
-import { ArrowRight, Lock, Mail, QrCode, ChevronRight, Terminal } from "lucide-react"
+import { ArrowRight, Lock, Mail, QrCode, ChevronRight, Terminal, AlertCircle } from "lucide-react"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useFormStatus } from "react-dom"
+
+function SubmitButton() {
+    const { pending } = useFormStatus()
+
+    return (
+        <Button
+            type="submit"
+            disabled={pending}
+            className="w-full h-14 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-2xl font-semibold text-lg transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(79,70,229,0.3)] border border-white/10 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+            {pending ? (
+                <span className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Verbindung...
+                </span>
+            ) : (
+                <>
+                    <span className="mr-2">Verbinden</span>
+                    <ArrowRight className="w-5 h-5" />
+                </>
+            )}
+        </Button>
+    )
+}
 
 export default function LoginPage() {
     const [showLogin, setShowLogin] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+
+    async function handleLogin(formData: FormData) {
+        setError(null)
+        const result = await login(formData)
+
+        if (result?.error) {
+            setError(result.error)
+        }
+        // If no error, the action will redirect automatically
+    }
 
     return (
         <div className="dark relative min-h-screen w-full overflow-hidden bg-[#030303] text-zinc-100 flex items-center justify-center font-sans selection:bg-indigo-500/30">
@@ -80,7 +116,10 @@ export default function LoginPage() {
                             <div className="relative w-full bg-[#0a0a0a]/80 backdrop-blur-2xl rounded-[30px] border border-white/10 p-8 md:p-12 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]">
                                 {/* Back Button */}
                                 <button
-                                    onClick={() => setShowLogin(false)}
+                                    onClick={() => {
+                                        setShowLogin(false)
+                                        setError(null)
+                                    }}
                                     className="absolute top-6 left-6 text-zinc-500 hover:text-white transition-colors"
                                 >
                                     <ChevronRight className="w-5 h-5 rotate-180" />
@@ -99,8 +138,23 @@ export default function LoginPage() {
                                     </p>
                                 </div>
 
+                                {/* Error Message */}
+                                <AnimatePresence mode="wait">
+                                    {error && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="mb-5 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3"
+                                        >
+                                            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                                            <p className="text-sm text-red-300 font-medium">{error}</p>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
                                 {/* Login Form */}
-                                <form className="space-y-5">
+                                <form action={handleLogin} className="space-y-5">
                                     <div className="space-y-4">
                                         <div className="group/input relative">
                                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-indigo-400 transition-colors">
@@ -109,6 +163,7 @@ export default function LoginPage() {
                                             <Input
                                                 name="email"
                                                 type="email"
+                                                autoComplete="email"
                                                 className="h-14 pl-12 bg-white/5 border-white/10 text-white placeholder:text-zinc-600 rounded-2xl focus-visible:ring-indigo-500/50 focus-visible:border-indigo-500/50 transition-all font-medium"
                                                 placeholder="E-Mail"
                                                 required
@@ -121,6 +176,7 @@ export default function LoginPage() {
                                             <Input
                                                 name="password"
                                                 type="password"
+                                                autoComplete="current-password"
                                                 className="h-14 pl-12 bg-white/5 border-white/10 text-white placeholder:text-zinc-600 rounded-2xl focus-visible:ring-indigo-500/50 focus-visible:border-indigo-500/50 transition-all font-medium"
                                                 placeholder="Zugangscode"
                                                 required
@@ -128,15 +184,7 @@ export default function LoginPage() {
                                         </div>
                                     </div>
 
-                                    <Button
-                                        formAction={async (formData) => {
-                                            await login(formData)
-                                        }}
-                                        className="w-full h-14 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-2xl font-semibold text-lg transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(79,70,229,0.3)] border border-white/10 mt-2"
-                                    >
-                                        <span className="mr-2">Verbinden</span>
-                                        <ArrowRight className="w-5 h-5" />
-                                    </Button>
+                                    <SubmitButton />
                                 </form>
 
                                 {/* Footer */}

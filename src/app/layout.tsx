@@ -18,6 +18,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
     title: "QARD - The Wallet Agency Engine",
     description: "Create premium wallet passes for your customers with QARD.",
+    viewport: {
+        width: "device-width",
+        initialScale: 1,
+        maximumScale: 5,
+        userScalable: true,
+    },
 };
 
 export default function RootLayout({
