@@ -804,7 +804,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                     <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
                         <p className="text-zinc-400">Noch keine Kunden. Teile deinen Link!</p>
                         <p className="text-sm text-violet-400 mt-2">
-                            qard.io/{campaign.client?.slug}
+                            start.getqard.com/{campaign.client?.slug}
                         </p>
                     </div>
                 ) : (
