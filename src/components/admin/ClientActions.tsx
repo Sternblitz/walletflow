@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Trash2, ExternalLink } from "lucide-react"
+import { getPOSURL } from "@/lib/domain-urls"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -70,7 +71,7 @@ export function ClientActions({ clientId, clientName, slug }: ClientActionsProps
                     <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
                     <DropdownMenuItem
                         className="focus:bg-white/10 focus:text-white cursor-pointer"
-                        onClick={() => window.open(`/app/${slug}`, '_blank')}
+                        onClick={() => window.open(getPOSURL(slug), '_blank')}
                     >
                         <ExternalLink className="w-4 h-4 mr-2" />
                         POS öffnen

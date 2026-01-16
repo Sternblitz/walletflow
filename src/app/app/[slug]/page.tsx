@@ -61,7 +61,7 @@ export default function POSPage() {
 
     const loadCampaignData = async () => {
         try {
-            const res = await fetch(`/api/campaign/${slug}`)
+            const res = await fetch(`/api/campaign/by-slug/${slug}`)
             if (res.ok) {
                 const data = await res.json()
                 setCampaignData(data)

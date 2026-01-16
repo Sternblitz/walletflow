@@ -590,7 +590,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                         </div>
                     </div>
                     {campaign.client?.slug && (
-                        <Link href={`/app/${campaign.client.slug}`} target="_blank">
+                        <Link href={getPOSURL(campaign.client.slug)} target="_blank">
                             <Button variant="outline" size="sm" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
                                 <ExternalLink className="w-4 h-4 mr-2" />
                                 Scanner öffnen
