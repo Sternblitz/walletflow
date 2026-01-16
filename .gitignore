@@ -24,6 +24,11 @@
 .DS_Store
 *.pem
 
+# backups (may contain sensitive data)
+backup*.zip
+backup*/
+*.backup
+
 # certificates and keys
 /certs/
 *.p12
