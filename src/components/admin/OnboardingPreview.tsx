@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 
-type BackgroundStyle = 'solid' | 'gradient' | 'radial' | 'animated' | 'mesh' | 'noise'
+type BackgroundStyle = 'solid' | 'gradient' | 'radial' | 'animated' | 'mesh' | 'noise' | 'orbs'
 
 interface GradientSettings {
     direction: 'to-bottom' | 'to-top' | 'to-right' | 'to-left' | 'diagonal'
@@ -35,6 +35,15 @@ interface NoiseSettings {
     scale: 'fine' | 'medium' | 'coarse'
 }
 
+interface OrbsSettings {
+    color1?: string
+    color2?: string
+    color3?: string
+    blur: number
+    opacity: number
+    speed: 'slow' | 'normal' | 'fast'
+}
+
 interface OnboardingPreviewProps {
     config: {
         clientName: string
@@ -51,6 +60,7 @@ interface OnboardingPreviewProps {
         animatedSettings?: AnimatedSettings
         meshSettings?: MeshSettings
         noiseSettings?: NoiseSettings
+        orbsSettings?: OrbsSettings
         title?: string
         description?: string
         askName?: boolean
@@ -103,6 +113,7 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
         animatedSettings = { speed: 'normal', colors: [bgColor, accentColor] },
         meshSettings = { opacity1: 40, opacity2: 30, blur: 80 },
         noiseSettings = { intensity: 20, scale: 'medium' },
+        orbsSettings = { blur: 120, opacity: 15, speed: 'normal' },
         title,
         description,
         askName = true,
@@ -145,6 +156,9 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
     // Noise frequency based on scale
     const noiseFrequency = noiseSettings.scale === 'fine' ? '1.2' : noiseSettings.scale === 'coarse' ? '0.5' : '0.9'
 
+    // Orbs animation duration
+    const orbsAnimationDuration = orbsSettings.speed === 'slow' ? '6s' : orbsSettings.speed === 'fast' ? '2s' : '4s'
+
     return (
         <div className="flex items-center justify-center">
             {/* Phone Frame */}
@@ -185,6 +199,39 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                         opacity: meshSettings.opacity2 / 100,
                                         filter: `blur(${meshSettings.blur}px)`,
                                         animationDelay: '1s'
+                                    }}
+                                />
+                            </div>
+                        )}
+
+                        {/* Orbs Background */}
+                        {backgroundStyle === 'orbs' && (
+                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                <div
+                                    className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full"
+                                    style={{
+                                        backgroundColor: orbsSettings.color1 || '#6366F1',
+                                        opacity: orbsSettings.opacity / 100,
+                                        filter: `blur(${orbsSettings.blur}px)`,
+                                        animation: `pulse-slow ${orbsAnimationDuration} ease-in-out infinite`,
+                                    }}
+                                />
+                                <div
+                                    className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full"
+                                    style={{
+                                        backgroundColor: orbsSettings.color2 || '#D946EF',
+                                        opacity: orbsSettings.opacity / 100,
+                                        filter: `blur(${orbsSettings.blur}px)`,
+                                        animation: `pulse-slow ${orbsAnimationDuration} ease-in-out infinite`,
+                                        animationDelay: '1s',
+                                    }}
+                                />
+                                <div
+                                    className="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[40%] h-[40%] rounded-full"
+                                    style={{
+                                        backgroundColor: orbsSettings.color3 || '#06B6D4',
+                                        opacity: (orbsSettings.opacity / 100) * 0.5,
+                                        filter: `blur(${orbsSettings.blur * 0.8}px)`,
                                     }}
                                 />
                             </div>
@@ -387,6 +434,10 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                 @keyframes gradient-xy {
                     0%, 100% { background-position: 0% 50%; }
                     50% { background-position: 100% 50%; }
+                }
+                @keyframes pulse-slow {
+                    0%, 100% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.7; transform: scale(1.05); }
                 }
             `}</style>
         </div>

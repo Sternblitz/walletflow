@@ -58,6 +58,7 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
     const animatedSettings = onboardingDesign.animatedSettings
     const meshSettings = onboardingDesign.meshSettings
     const noiseSettings = onboardingDesign.noiseSettings
+    const orbsSettings = onboardingDesign.orbsSettings
 
     // Extract logo - onboardingDesign logo > Campaign logo > Client logo
     const campaignLogo = designAssets.images?.logo?.url
@@ -86,6 +87,7 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
             animatedSettings={animatedSettings}
             meshSettings={meshSettings}
             noiseSettings={noiseSettings}
+            orbsSettings={orbsSettings}
             customTitle={customTitle}
             customDescription={customDescription}
             personalization={personalization}

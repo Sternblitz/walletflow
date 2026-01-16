@@ -25,7 +25,7 @@ interface PersonalizationConfig {
     design_button_text?: string
 }
 
-type BackgroundStyle = 'solid' | 'gradient' | 'radial' | 'animated' | 'mesh' | 'noise'
+type BackgroundStyle = 'solid' | 'gradient' | 'radial' | 'animated' | 'mesh' | 'noise' | 'orbs'
 
 interface GradientSettings {
     direction: 'to-bottom' | 'to-top' | 'to-right' | 'to-left' | 'diagonal'
@@ -57,6 +57,15 @@ interface NoiseSettings {
     scale: 'fine' | 'medium' | 'coarse'
 }
 
+interface OrbsSettings {
+    color1?: string
+    color2?: string
+    color3?: string
+    blur: number
+    opacity: number
+    speed: 'slow' | 'normal' | 'fast'
+}
+
 interface OnboardingFormProps {
     slug: string
     campaignId: string
@@ -75,6 +84,7 @@ interface OnboardingFormProps {
     animatedSettings?: AnimatedSettings
     meshSettings?: MeshSettings
     noiseSettings?: NoiseSettings
+    orbsSettings?: OrbsSettings
     customTitle?: string
     customDescription?: string
     personalization: PersonalizationConfig
@@ -98,6 +108,7 @@ export function OnboardingForm({
     animatedSettings = { speed: 'normal', colors: [] },
     meshSettings = { opacity1: 40, opacity2: 30, blur: 80 },
     noiseSettings = { intensity: 20, scale: 'medium' },
+    orbsSettings = { blur: 120, opacity: 15, speed: 'normal' },
     customTitle,
     customDescription,
     personalization
@@ -215,6 +226,9 @@ export function OnboardingForm({
     // Noise frequency
     const noiseFrequency = noiseSettings.scale === 'fine' ? '1.2' : noiseSettings.scale === 'coarse' ? '0.5' : '0.9'
 
+    // Orbs animation duration
+    const orbsAnimationDuration = orbsSettings.speed === 'slow' ? '6s' : orbsSettings.speed === 'fast' ? '2s' : '4s'
+
     // Form card styles (simple, no glassmorphism)
     const formCardStyle: React.CSSProperties = {
         backgroundColor: finalFormBgColor,
@@ -241,8 +255,15 @@ export function OnboardingForm({
                     0%, 100% { transform: scale(1); opacity: 1; }
                     50% { transform: scale(1.02); opacity: 0.9; }
                 }
+                @keyframes pulse-slow {
+                    0%, 100% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.7; transform: scale(1.05); }
+                }
                 .animate-pulse-subtle {
                     animation: pulse-subtle 2s ease-in-out infinite;
+                }
+                .animate-pulse-slow {
+                    animation: pulse-slow 4s ease-in-out infinite;
                 }
             `}</style>
 
@@ -290,6 +311,39 @@ export function OnboardingForm({
                         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='${noiseFrequency}' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
                     }}
                 />
+            )}
+
+            {/* Orbs Background */}
+            {backgroundStyle === 'orbs' && (
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div
+                        className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full animate-pulse-slow"
+                        style={{
+                            backgroundColor: orbsSettings.color1 || '#6366F1',
+                            opacity: (orbsSettings.opacity || 15) / 100,
+                            filter: `blur(${orbsSettings.blur || 120}px)`,
+                            animation: `pulse-slow ${orbsAnimationDuration} ease-in-out infinite`,
+                        }}
+                    />
+                    <div
+                        className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full"
+                        style={{
+                            backgroundColor: orbsSettings.color2 || '#D946EF',
+                            opacity: (orbsSettings.opacity || 15) / 100,
+                            filter: `blur(${orbsSettings.blur || 120}px)`,
+                            animation: `pulse-slow ${orbsAnimationDuration} ease-in-out infinite`,
+                            animationDelay: '1s',
+                        }}
+                    />
+                    <div
+                        className="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[40%] h-[40%] rounded-full"
+                        style={{
+                            backgroundColor: orbsSettings.color3 || '#06B6D4',
+                            opacity: ((orbsSettings.opacity || 15) / 100) * 0.5,
+                            filter: `blur(${(orbsSettings.blur || 120) * 0.8}px)`,
+                        }}
+                    />
+                </div>
             )}
 
             {/* Background gradient overlay for depth */}

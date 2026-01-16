@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 import { OnboardingPreview } from './OnboardingPreview'
 import { OnboardingColorEditor } from './OnboardingColorEditor'
 
-type BackgroundStyle = 'solid' | 'gradient' | 'radial' | 'animated' | 'mesh' | 'noise'
+type BackgroundStyle = 'solid' | 'gradient' | 'radial' | 'animated' | 'mesh' | 'noise' | 'orbs'
 
 interface GradientSettings {
     direction: 'to-bottom' | 'to-top' | 'to-right' | 'to-left' | 'diagonal'
@@ -45,6 +45,15 @@ interface NoiseSettings {
     scale: 'fine' | 'medium' | 'coarse'
 }
 
+interface OrbsSettings {
+    color1?: string
+    color2?: string
+    color3?: string
+    blur: number // 60-200
+    opacity: number // 10-50
+    speed: 'slow' | 'normal' | 'fast'
+}
+
 interface OnboardingDesignConfig {
     title?: string
     description?: string
@@ -64,6 +73,7 @@ interface OnboardingDesignConfig {
     animatedSettings?: AnimatedSettings
     meshSettings?: MeshSettings
     noiseSettings?: NoiseSettings
+    orbsSettings?: OrbsSettings
 }
 
 interface OnboardingDesignEditorProps {
@@ -92,6 +102,7 @@ const BACKGROUND_STYLES: { id: BackgroundStyle; label: string; icon: string; has
     { id: 'radial', label: 'Radial', icon: '🔆', hasOptions: true },
     { id: 'animated', label: 'Animiert', icon: '✨', hasOptions: true },
     { id: 'mesh', label: 'Mesh', icon: '🌈', hasOptions: true },
+    { id: 'orbs', label: 'Orbs', icon: '🔮', hasOptions: true },
     { id: 'noise', label: 'Noise', icon: '📺', hasOptions: true },
 ]
 
@@ -175,6 +186,7 @@ export function OnboardingDesignEditor({
     const animatedSettings = config.animatedSettings || { speed: 'normal', colors: [defaultColors.bgColor, defaultColors.accentColor] }
     const meshSettings = config.meshSettings || { opacity1: 40, opacity2: 30, blur: 80 }
     const noiseSettings = config.noiseSettings || { intensity: 20, scale: 'medium' }
+    const orbsSettings = config.orbsSettings || { blur: 120, opacity: 15, speed: 'normal' }
 
     const previewConfig = {
         clientName,
@@ -187,6 +199,7 @@ export function OnboardingDesignEditor({
         animatedSettings,
         meshSettings,
         noiseSettings,
+        orbsSettings,
         title: config.title,
         description: config.description,
         askName, nameRequired, namePlaceholder: 'Max Mustermann',
@@ -531,6 +544,90 @@ export function OnboardingDesignEditor({
                                                         {s.label}
                                                     </button>
                                                 ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* ORBS OPTIONS */}
+                                {currentStyle === 'orbs' && (
+                                    <>
+                                        <div className="flex items-center gap-3">
+                                            <Label className="text-[10px] text-white/50">Orb-Farben</Label>
+                                            <div className="flex gap-2">
+                                                {[0, 1, 2].map(i => {
+                                                    const colors = [
+                                                        orbsSettings.color1 || '#6366F1',
+                                                        orbsSettings.color2 || '#D946EF',
+                                                        orbsSettings.color3 || '#06B6D4',
+                                                    ]
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            className="w-8 h-8 rounded border border-white/20 cursor-pointer relative overflow-hidden"
+                                                            style={{ backgroundColor: colors[i] }}
+                                                        >
+                                                            <input
+                                                                type="color"
+                                                                value={colors[i]}
+                                                                onChange={(e) => {
+                                                                    const key = i === 0 ? 'color1' : i === 1 ? 'color2' : 'color3'
+                                                                    onChange({ ...config, orbsSettings: { ...orbsSettings, [key]: e.target.value } })
+                                                                }}
+                                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                                            />
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-[10px] text-white/50">Geschwindigkeit</Label>
+                                            <div className="flex gap-1">
+                                                {['slow', 'normal', 'fast'].map(s => (
+                                                    <button
+                                                        key={s}
+                                                        onClick={() => onChange({ ...config, orbsSettings: { ...orbsSettings, speed: s as any } })}
+                                                        className={cn(
+                                                            "px-3 py-1 rounded text-[10px] font-medium transition-all",
+                                                            orbsSettings.speed === s
+                                                                ? "bg-violet-500 text-white"
+                                                                : "bg-white/5 text-white/50 hover:bg-white/10"
+                                                        )}
+                                                    >
+                                                        {s === 'slow' ? 'Langsam' : s === 'normal' ? 'Normal' : 'Schnell'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <Label className="text-[10px] text-white/50">Weichheit</Label>
+                                                    <span className="text-[10px] text-white/40">{orbsSettings.blur}px</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min={60}
+                                                    max={200}
+                                                    value={orbsSettings.blur}
+                                                    onChange={(e) => onChange({ ...config, orbsSettings: { ...orbsSettings, blur: parseInt(e.target.value) } })}
+                                                    className="w-full accent-violet-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <Label className="text-[10px] text-white/50">Deckkraft</Label>
+                                                    <span className="text-[10px] text-white/40">{orbsSettings.opacity}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min={5}
+                                                    max={40}
+                                                    value={orbsSettings.opacity}
+                                                    onChange={(e) => onChange({ ...config, orbsSettings: { ...orbsSettings, opacity: parseInt(e.target.value) } })}
+                                                    className="w-full accent-violet-500"
+                                                />
                                             </div>
                                         </div>
                                     </>
