@@ -396,7 +396,12 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                                 config={onboardingDesign}
                                 onChange={handleOnboardingDesignChange}
                                 clientName={campaign?.client?.name || campaign?.name || 'Mein Shop'}
-                                logoUrl={draft?.images?.logo?.url}
+                                walletColors={draft?.colors ? {
+                                    backgroundColor: draft.colors.backgroundColor || '#1A1A1A',
+                                    foregroundColor: draft.colors.foregroundColor || '#FFFFFF',
+                                    labelColor: draft.colors.labelColor || '#888888',
+                                } : null}
+                                walletLogoUrl={draft?.images?.logo?.url}
                                 askName={personalization.ask_name}
                                 askBirthday={personalization.ask_birthday}
                                 askEmail={personalization.ask_email}

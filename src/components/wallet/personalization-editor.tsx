@@ -283,17 +283,29 @@ export function PersonalizationEditor({ config, onChange, branding }: Personaliz
                         onRequiredChange={(v) => update({ phone_required: v })}
                     />
 
-                    {/* Allow Skip */}
+                    {/* Auto-Skip Info - calculated automatically */}
                     {hasAnyField && (
                         <div className="flex items-center justify-between p-3 bg-zinc-900/50 border border-white/5 rounded-lg mt-4">
-                            <div>
-                                <Label className="text-zinc-300 text-sm">Überspringen erlauben</Label>
-                                <p className="text-xs text-zinc-500">Kunden können ohne Eingabe fortfahren</p>
+                            <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${current.name_required || current.birthday_required || current.email_required || current.phone_required
+                                        ? 'bg-amber-500'
+                                        : 'bg-emerald-500'
+                                    }`} />
+                                <div>
+                                    <span className="text-sm text-zinc-300">
+                                        {current.name_required || current.birthday_required || current.email_required || current.phone_required
+                                            ? 'Pflichtfelder vorhanden'
+                                            : 'Alle Felder optional'
+                                        }
+                                    </span>
+                                    <p className="text-xs text-zinc-500">
+                                        {current.name_required || current.birthday_required || current.email_required || current.phone_required
+                                            ? 'Kunden müssen Pflichtfelder ausfüllen'
+                                            : 'Kunden können ohne Eingabe fortfahren'
+                                        }
+                                    </p>
+                                </div>
                             </div>
-                            <Toggle
-                                checked={current.allow_skip}
-                                onChange={(v) => update({ allow_skip: v })}
-                            />
                         </div>
                     )}
                 </div>

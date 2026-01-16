@@ -34,6 +34,10 @@ interface OnboardingFormProps {
     bgColor: string
     fgColor: string
     accentColor: string
+    formBgColor?: string
+    formTextColor?: string
+    customTitle?: string
+    customDescription?: string
     personalization: PersonalizationConfig
 }
 
@@ -46,6 +50,10 @@ export function OnboardingForm({
     bgColor,
     fgColor,
     accentColor,
+    formBgColor = '#FFFFFF',
+    formTextColor = '#1F2937',
+    customTitle,
+    customDescription,
     personalization
 }: OnboardingFormProps) {
     const [name, setName] = useState('')
@@ -110,6 +118,14 @@ export function OnboardingForm({
     const finalAccentColor = p.design_accent || accentColor
     const finalBorderColor = p.design_border || finalAccentColor
 
+    // Form-specific colors from onboardingDesign
+    const finalFormBgColor = p.design_form_bg || formBgColor
+    const finalFormTextColor = p.design_form_text || formTextColor
+
+    // Title and description - prioritize customTitle/Description from onboardingDesign
+    const displayTitle = customTitle || p.onboarding_title || clientName
+    const displayDescription = customDescription || p.onboarding_description || (hasFields ? 'Personalisiere deine Karte' : 'Deine digitale Treuekarte')
+
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
@@ -157,10 +173,10 @@ export function OnboardingForm({
                         </div>
                     )}
                     <h1 className="text-3xl font-bold mb-2" style={{ color: finalFgColor }}>
-                        {p.onboarding_title || clientName}
+                        {displayTitle}
                     </h1>
                     <p style={{ color: finalAccentColor }}>
-                        {p.onboarding_description || (hasFields ? 'Personalisiere deine Karte' : 'Deine digitale Treuekarte')}
+                        {displayDescription}
                     </p>
                 </div>
 
@@ -180,7 +196,7 @@ export function OnboardingForm({
                     <div
                         className="rounded-3xl p-6 shadow-2xl relative"
                         style={{
-                            backgroundColor: p.design_form_bg || '#FFFFFF',
+                            backgroundColor: finalFormBgColor,
                         }}
                     >
                         {/* Thin Border for definition */}

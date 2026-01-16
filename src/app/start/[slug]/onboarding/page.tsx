@@ -31,16 +31,28 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
 
     const config = campaign.config || {}
     const personalization = config.personalization || {}
+    const onboardingDesign = config.onboardingDesign || {}
     const designAssets = campaign.design_assets || {}
 
-    // Extract branding colors
-    const bgColor = designAssets.colors?.backgroundColor || '#1A1A1A'
-    const fgColor = designAssets.colors?.foregroundColor || '#FFFFFF'
-    const accentColor = designAssets.colors?.labelColor || '#888888'
+    // Extract branding colors - prioritize onboardingDesign, fallback to wallet card colors
+    const walletBgColor = designAssets.colors?.backgroundColor || '#1A1A1A'
+    const walletFgColor = designAssets.colors?.foregroundColor || '#FFFFFF'
+    const walletAccentColor = designAssets.colors?.labelColor || '#888888'
 
-    // Extract logo (Campaign logo > Client logo)
+    // Use onboardingDesign if set, otherwise fallback to wallet colors
+    const bgColor = onboardingDesign.bgColor || walletBgColor
+    const fgColor = onboardingDesign.fgColor || walletFgColor
+    const accentColor = onboardingDesign.accentColor || walletAccentColor
+    const formBgColor = onboardingDesign.formBgColor || '#FFFFFF'
+    const formTextColor = onboardingDesign.formTextColor || '#1F2937'
+
+    // Extract logo - onboardingDesign logo > Campaign logo > Client logo
     const campaignLogo = designAssets.images?.logo?.url
-    const logoUrl = campaignLogo || client.logo_url
+    const logoUrl = onboardingDesign.logoUrl || campaignLogo || client.logo_url
+
+    // Custom title/description from onboardingDesign
+    const customTitle = onboardingDesign.title
+    const customDescription = onboardingDesign.description
 
     return (
         <OnboardingForm
@@ -52,6 +64,10 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
             bgColor={bgColor}
             fgColor={fgColor}
             accentColor={accentColor}
+            formBgColor={formBgColor}
+            formTextColor={formTextColor}
+            customTitle={customTitle}
+            customDescription={customDescription}
             personalization={personalization}
         />
     )

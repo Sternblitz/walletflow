@@ -14,8 +14,8 @@ interface OnboardingPreviewProps {
         accentColor: string
         formBgColor: string
         formTextColor: string
-        buttonBgColor: string
-        buttonTextColor: string
+        buttonBgColor?: string
+        buttonTextColor?: string
 
         // Content
         title?: string
