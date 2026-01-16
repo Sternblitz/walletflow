@@ -47,7 +47,7 @@ export function Step1Client({ data, update }: any) {
                                 value={data.slug}
                                 onChange={(e) => update({ slug: e.target.value })}
                                 placeholder="my-business"
-                                className="pl-[6.5rem] bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:bg-white/10 focus-visible:ring-1 focus-visible:ring-white/20 transition-all font-mono text-sm h-10"
+                                className="pl-[11.5rem] bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:bg-white/10 focus-visible:ring-1 focus-visible:ring-white/20 transition-all font-mono text-sm h-10"
                             />
                         </div>
                     </div>
