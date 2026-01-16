@@ -39,6 +39,19 @@ export function middleware(request: NextRequest) {
         return NextResponse.rewrite(url);
     }
 
+    // SECURITY: Block direct access to protected routes on main domain
+    // These should ONLY be accessible via their subdomains
+    if (!subdomain) {
+        const pathname = url.pathname;
+
+        if (pathname.startsWith('/admin') ||
+            pathname.startsWith('/start') ||
+            pathname.startsWith('/app')) {
+            // Return 404 for direct access attempts
+            return NextResponse.rewrite(new URL('/404', request.url));
+        }
+    }
+
     // Main domain (getqard.com) - serve normally
     return NextResponse.next();
 }
