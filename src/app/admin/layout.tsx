@@ -16,8 +16,12 @@ export default async function AdminLayout({
     const { data: { user }, error } = await supabase.auth.getUser()
 
     if (error || !user) {
-        // Not authenticated - redirect to login
-        redirect('/login')
+        // Not authenticated - redirect to login on main domain
+        // Can't use relative redirect because middleware will rewrite it
+        const loginUrl = process.env.NODE_ENV === 'production'
+            ? 'https://getqard.com/login'
+            : 'http://localhost:3000/login'
+        redirect(loginUrl)
     }
 
     return (
