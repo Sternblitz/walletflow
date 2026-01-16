@@ -21,30 +21,41 @@ export function middleware(request: NextRequest) {
     const subdomain = hostParts.length >= 3 ? hostParts[0] : null;
 
     // Handle subdomain routing
+    // IMPORTANT: Only rewrite if path doesn't already start with the correct prefix
+    // This prevents double-prefixing e.g. /admin/admin/clients
+
     if (subdomain === 'admin') {
-        // admin.getqard.com → /admin (Agentur)
-        url.pathname = `/admin${url.pathname === '/' ? '' : url.pathname}`;
-        return NextResponse.rewrite(url);
+        // admin.getqard.com → /admin/*
+        // Only rewrite if path doesn't already start with /admin
+        if (!url.pathname.startsWith('/admin')) {
+            url.pathname = `/admin${url.pathname}`;
+            return NextResponse.rewrite(url);
+        }
+        // Path already has /admin prefix, just serve it
+        return NextResponse.next();
     }
 
     if (subdomain === 'app') {
-        // app.getqard.com → /app (POS für Läden)
-        url.pathname = `/app${url.pathname === '/' ? '' : url.pathname}`;
-        return NextResponse.rewrite(url);
+        // app.getqard.com → /app/*
+        if (!url.pathname.startsWith('/app')) {
+            url.pathname = `/app${url.pathname}`;
+            return NextResponse.rewrite(url);
+        }
+        return NextResponse.next();
     }
 
     if (subdomain === 'start') {
-        // start.getqard.com → /start
-        url.pathname = `/start${url.pathname === '/' ? '' : url.pathname}`;
-        return NextResponse.rewrite(url);
+        // start.getqard.com → /start/*
+        if (!url.pathname.startsWith('/start')) {
+            url.pathname = `/start${url.pathname}`;
+            return NextResponse.rewrite(url);
+        }
+        return NextResponse.next();
     }
 
     // IMPORTANT: Main domain (getqard.com) without subdomain
     // This project should NOT handle the main domain!
-    // Redirect to www.getqard.com or show a message
     if (!subdomain && !isLocalhost) {
-        // Main domain accessed directly - this shouldn't happen if DNS is configured correctly
-        // Return a helpful message or redirect to landing page project
         return new NextResponse(
             `This application runs on subdomains only:
             
