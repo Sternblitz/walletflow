@@ -46,6 +46,13 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
     const formBgColor = onboardingDesign.formBgColor || '#FFFFFF'
     const formTextColor = onboardingDesign.formTextColor || '#1F2937'
 
+    // New design options
+    const backgroundStyle = onboardingDesign.backgroundStyle || 'solid'
+    const formGlassmorphism = onboardingDesign.formGlassmorphism || false
+    const glowBorderColor = onboardingDesign.useSeparateGlowColor
+        ? (onboardingDesign.glowBorderColor || accentColor)
+        : accentColor
+
     // Extract logo - onboardingDesign logo > Campaign logo > Client logo
     const campaignLogo = designAssets.images?.logo?.url
     const logoUrl = onboardingDesign.logoUrl || campaignLogo || client.logo_url
@@ -66,6 +73,9 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
             accentColor={accentColor}
             formBgColor={formBgColor}
             formTextColor={formTextColor}
+            backgroundStyle={backgroundStyle}
+            formGlassmorphism={formGlassmorphism}
+            glowBorderColor={glowBorderColor}
             customTitle={customTitle}
             customDescription={customDescription}
             personalization={personalization}

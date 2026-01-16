@@ -25,6 +25,8 @@ interface PersonalizationConfig {
     design_button_text?: string
 }
 
+type BackgroundStyle = 'solid' | 'gradient' | 'radial' | 'animated' | 'mesh' | 'noise'
+
 interface OnboardingFormProps {
     slug: string
     campaignId: string
@@ -36,6 +38,9 @@ interface OnboardingFormProps {
     accentColor: string
     formBgColor?: string
     formTextColor?: string
+    backgroundStyle?: BackgroundStyle
+    formGlassmorphism?: boolean
+    glowBorderColor?: string
     customTitle?: string
     customDescription?: string
     personalization: PersonalizationConfig
@@ -52,6 +57,9 @@ export function OnboardingForm({
     accentColor,
     formBgColor = '#FFFFFF',
     formTextColor = '#1F2937',
+    backgroundStyle = 'solid',
+    formGlassmorphism = false,
+    glowBorderColor,
     customTitle,
     customDescription,
     personalization
@@ -116,20 +124,60 @@ export function OnboardingForm({
     const finalBgColor = p.design_bg || bgColor
     const finalFgColor = p.design_text || fgColor
     const finalAccentColor = p.design_accent || accentColor
-    const finalBorderColor = p.design_border || finalAccentColor
+    const finalBorderColor = glowBorderColor || p.design_border || finalAccentColor
 
     // Form-specific colors from onboardingDesign
     const finalFormBgColor = p.design_form_bg || formBgColor
     const finalFormTextColor = p.design_form_text || formTextColor
 
+    // Effective form text color for glassmorphism
+    const effectiveFormTextColor = formGlassmorphism ? finalFgColor : finalFormTextColor
+
     // Title and description - prioritize customTitle/Description from onboardingDesign
     const displayTitle = customTitle || p.onboarding_title || clientName
     const displayDescription = customDescription || p.onboarding_description || (hasFields ? 'Personalisiere deine Karte' : 'Deine digitale Treuekarte')
 
+    // Helper: darken/lighten color
+    function adjustColor(hex: string, percent: number): string {
+        const num = parseInt(hex.replace('#', ''), 16)
+        const amt = Math.round(2.55 * percent)
+        const R = Math.max(0, Math.min(255, (num >> 16) + amt))
+        const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amt))
+        const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt))
+        return `#${(1 << 24 | R << 16 | G << 8 | B).toString(16).slice(1)}`
+    }
+
+    // Get background style CSS
+    function getBackgroundStyle(): React.CSSProperties {
+        const darker = adjustColor(finalBgColor, -20)
+        const lighter = adjustColor(finalBgColor, 20)
+
+        switch (backgroundStyle) {
+            case 'gradient':
+                return { background: `linear-gradient(to bottom, ${finalBgColor}, ${darker})` }
+            case 'radial':
+                return { background: `radial-gradient(circle at center, ${lighter}, ${finalBgColor})` }
+            default:
+                return { backgroundColor: finalBgColor }
+        }
+    }
+
+    // Form card styles
+    const formCardStyle: React.CSSProperties = formGlassmorphism
+        ? {
+            background: `rgba(255, 255, 255, 0.15)`,
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+        }
+        : {
+            backgroundColor: finalFormBgColor,
+        }
+
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
-            style={{ backgroundColor: finalBgColor, color: finalFgColor }}
+            style={{ ...getBackgroundStyle(), color: finalFgColor }}
         >
 
 
@@ -151,6 +199,41 @@ export function OnboardingForm({
                     animation: pulse-subtle 2s ease-in-out infinite;
                 }
             `}</style>
+
+            {/* Animated Background */}
+            {backgroundStyle === 'animated' && (
+                <div
+                    className="absolute inset-0 animate-gradient-xy"
+                    style={{
+                        background: `linear-gradient(-45deg, ${finalBgColor}, ${adjustColor(finalBgColor, 20)}, ${finalAccentColor}40, ${finalBgColor})`,
+                        backgroundSize: '400% 400%',
+                    }}
+                />
+            )}
+
+            {/* Mesh Background */}
+            {backgroundStyle === 'mesh' && (
+                <div className="absolute inset-0">
+                    <div
+                        className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-40 animate-pulse"
+                        style={{ backgroundColor: finalAccentColor }}
+                    />
+                    <div
+                        className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full blur-3xl opacity-30 animate-pulse"
+                        style={{ backgroundColor: adjustColor(finalAccentColor, 40), animationDelay: '1s' }}
+                    />
+                </div>
+            )}
+
+            {/* Noise Overlay */}
+            {backgroundStyle === 'noise' && (
+                <div
+                    className="absolute inset-0 opacity-20 pointer-events-none"
+                    style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+                    }}
+                />
+            )}
 
             {/* Background gradient overlay for depth */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/20 pointer-events-none" />
@@ -195,9 +278,7 @@ export function OnboardingForm({
                     {/* Actual Form Card - ON TOP of animation */}
                     <div
                         className="rounded-3xl p-6 shadow-2xl relative"
-                        style={{
-                            backgroundColor: finalFormBgColor,
-                        }}
+                        style={formCardStyle}
                     >
                         {/* Thin Border for definition */}
                         <div className="absolute inset-0 rounded-3xl pointer-events-none border border-black/5" />
