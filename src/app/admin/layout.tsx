@@ -1,13 +1,25 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
 
-export default function AdminLayout({
+export default async function AdminLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
+    // CRITICAL: Server-side auth check
+    // This protects the entire /admin section
+    const supabase = await createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    if (error || !user) {
+        // Not authenticated - redirect to login
+        redirect('/login')
+    }
+
     return (
         <SidebarProvider>
             {/* Ambient Background */}
