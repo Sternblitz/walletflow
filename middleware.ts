@@ -40,13 +40,17 @@ export function middleware(request: NextRequest) {
     }
 
     // SECURITY: Block direct access to protected routes on main domain
-    // These should ONLY be accessible via their subdomains
+    // Only block ROOT paths, not subpages (e.g. block /admin but allow /admin/something would already be blocked by Next.js routing)
     if (!subdomain) {
         const pathname = url.pathname;
 
-        if (pathname.startsWith('/admin') ||
-            pathname.startsWith('/start') ||
-            pathname.startsWith('/app')) {
+        // Block exact matches and root-level access
+        if (pathname === '/admin' ||
+            pathname === '/start' ||
+            pathname === '/app' ||
+            pathname.startsWith('/admin/') ||
+            pathname.startsWith('/start/') ||
+            pathname.startsWith('/app/')) {
             // Return 404 for direct access attempts
             return NextResponse.rewrite(new URL('/404', request.url));
         }
@@ -64,7 +68,8 @@ export const config = {
          * - _next/image (image optimization files)
          * - favicon.ico (favicon file)
          * - public folder
+         * - api routes (let them handle their own logic)
          */
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+        '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 };

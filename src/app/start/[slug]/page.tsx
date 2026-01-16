@@ -51,6 +51,7 @@ export default async function SmartLinkPage({ params }: { params: Promise<{ slug
     )
 
     // 4. Auto-Redirect Logic for Mobile
+    // Redirects need full path because middleware rewrites happen AFTER redirect
     if (isIOS) {
         if (requiresOnboarding) {
             redirect(`/start/${slug}/onboarding?campaignId=${campaign.id}&platform=ios`)
