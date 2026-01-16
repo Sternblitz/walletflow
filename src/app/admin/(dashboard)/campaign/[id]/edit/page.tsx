@@ -15,6 +15,7 @@ import { ImagesEditor } from '@/components/wallet/images-editor'
 import { LocationsEditor } from '@/components/wallet/locations-editor'
 import { PersonalizationConfig } from '@/components/wallet/personalization-editor'
 import { Location } from '@/components/ui/location-picker'
+import { OnboardingDesignEditor } from '@/components/admin/OnboardingDesignEditor'
 
 // Dynamic import to avoid hydration mismatch
 const PersonalizationEditor = dynamic(
@@ -55,6 +56,7 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
     const [draft, setDraft] = useState<WalletPassDraft | null>(null)
     const [locations, setLocations] = useState<Location[]>([])
     const [personalization, setPersonalization] = useState<Partial<PersonalizationConfig>>({})
+    const [onboardingDesign, setOnboardingDesign] = useState<any>({})
 
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -84,6 +86,9 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                     if (data.campaign.config?.personalization) {
                         setPersonalization(data.campaign.config.personalization)
                     }
+                    if (data.campaign.config?.onboardingDesign) {
+                        setOnboardingDesign(data.campaign.config.onboardingDesign)
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching campaign:', error)
@@ -110,6 +115,11 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
         setSaveResult(null)
     }, [])
 
+    const handleOnboardingDesignChange = useCallback((newOnboardingDesign: any) => {
+        setOnboardingDesign(newOnboardingDesign)
+        setSaveResult(null)
+    }, [])
+
     const handleColorChange = useCallback((newColors: WalletPassDraft['colors']) => {
         if (!draft) return
         handleDraftChange({
@@ -131,6 +141,7 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                         ...campaign?.config,
                         locations: locations,
                         personalization: personalization,
+                        onboardingDesign: onboardingDesign,
                         stampEmoji: draft.stampConfig?.icon || '☕',
                         maxStamps: draft.stampConfig?.total || 10
                     }
@@ -161,6 +172,7 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                         ...campaign?.config,
                         locations: locations,
                         personalization: personalization,
+                        onboardingDesign: onboardingDesign,
                         stampEmoji: draft.stampConfig?.icon || '☕',
                         maxStamps: draft.stampConfig?.total || 10
                     }
@@ -364,6 +376,35 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                                     logoUrl: draft?.images?.logo?.url,
                                     colors: draft?.colors
                                 }}
+                            />
+                        </section>
+
+                        <div className="h-px bg-white/5" />
+
+                        {/* Onboarding Page Design */}
+                        <section className="space-y-4">
+                            <div className="flex items-center gap-2 mb-6">
+                                <div className="p-2 rounded-lg bg-violet-500/10 text-violet-500">
+                                    <Smartphone className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-white">Start-Seite Design</h2>
+                                    <p className="text-xs text-zinc-500">Wie sieht die Onboarding-Seite aus?</p>
+                                </div>
+                            </div>
+                            <OnboardingDesignEditor
+                                config={onboardingDesign}
+                                onChange={handleOnboardingDesignChange}
+                                clientName={campaign?.client?.name || campaign?.name || 'Mein Shop'}
+                                logoUrl={draft?.images?.logo?.url}
+                                askName={personalization.ask_name}
+                                askBirthday={personalization.ask_birthday}
+                                askEmail={personalization.ask_email}
+                                askPhone={personalization.ask_phone}
+                                nameRequired={personalization.name_required}
+                                birthdayRequired={personalization.birthday_required}
+                                emailRequired={personalization.email_required}
+                                phoneRequired={personalization.phone_required}
                             />
                         </section>
 
