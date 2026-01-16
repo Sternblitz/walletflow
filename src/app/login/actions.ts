@@ -26,6 +26,9 @@ export async function login(formData: FormData) {
         return { error: 'Ungültige Anmeldedaten' }
     }
 
-    // Successfully authenticated - redirect to admin
-    redirect('/admin')
+    // Successfully authenticated - redirect to admin subdomain
+    const adminUrl = process.env.NODE_ENV === 'production'
+        ? 'https://admin.getqard.com'
+        : 'http://localhost:3000/admin'
+    redirect(adminUrl)
 }
