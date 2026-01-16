@@ -39,24 +39,30 @@ export function middleware(request: NextRequest) {
         return NextResponse.rewrite(url);
     }
 
-    // SECURITY: Block direct access to protected routes on main domain
-    // Only block ROOT paths, not subpages (e.g. block /admin but allow /admin/something would already be blocked by Next.js routing)
-    if (!subdomain) {
-        const pathname = url.pathname;
+    // IMPORTANT: Main domain (getqard.com) without subdomain
+    // This project should NOT handle the main domain!
+    // Redirect to www.getqard.com or show a message
+    if (!subdomain && !isLocalhost) {
+        // Main domain accessed directly - this shouldn't happen if DNS is configured correctly
+        // Return a helpful message or redirect to landing page project
+        return new NextResponse(
+            `This application runs on subdomains only:
+            
+• admin.getqard.com - Agency Dashboard
+• app.getqard.com - POS System
+• start.getqard.com - Customer Onboarding
 
-        // Block exact matches and root-level access
-        if (pathname === '/admin' ||
-            pathname === '/start' ||
-            pathname === '/app' ||
-            pathname.startsWith('/admin/') ||
-            pathname.startsWith('/start/') ||
-            pathname.startsWith('/app/')) {
-            // Return 404 for direct access attempts
-            return NextResponse.rewrite(new URL('/404', request.url));
-        }
+For the main website, visit: www.getqard.com`,
+            {
+                status: 404,
+                headers: {
+                    'Content-Type': 'text/plain',
+                },
+            }
+        );
     }
 
-    // Main domain (getqard.com) - serve normally
+    // Shouldn't reach here in production
     return NextResponse.next();
 }
 
@@ -68,7 +74,7 @@ export const config = {
          * - _next/image (image optimization files)
          * - favicon.ico (favicon file)
          * - public folder
-         * - api routes (let them handle their own logic)
+         * - api routes (they handle their own logic)
          */
         '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
