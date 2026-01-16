@@ -5,10 +5,10 @@ import { useParams } from 'next/navigation'
 import { Camera, X, RotateCcw, Zap, BarChart3, Send, Users, TrendingUp, Wallet, Settings, LogOut, ChevronRight, Check, Sparkles, LayoutDashboard, Bell, ArrowRight, Search, Cake, Mail, Phone } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'sonner'
-import { ActivityChart, WalletDonut, RetentionGauge } from '@/components/pos/POSCharts'
-import { AutomationManager } from '@/components/pos/AutomationManager'
-import { AutomationRulesManager } from '@/components/pos/AutomationRulesManager'
-import { ThemeToggle } from '@/components/pos/ThemeToggle'
+import { ActivityChart, WalletDonut, RetentionGauge } from '@/components/app/POSCharts'
+import { AutomationManager } from '@/components/app/AutomationManager'
+import { AutomationRulesManager } from '@/components/app/AutomationRulesManager'
+import { ThemeToggle } from '@/components/app/ThemeToggle'
 
 type Role = 'none' | 'staff' | 'chef'
 type Mode = 'idle' | 'scanning' | 'camera' | 'result'
@@ -73,7 +73,7 @@ export default function POSPage() {
 
     const loadStats = async () => {
         try {
-            const res = await fetch(`/api/pos/stats?slug=${slug}`)
+            const res = await fetch(`/api/app/stats?slug=${slug}`)
             if (res.ok) {
                 const data = await res.json()
                 setStats(data)
@@ -86,7 +86,7 @@ export default function POSPage() {
     const loadCustomers = async () => {
         setCustomersLoading(true)
         try {
-            const res = await fetch(`/api/pos/customers?slug=${slug}`)
+            const res = await fetch(`/api/app/customers?slug=${slug}`)
             if (res.ok) {
                 const data = await res.json()
                 setCustomers(data.customers || [])
@@ -104,7 +104,7 @@ export default function POSPage() {
         setAuthError(null)
 
         try {
-            const res = await fetch(`/api/pos/auth`, {
+            const res = await fetch(`/api/app/auth`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ slug, pin })
@@ -224,7 +224,7 @@ export default function POSPage() {
 
         setPushSubmitting(true)
         try {
-            const res = await fetch('/api/pos/push-request', {
+            const res = await fetch('/api/app/push-request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -569,8 +569,8 @@ export default function POSPage() {
                                         setPushSchedule('')
                                     }}
                                     className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all ${!isScheduled
-                                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                                            : 'bg-card border border-border text-muted-foreground hover:bg-accent'
+                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                                        : 'bg-card border border-border text-muted-foreground hover:bg-accent'
                                         }`}
                                 >
                                     Sofort senden
@@ -579,8 +579,8 @@ export default function POSPage() {
                                     type="button"
                                     onClick={() => setIsScheduled(true)}
                                     className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all ${isScheduled
-                                            ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/20'
-                                            : 'bg-card border border-border text-muted-foreground hover:bg-accent'
+                                        ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/20'
+                                        : 'bg-card border border-border text-muted-foreground hover:bg-accent'
                                         }`}
                                 >
                                     Für später planen
@@ -626,8 +626,8 @@ export default function POSPage() {
                             type="submit"
                             disabled={!pushMessage.trim() || pushSubmitting || (isScheduled && !pushSchedule)}
                             className={`w-full py-5 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-[0.98] ${isScheduled
-                                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 shadow-violet-500/20'
-                                    : 'bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 shadow-blue-500/20'
+                                ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 shadow-violet-500/20'
+                                : 'bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 shadow-blue-500/20'
                                 }`}
                         >
                             {pushSubmitting ? (

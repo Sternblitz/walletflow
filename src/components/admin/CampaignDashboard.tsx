@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
+import { getStartURL, getPOSURL } from "@/lib/domain-urls"
 import {
     ArrowLeft,
     Users,
@@ -159,7 +160,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
         if (!campaignId) return
         setLoadingCredentials(true)
         try {
-            const res = await fetch(`/api/campaign/${campaignId}/pos-credentials`)
+            const res = await fetch(`/api/campaign/${campaignId}/app-credentials`)
             const data = await res.json()
             if (data.credentials) {
                 let creds = data.credentials
@@ -231,7 +232,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
         if (!campaignId) return
         setSavingPins(true)
         try {
-            const res = await fetch(`/api/campaign/${campaignId}/pos-credentials`, {
+            const res = await fetch(`/api/campaign/${campaignId}/app-credentials`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ credentials: posCredentials })
@@ -430,14 +431,14 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                     <div className="p-4 rounded-lg bg-black/50 border border-white/5 space-y-4">
                         <div className="flex items-center gap-2">
                             <div className="flex-1 bg-zinc-900 rounded-md border border-white/10 px-3 py-2 text-sm text-zinc-300 font-mono truncate">
-                                https://qard.io/start/{campaign.client?.slug}
+                                {getStartURL(campaign.client?.slug || '')}
                             </div>
                             <Button
                                 size="icon"
                                 variant="outline"
                                 className="shrink-0"
                                 onClick={() => {
-                                    navigator.clipboard.writeText(`https://qard.io/start/${campaign.client?.slug}`)
+                                    navigator.clipboard.writeText(getStartURL(campaign.client?.slug || ''))
                                     alert('Link kopiert!')
                                 }}
                             >
@@ -454,7 +455,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                             <div className="p-2 bg-white rounded-xl">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://qard.io/start/${campaign.client?.slug}`}
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(getStartURL(campaign.client?.slug || ''))}`}
                                     alt="QR Code"
                                     className="w-32 h-32"
                                 />
@@ -589,7 +590,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                         </div>
                     </div>
                     {campaign.client?.slug && (
-                        <Link href={`/pos/${campaign.client.slug}`} target="_blank">
+                        <Link href={`/app/${campaign.client.slug}`} target="_blank">
                             <Button variant="outline" size="sm" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
                                 <ExternalLink className="w-4 h-4 mr-2" />
                                 Scanner öffnen

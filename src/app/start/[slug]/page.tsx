@@ -2,6 +2,7 @@ import { headers } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import { getStartURL } from "@/lib/domain-urls"
 
 export default async function SmartLinkPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params
@@ -65,7 +66,7 @@ export default async function SmartLinkPage({ params }: { params: Promise<{ slug
     }
 
     // 5. Desktop Fallback (The Landing Page)
-    const smartLinkUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://qard.io'}/start/${slug}`
+    const smartLinkUrl = getStartURL(slug)
 
     return (
         <div

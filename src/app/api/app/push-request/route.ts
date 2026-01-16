@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 /**
- * POST /api/pos/push-request
+ * POST /api/app/push-request
  * Create a push notification request (Managed Push)
  * 
  * The request goes into a queue for agency approval
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * GET /api/pos/push-request?campaignId=XXX
+ * GET /api/app/push-request?campaignId=XXX
  * Get pending push requests for a campaign
  */
 export async function GET(req: NextRequest) {

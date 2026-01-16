@@ -31,7 +31,7 @@ export function AutomationManager({ slug }: AutomationManagerProps) {
 
     const fetchRequests = async () => {
         try {
-            const res = await fetch(`/api/pos/push-request?slug=${slug}`)
+            const res = await fetch(`/api/app/push-request?slug=${slug}`)
             if (res.ok) {
                 const data = await res.json()
                 setRequests(data.requests || [])
@@ -48,7 +48,7 @@ export function AutomationManager({ slug }: AutomationManagerProps) {
 
         setSubmitting(true)
         try {
-            const res = await fetch('/api/pos/push-request', {
+            const res = await fetch('/api/app/push-request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { TemplatePreview } from "./template-preview"
+import { getStartURL } from "@/lib/domain-urls"
 import {
     Printer,
     Download,
@@ -30,7 +31,7 @@ export function MarketingDesigner({ campaign }: MarketingDesignerProps) {
     const [subline, setSubline] = useState("Einfach QR-Code scannen und Karte hinzufügen.")
     const [accentColor, setAccentColor] = useState(campaign.color || "#09090b") // Default to black or campaign color
 
-    const qrUrl = `https://qard.io/start/${campaign.slug}`
+    const qrUrl = getStartURL(campaign.slug)
 
     const handlePrint = () => {
         window.print()

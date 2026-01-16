@@ -81,7 +81,7 @@ export default async function ClientDashboardPage({ params }: { params: Promise<
 
                 {/* Main Action: Validierung */}
                 <Link
-                    href={`/pos/${slug}`}
+                    href={`/app/${slug}`}
                     className="block w-full p-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl shadow-lg shadow-green-900/20 active:scale-95 transition-all text-center group"
                 >
                     <div className="flex justify-center mb-3">

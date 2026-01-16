@@ -70,7 +70,7 @@ export function ClientActions({ clientId, clientName, slug }: ClientActionsProps
                     <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
                     <DropdownMenuItem
                         className="focus:bg-white/10 focus:text-white cursor-pointer"
-                        onClick={() => window.open(`/pos/${slug}`, '_blank')}
+                        onClick={() => window.open(`/app/${slug}`, '_blank')}
                     >
                         <ExternalLink className="w-4 h-4 mr-2" />
                         POS öffnen

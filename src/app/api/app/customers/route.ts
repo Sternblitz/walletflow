@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
 /**
- * GET /api/pos/customers?slug=xxx
+ * GET /api/app/customers?slug=xxx
  * Returns customer list for a restaurant's POS dashboard
  */
 export async function GET(req: NextRequest) {

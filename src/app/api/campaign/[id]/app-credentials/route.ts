@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 /**
- * GET /api/campaign/[id]/pos-credentials
+ * GET /api/campaign/[id]/app-credentials
  * Get all POS credentials for a campaign
  */
 export async function GET(
@@ -36,7 +36,7 @@ export async function GET(
 }
 
 /**
- * POST /api/campaign/[id]/pos-credentials
+ * POST /api/campaign/[id]/app-credentials
  * Update or Create POS credentials
  */
 export async function POST(

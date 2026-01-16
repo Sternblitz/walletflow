@@ -28,7 +28,7 @@ export async function verifyPinAndLogin(slug: string, pin: string) {
         // Staff Login
         const cookieStore = await cookies()
         cookieStore.set(`auth_${slug}`, 'staff', { secure: true, httpOnly: true, maxAge: 60 * 60 * 12 }) // 12h
-        return { success: true, role: 'staff', redirect: `/pos/${slug}` }
+        return { success: true, role: 'staff', redirect: `/app/${slug}` }
     }
 
     return { error: 'Falscher PIN Code' }

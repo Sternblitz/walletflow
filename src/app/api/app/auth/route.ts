@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 /**
- * POST /api/pos/auth
+ * POST /api/app/auth
  * Authenticate POS user with PIN
  */
 export async function POST(req: NextRequest) {
