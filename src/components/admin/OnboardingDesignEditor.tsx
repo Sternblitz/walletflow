@@ -106,6 +106,27 @@ const BACKGROUND_STYLES: { id: BackgroundStyle; label: string; icon: string; has
     { id: 'noise', label: 'Noise', icon: '📺', hasOptions: true },
 ]
 
+// Orbs color presets
+const ORBS_PRESETS = [
+    { name: 'neon', label: '🌆 Neon', colors: { color1: '#6366F1', color2: '#D946EF', color3: '#06B6D4' } },
+    { name: 'sunset', label: '🌅 Sunset', colors: { color1: '#F97316', color2: '#EC4899', color3: '#FBBF24' } },
+    { name: 'ocean', label: '🌊 Ocean', colors: { color1: '#0EA5E9', color2: '#06B6D4', color3: '#3B82F6' } },
+    { name: 'forest', label: '🌲 Forest', colors: { color1: '#22C55E', color2: '#10B981', color3: '#14B8A6' } },
+    { name: 'mono', label: '⚫ Mono', colors: { color1: '#6B7280', color2: '#9CA3AF', color3: '#4B5563' } },
+    { name: 'fire', label: '🔥 Fire', colors: { color1: '#EF4444', color2: '#F97316', color3: '#DC2626' } },
+]
+
+function getOrbsPresetName(settings: OrbsSettings): string {
+    for (const preset of ORBS_PRESETS) {
+        if (settings.color1 === preset.colors.color1 &&
+            settings.color2 === preset.colors.color2 &&
+            settings.color3 === preset.colors.color3) {
+            return preset.name
+        }
+    }
+    return 'custom'
+}
+
 export function OnboardingDesignEditor({
     config,
     onChange,
@@ -552,82 +573,86 @@ export function OnboardingDesignEditor({
                                 {/* ORBS OPTIONS */}
                                 {currentStyle === 'orbs' && (
                                     <>
-                                        <div className="flex items-center gap-3">
-                                            <Label className="text-[10px] text-white/50">Orb-Farben</Label>
-                                            <div className="flex gap-2">
-                                                {[0, 1, 2].map(i => {
-                                                    const colors = [
-                                                        orbsSettings.color1 || '#6366F1',
-                                                        orbsSettings.color2 || '#D946EF',
-                                                        orbsSettings.color3 || '#06B6D4',
-                                                    ]
-                                                    return (
-                                                        <div
-                                                            key={i}
-                                                            className="w-8 h-8 rounded border border-white/20 cursor-pointer relative overflow-hidden"
-                                                            style={{ backgroundColor: colors[i] }}
-                                                        >
-                                                            <input
-                                                                type="color"
-                                                                value={colors[i]}
-                                                                onChange={(e) => {
-                                                                    const key = i === 0 ? 'color1' : i === 1 ? 'color2' : 'color3'
-                                                                    onChange({ ...config, orbsSettings: { ...orbsSettings, [key]: e.target.value } })
-                                                                }}
-                                                                className="absolute inset-0 opacity-0 cursor-pointer"
-                                                            />
-                                                        </div>
-                                                    )
-                                                })}
-                                            </div>
-                                        </div>
+                                        {/* Presets Dropdown */}
                                         <div className="flex items-center justify-between">
-                                            <Label className="text-[10px] text-white/50">Geschwindigkeit</Label>
-                                            <div className="flex gap-1">
-                                                {['slow', 'normal', 'fast'].map(s => (
-                                                    <button
-                                                        key={s}
-                                                        onClick={() => onChange({ ...config, orbsSettings: { ...orbsSettings, speed: s as any } })}
-                                                        className={cn(
-                                                            "px-3 py-1 rounded text-[10px] font-medium transition-all",
-                                                            orbsSettings.speed === s
-                                                                ? "bg-violet-500 text-white"
-                                                                : "bg-white/5 text-white/50 hover:bg-white/10"
-                                                        )}
+                                            <Label className="text-[10px] text-white/50">Farbschema</Label>
+                                            <select
+                                                value={getOrbsPresetName(orbsSettings)}
+                                                onChange={(e) => {
+                                                    const preset = ORBS_PRESETS.find(p => p.name === e.target.value)
+                                                    if (preset) {
+                                                        onChange({ ...config, orbsSettings: { ...orbsSettings, ...preset.colors } })
+                                                    }
+                                                }}
+                                                className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[11px] text-white/80 cursor-pointer"
+                                            >
+                                                {ORBS_PRESETS.map(p => (
+                                                    <option key={p.name} value={p.name}>{p.label}</option>
+                                                ))}
+                                                <option value="custom">Eigene</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Color Preview (clickable for custom) */}
+                                        <div className="flex items-center gap-3">
+                                            <Label className="text-[10px] text-white/50">Farben</Label>
+                                            <div className="flex gap-2">
+                                                {[
+                                                    { key: 'color1', default: '#6366F1' },
+                                                    { key: 'color2', default: '#D946EF' },
+                                                    { key: 'color3', default: '#06B6D4' },
+                                                ].map(({ key, default: def }) => (
+                                                    <div
+                                                        key={key}
+                                                        className="w-6 h-6 rounded border border-white/20 cursor-pointer relative overflow-hidden"
+                                                        style={{ backgroundColor: (orbsSettings as any)[key] || def }}
                                                     >
-                                                        {s === 'slow' ? 'Langsam' : s === 'normal' ? 'Normal' : 'Schnell'}
-                                                    </button>
+                                                        <input
+                                                            type="color"
+                                                            value={(orbsSettings as any)[key] || def}
+                                                            onChange={(e) => onChange({ ...config, orbsSettings: { ...orbsSettings, [key]: e.target.value } })}
+                                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                                        />
+                                                    </div>
                                                 ))}
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
+
+                                        {/* Compact sliders row */}
+                                        <div className="grid grid-cols-3 gap-2">
                                             <div>
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <Label className="text-[10px] text-white/50">Weichheit</Label>
-                                                    <span className="text-[10px] text-white/40">{orbsSettings.blur}px</span>
-                                                </div>
+                                                <Label className="text-[9px] text-white/40 block mb-1">Weichheit</Label>
                                                 <input
                                                     type="range"
                                                     min={60}
                                                     max={200}
                                                     value={orbsSettings.blur}
                                                     onChange={(e) => onChange({ ...config, orbsSettings: { ...orbsSettings, blur: parseInt(e.target.value) } })}
-                                                    className="w-full accent-violet-500"
+                                                    className="w-full accent-violet-500 h-1"
                                                 />
                                             </div>
                                             <div>
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <Label className="text-[10px] text-white/50">Deckkraft</Label>
-                                                    <span className="text-[10px] text-white/40">{orbsSettings.opacity}%</span>
-                                                </div>
+                                                <Label className="text-[9px] text-white/40 block mb-1">Deckkraft</Label>
                                                 <input
                                                     type="range"
                                                     min={5}
                                                     max={40}
                                                     value={orbsSettings.opacity}
                                                     onChange={(e) => onChange({ ...config, orbsSettings: { ...orbsSettings, opacity: parseInt(e.target.value) } })}
-                                                    className="w-full accent-violet-500"
+                                                    className="w-full accent-violet-500 h-1"
                                                 />
+                                            </div>
+                                            <div>
+                                                <Label className="text-[9px] text-white/40 block mb-1">Speed</Label>
+                                                <select
+                                                    value={orbsSettings.speed}
+                                                    onChange={(e) => onChange({ ...config, orbsSettings: { ...orbsSettings, speed: e.target.value as any } })}
+                                                    className="w-full bg-white/5 border border-white/10 rounded px-1 py-0.5 text-[9px] text-white/70"
+                                                >
+                                                    <option value="slow">Langsam</option>
+                                                    <option value="normal">Normal</option>
+                                                    <option value="fast">Schnell</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </>

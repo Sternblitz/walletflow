@@ -207,8 +207,9 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                         {/* Orbs Background */}
                         {backgroundStyle === 'orbs' && (
                             <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                {/* Top Left Orb */}
                                 <div
-                                    className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full"
+                                    className="absolute top-[-15%] left-[-15%] w-[50%] h-[50%] rounded-full"
                                     style={{
                                         backgroundColor: orbsSettings.color1 || '#6366F1',
                                         opacity: orbsSettings.opacity / 100,
@@ -216,8 +217,9 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                         animation: `pulse-slow ${orbsAnimationDuration} ease-in-out infinite`,
                                     }}
                                 />
+                                {/* Top Right Orb */}
                                 <div
-                                    className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full"
+                                    className="absolute top-[-15%] right-[-15%] w-[50%] h-[50%] rounded-full"
                                     style={{
                                         backgroundColor: orbsSettings.color2 || '#D946EF',
                                         opacity: orbsSettings.opacity / 100,
@@ -226,12 +228,15 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                         animationDelay: '1s',
                                     }}
                                 />
+                                {/* Bottom Center Orb */}
                                 <div
-                                    className="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[40%] h-[40%] rounded-full"
+                                    className="absolute bottom-[-20%] left-[50%] -translate-x-1/2 w-[60%] h-[50%] rounded-full"
                                     style={{
                                         backgroundColor: orbsSettings.color3 || '#06B6D4',
-                                        opacity: (orbsSettings.opacity / 100) * 0.5,
-                                        filter: `blur(${orbsSettings.blur * 0.8}px)`,
+                                        opacity: (orbsSettings.opacity / 100) * 0.7,
+                                        filter: `blur(${orbsSettings.blur * 0.9}px)`,
+                                        animation: `pulse-slow ${orbsAnimationDuration} ease-in-out infinite`,
+                                        animationDelay: '2s',
                                     }}
                                 />
                             </div>
