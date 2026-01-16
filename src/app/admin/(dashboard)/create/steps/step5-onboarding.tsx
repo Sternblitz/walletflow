@@ -34,8 +34,6 @@ export function Step5Onboarding({ data, update }: Step5OnboardingProps) {
         accentColor: data.onboardingConfig?.colors?.accentColor || '#8B5CF6',
         formBgColor: data.onboardingConfig?.colors?.formBgColor || '#FFFFFF',
         formTextColor: data.onboardingConfig?.colors?.formTextColor || '#1F2937',
-        buttonBgColor: data.onboardingConfig?.colors?.buttonBgColor || '#000000',
-        buttonTextColor: data.onboardingConfig?.colors?.buttonTextColor || '#FFFFFF',
     })
 
     // UI State
