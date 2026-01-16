@@ -42,6 +42,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { IconEditor } from "@/components/ui/icon-editor"
+import { FloatingPreviewPanel, PreviewToggleButton } from "@/components/admin/FloatingPreviewPanel"
 
 interface Step3DesignProps {
     data: any
@@ -206,6 +207,7 @@ export function Step3DesignV2({ data, update }: Step3DesignProps) {
     const [aiDesign, setAiDesign] = useState<FullDesignProposal | null>(null)
     const [showAiResults, setShowAiResults] = useState(false)
     const [showIconEditor, setShowIconEditor] = useState(false)
+    const [showFloatingPreview, setShowFloatingPreview] = useState(false)
 
     // Sync to parent - include stamp config
     useEffect(() => {
@@ -1174,6 +1176,22 @@ export function Step3DesignV2({ data, update }: Step3DesignProps) {
                 backgroundColor={config.backgroundColor}
                 businessType={data.clientName || ''}
             />
+
+            {/* Floating Preview Panel - Mobile & Click Toggle */}
+            <FloatingPreviewPanel
+                isOpen={showFloatingPreview}
+                onClose={() => setShowFloatingPreview(false)}
+                config={{
+                    ...config,
+                    stripImageUrl: concept === 'STAMP_CARD' ? dynamicStripUrl : config.stripImageUrl,
+                }}
+                concept={concept}
+            />
+
+            {/* Preview Toggle Button - Visible on Mobile or as Quick Access */}
+            <div className="xl:hidden">
+                <PreviewToggleButton onClick={() => setShowFloatingPreview(true)} />
+            </div>
         </>
     )
 }

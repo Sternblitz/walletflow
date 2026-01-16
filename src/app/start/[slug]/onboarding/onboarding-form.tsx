@@ -207,7 +207,7 @@ export function OnboardingForm({
                             {/* Birthday Field - Month/Day Picker */}
                             {p.ask_birthday && (
                                 <div className="space-y-2">
-                                    <label className="block text-sm font-medium" style={{ color: finalFgColor }}>
+                                    <label className="block text-sm font-medium text-gray-700">
                                         Geburtstag
                                         {p.birthday_required ? (
                                             <span className="text-red-500 ml-1">*</span>
@@ -262,7 +262,7 @@ export function OnboardingForm({
                                     {errors.birthday && (
                                         <p className="text-red-500 text-xs mt-1">{errors.birthday}</p>
                                     )}
-                                    <p className="text-xs opacity-60" style={{ color: finalFgColor }}>Für Geburtstagsüberraschungen 🎂</p>
+                                    <p className="text-xs text-gray-500">Für Geburtstagsüberraschungen 🎂</p>
                                 </div>
                             )}
 
