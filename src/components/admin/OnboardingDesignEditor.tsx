@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Smartphone, Palette, Apple, Globe, ChevronDown, ChevronUp,
-    Image, Upload, Sparkles, Layers, Eye
+    Image, Upload, Sparkles, Layers
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,30 +12,58 @@ import { cn } from '@/lib/utils'
 import { OnboardingPreview } from './OnboardingPreview'
 import { OnboardingColorEditor } from './OnboardingColorEditor'
 
-// Background style types
 type BackgroundStyle = 'solid' | 'gradient' | 'radial' | 'animated' | 'mesh' | 'noise'
 
+interface GradientSettings {
+    direction: 'to-bottom' | 'to-top' | 'to-right' | 'to-left' | 'diagonal'
+    intensity: number // 0-100
+    secondaryColor?: string
+}
+
+interface RadialSettings {
+    centerX: number // 0-100
+    centerY: number // 0-100
+    intensity: number // 0-100
+    secondaryColor?: string
+}
+
+interface AnimatedSettings {
+    speed: 'slow' | 'normal' | 'fast'
+    colors: string[] // up to 3 colors
+}
+
+interface MeshSettings {
+    color1?: string
+    color2?: string
+    opacity1: number
+    opacity2: number
+    blur: number
+}
+
+interface NoiseSettings {
+    intensity: number // 0-100
+    scale: 'fine' | 'medium' | 'coarse'
+}
+
 interface OnboardingDesignConfig {
-    // Content
     title?: string
     description?: string
     logoUrl?: string | null
     logoSource?: 'wallet' | 'custom' | 'none'
-
-    // Background
     backgroundStyle?: BackgroundStyle
-
-    // Colors
     bgColor?: string
     fgColor?: string
     accentColor?: string
     formBgColor?: string
     formTextColor?: string
-
-    // Advanced
-    formGlassmorphism?: boolean
     useSeparateGlowColor?: boolean
     glowBorderColor?: string
+    // Effect-specific settings
+    gradientSettings?: GradientSettings
+    radialSettings?: RadialSettings
+    animatedSettings?: AnimatedSettings
+    meshSettings?: MeshSettings
+    noiseSettings?: NoiseSettings
 }
 
 interface OnboardingDesignEditorProps {
@@ -58,13 +86,13 @@ interface OnboardingDesignEditorProps {
     phoneRequired?: boolean
 }
 
-const BACKGROUND_STYLES: { id: BackgroundStyle; label: string; icon: string }[] = [
-    { id: 'solid', label: 'Solid', icon: '◼️' },
-    { id: 'gradient', label: 'Gradient', icon: '🌓' },
-    { id: 'radial', label: 'Radial', icon: '🔆' },
-    { id: 'animated', label: 'Animiert', icon: '✨' },
-    { id: 'mesh', label: 'Mesh', icon: '🌈' },
-    { id: 'noise', label: 'Noise', icon: '📺' },
+const BACKGROUND_STYLES: { id: BackgroundStyle; label: string; icon: string; hasOptions: boolean }[] = [
+    { id: 'solid', label: 'Solid', icon: '◼️', hasOptions: false },
+    { id: 'gradient', label: 'Gradient', icon: '🌓', hasOptions: true },
+    { id: 'radial', label: 'Radial', icon: '🔆', hasOptions: true },
+    { id: 'animated', label: 'Animiert', icon: '✨', hasOptions: true },
+    { id: 'mesh', label: 'Mesh', icon: '🌈', hasOptions: true },
+    { id: 'noise', label: 'Noise', icon: '📺', hasOptions: true },
 ]
 
 export function OnboardingDesignEditor({
@@ -86,11 +114,9 @@ export function OnboardingDesignEditor({
     const [previewPlatform, setPreviewPlatform] = useState<'ios' | 'android'>('ios')
     const [showColorEditor, setShowColorEditor] = useState(false)
     const [showLogoOptions, setShowLogoOptions] = useState(false)
-    const [showAdvanced, setShowAdvanced] = useState(false)
     const [uploading, setUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    // Default colors
     const defaultColors = {
         bgColor: config.bgColor || walletColors?.backgroundColor || '#0A0A0A',
         fgColor: config.fgColor || walletColors?.foregroundColor || '#FFFFFF',
@@ -99,12 +125,13 @@ export function OnboardingDesignEditor({
         formTextColor: config.formTextColor || '#1F2937',
     }
 
-    // Logo handling
     const logoSource = config.logoSource || 'wallet'
     const displayLogo = logoSource === 'wallet' ? walletLogoUrl :
         logoSource === 'custom' ? config.logoUrl : null
 
-    // Glow color
+    const currentStyle = config.backgroundStyle || 'solid'
+    const currentStyleInfo = BACKGROUND_STYLES.find(s => s.id === currentStyle)
+
     const glowColor = config.useSeparateGlowColor
         ? (config.glowBorderColor || defaultColors.accentColor)
         : defaultColors.accentColor
@@ -114,14 +141,9 @@ export function OnboardingDesignEditor({
     }
 
     const setLogoSource = (source: 'wallet' | 'custom' | 'none') => {
-        onChange({
-            ...config,
-            logoSource: source,
-            logoUrl: source === 'wallet' ? null : config.logoUrl,
-        })
+        onChange({ ...config, logoSource: source, logoUrl: source === 'wallet' ? null : config.logoUrl })
     }
 
-    // Logo upload handler
     const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0]
         if (!file) return
@@ -130,21 +152,15 @@ export function OnboardingDesignEditor({
         try {
             const formData = new FormData()
             formData.append('file', file)
-            formData.append('bucket', 'public')
             formData.append('folder', 'onboarding-logos')
 
-            const res = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            })
+            const res = await fetch('/api/upload', { method: 'POST', body: formData })
 
             if (res.ok) {
                 const data = await res.json()
-                onChange({
-                    ...config,
-                    logoSource: 'custom',
-                    logoUrl: data.url,
-                })
+                onChange({ ...config, logoSource: 'custom', logoUrl: data.url })
+            } else {
+                console.error('Upload failed:', await res.text())
             }
         } catch (error) {
             console.error('Upload failed:', error)
@@ -153,13 +169,24 @@ export function OnboardingDesignEditor({
         }
     }
 
+    // Default effect settings
+    const gradientSettings = config.gradientSettings || { direction: 'to-bottom', intensity: 50 }
+    const radialSettings = config.radialSettings || { centerX: 50, centerY: 30, intensity: 50 }
+    const animatedSettings = config.animatedSettings || { speed: 'normal', colors: [defaultColors.bgColor, defaultColors.accentColor] }
+    const meshSettings = config.meshSettings || { opacity1: 40, opacity2: 30, blur: 80 }
+    const noiseSettings = config.noiseSettings || { intensity: 20, scale: 'medium' }
+
     const previewConfig = {
         clientName,
         logoUrl: displayLogo,
         ...defaultColors,
-        backgroundStyle: config.backgroundStyle || 'solid',
-        formGlassmorphism: config.formGlassmorphism || false,
+        backgroundStyle: currentStyle,
         glowBorderColor: glowColor,
+        gradientSettings,
+        radialSettings,
+        animatedSettings,
+        meshSettings,
+        noiseSettings,
         title: config.title,
         description: config.description,
         askName, nameRequired, namePlaceholder: 'Max Mustermann',
@@ -199,14 +226,15 @@ export function OnboardingDesignEditor({
                     <Layers className="w-4 h-4 text-cyan-400" />
                     <span className="text-sm font-medium text-white">Hintergrund-Stil</span>
                 </div>
-                <div className="grid grid-cols-6 gap-1.5">
+
+                <div className="grid grid-cols-6 gap-1.5 mb-3">
                     {BACKGROUND_STYLES.map((style) => (
                         <button
                             key={style.id}
                             onClick={() => onChange({ ...config, backgroundStyle: style.id })}
                             className={cn(
                                 "flex flex-col items-center gap-1 p-2 rounded-lg transition-all text-center",
-                                (config.backgroundStyle || 'solid') === style.id
+                                currentStyle === style.id
                                     ? "bg-violet-500/20 ring-1 ring-violet-500 text-white"
                                     : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
                             )}
@@ -216,6 +244,301 @@ export function OnboardingDesignEditor({
                         </button>
                     ))}
                 </div>
+
+                {/* Effect-specific options */}
+                <AnimatePresence mode="wait">
+                    {currentStyleInfo?.hasOptions && (
+                        <motion.div
+                            key={currentStyle}
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="pt-3 mt-3 border-t border-white/10 space-y-3">
+                                {/* GRADIENT OPTIONS */}
+                                {currentStyle === 'gradient' && (
+                                    <>
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-[10px] text-white/50">Richtung</Label>
+                                            <div className="flex gap-1">
+                                                {[
+                                                    { id: 'to-bottom', icon: '↓' },
+                                                    { id: 'to-top', icon: '↑' },
+                                                    { id: 'to-right', icon: '→' },
+                                                    { id: 'to-left', icon: '←' },
+                                                    { id: 'diagonal', icon: '↘' },
+                                                ].map(d => (
+                                                    <button
+                                                        key={d.id}
+                                                        onClick={() => onChange({ ...config, gradientSettings: { ...gradientSettings, direction: d.id as any } })}
+                                                        className={cn(
+                                                            "w-7 h-7 rounded text-sm transition-all",
+                                                            gradientSettings.direction === d.id
+                                                                ? "bg-violet-500 text-white"
+                                                                : "bg-white/5 text-white/50 hover:bg-white/10"
+                                                        )}
+                                                    >
+                                                        {d.icon}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <Label className="text-[10px] text-white/50">Intensität</Label>
+                                                <span className="text-[10px] text-white/40">{gradientSettings.intensity}%</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min={10}
+                                                max={100}
+                                                value={gradientSettings.intensity}
+                                                onChange={(e) => onChange({ ...config, gradientSettings: { ...gradientSettings, intensity: parseInt(e.target.value) } })}
+                                                className="w-full accent-violet-500"
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Label className="text-[10px] text-white/50">Zweite Farbe</Label>
+                                            <div className="flex items-center gap-2">
+                                                <div
+                                                    className="w-8 h-8 rounded border border-white/20 cursor-pointer relative overflow-hidden"
+                                                    style={{ backgroundColor: gradientSettings.secondaryColor || adjustColor(defaultColors.bgColor, -30) }}
+                                                >
+                                                    <input
+                                                        type="color"
+                                                        value={gradientSettings.secondaryColor || adjustColor(defaultColors.bgColor, -30)}
+                                                        onChange={(e) => onChange({ ...config, gradientSettings: { ...gradientSettings, secondaryColor: e.target.value } })}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                    />
+                                                </div>
+                                                <span className="text-[10px] text-white/40 font-mono">{gradientSettings.secondaryColor || 'auto'}</span>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* RADIAL OPTIONS */}
+                                {currentStyle === 'radial' && (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <Label className="text-[10px] text-white/50">Zentrum X</Label>
+                                                    <span className="text-[10px] text-white/40">{radialSettings.centerX}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min={0}
+                                                    max={100}
+                                                    value={radialSettings.centerX}
+                                                    onChange={(e) => onChange({ ...config, radialSettings: { ...radialSettings, centerX: parseInt(e.target.value) } })}
+                                                    className="w-full accent-violet-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <Label className="text-[10px] text-white/50">Zentrum Y</Label>
+                                                    <span className="text-[10px] text-white/40">{radialSettings.centerY}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min={0}
+                                                    max={100}
+                                                    value={radialSettings.centerY}
+                                                    onChange={(e) => onChange({ ...config, radialSettings: { ...radialSettings, centerY: parseInt(e.target.value) } })}
+                                                    className="w-full accent-violet-500"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <Label className="text-[10px] text-white/50">Intensität</Label>
+                                                <span className="text-[10px] text-white/40">{radialSettings.intensity}%</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min={10}
+                                                max={100}
+                                                value={radialSettings.intensity}
+                                                onChange={(e) => onChange({ ...config, radialSettings: { ...radialSettings, intensity: parseInt(e.target.value) } })}
+                                                className="w-full accent-violet-500"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* ANIMATED OPTIONS */}
+                                {currentStyle === 'animated' && (
+                                    <>
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-[10px] text-white/50">Geschwindigkeit</Label>
+                                            <div className="flex gap-1">
+                                                {['slow', 'normal', 'fast'].map(s => (
+                                                    <button
+                                                        key={s}
+                                                        onClick={() => onChange({ ...config, animatedSettings: { ...animatedSettings, speed: s as any } })}
+                                                        className={cn(
+                                                            "px-3 py-1 rounded text-[10px] font-medium transition-all",
+                                                            animatedSettings.speed === s
+                                                                ? "bg-violet-500 text-white"
+                                                                : "bg-white/5 text-white/50 hover:bg-white/10"
+                                                        )}
+                                                    >
+                                                        {s === 'slow' ? 'Langsam' : s === 'normal' ? 'Normal' : 'Schnell'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Label className="text-[10px] text-white/50">Farben</Label>
+                                            <div className="flex gap-2">
+                                                {[0, 1].map(i => (
+                                                    <div
+                                                        key={i}
+                                                        className="w-8 h-8 rounded border border-white/20 cursor-pointer relative overflow-hidden"
+                                                        style={{ backgroundColor: animatedSettings.colors[i] || defaultColors.accentColor }}
+                                                    >
+                                                        <input
+                                                            type="color"
+                                                            value={animatedSettings.colors[i] || defaultColors.accentColor}
+                                                            onChange={(e) => {
+                                                                const newColors = [...animatedSettings.colors]
+                                                                newColors[i] = e.target.value
+                                                                onChange({ ...config, animatedSettings: { ...animatedSettings, colors: newColors } })
+                                                            }}
+                                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* MESH OPTIONS */}
+                                {currentStyle === 'mesh' && (
+                                    <>
+                                        <div className="flex items-center gap-3">
+                                            <Label className="text-[10px] text-white/50">Blob-Farben</Label>
+                                            <div className="flex gap-2">
+                                                <div
+                                                    className="w-8 h-8 rounded border border-white/20 cursor-pointer relative overflow-hidden"
+                                                    style={{ backgroundColor: meshSettings.color1 || defaultColors.accentColor }}
+                                                >
+                                                    <input
+                                                        type="color"
+                                                        value={meshSettings.color1 || defaultColors.accentColor}
+                                                        onChange={(e) => onChange({ ...config, meshSettings: { ...meshSettings, color1: e.target.value } })}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                    />
+                                                </div>
+                                                <div
+                                                    className="w-8 h-8 rounded border border-white/20 cursor-pointer relative overflow-hidden"
+                                                    style={{ backgroundColor: meshSettings.color2 || adjustColor(defaultColors.accentColor, 40) }}
+                                                >
+                                                    <input
+                                                        type="color"
+                                                        value={meshSettings.color2 || adjustColor(defaultColors.accentColor, 40)}
+                                                        onChange={(e) => onChange({ ...config, meshSettings: { ...meshSettings, color2: e.target.value } })}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <Label className="text-[10px] text-white/50">Deckkraft 1</Label>
+                                                    <span className="text-[10px] text-white/40">{meshSettings.opacity1}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min={10}
+                                                    max={80}
+                                                    value={meshSettings.opacity1}
+                                                    onChange={(e) => onChange({ ...config, meshSettings: { ...meshSettings, opacity1: parseInt(e.target.value) } })}
+                                                    className="w-full accent-violet-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <Label className="text-[10px] text-white/50">Deckkraft 2</Label>
+                                                    <span className="text-[10px] text-white/40">{meshSettings.opacity2}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min={10}
+                                                    max={80}
+                                                    value={meshSettings.opacity2}
+                                                    onChange={(e) => onChange({ ...config, meshSettings: { ...meshSettings, opacity2: parseInt(e.target.value) } })}
+                                                    className="w-full accent-violet-500"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <Label className="text-[10px] text-white/50">Weichheit</Label>
+                                                <span className="text-[10px] text-white/40">{meshSettings.blur}px</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min={20}
+                                                max={150}
+                                                value={meshSettings.blur}
+                                                onChange={(e) => onChange({ ...config, meshSettings: { ...meshSettings, blur: parseInt(e.target.value) } })}
+                                                className="w-full accent-violet-500"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* NOISE OPTIONS */}
+                                {currentStyle === 'noise' && (
+                                    <>
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <Label className="text-[10px] text-white/50">Intensität</Label>
+                                                <span className="text-[10px] text-white/40">{noiseSettings.intensity}%</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min={5}
+                                                max={50}
+                                                value={noiseSettings.intensity}
+                                                onChange={(e) => onChange({ ...config, noiseSettings: { ...noiseSettings, intensity: parseInt(e.target.value) } })}
+                                                className="w-full accent-violet-500"
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-[10px] text-white/50">Körnung</Label>
+                                            <div className="flex gap-1">
+                                                {[
+                                                    { id: 'fine', label: 'Fein' },
+                                                    { id: 'medium', label: 'Mittel' },
+                                                    { id: 'coarse', label: 'Grob' },
+                                                ].map(s => (
+                                                    <button
+                                                        key={s.id}
+                                                        onClick={() => onChange({ ...config, noiseSettings: { ...noiseSettings, scale: s.id as any } })}
+                                                        className={cn(
+                                                            "px-3 py-1 rounded text-[10px] font-medium transition-all",
+                                                            noiseSettings.scale === s.id
+                                                                ? "bg-violet-500 text-white"
+                                                                : "bg-white/5 text-white/50 hover:bg-white/10"
+                                                        )}
+                                                    >
+                                                        {s.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Logo Section */}
@@ -286,7 +609,10 @@ export function OnboardingDesignEditor({
                                             className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-white/20 rounded-lg hover:border-violet-500/50 hover:bg-violet-500/5 transition-all"
                                         >
                                             {uploading ? (
-                                                <span className="text-xs text-white/60">Wird hochgeladen...</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                                                    <span className="text-xs text-white/60">Wird hochgeladen...</span>
+                                                </div>
                                             ) : (
                                                 <>
                                                     <Upload className="w-5 h-5 text-white/40" />
@@ -342,113 +668,61 @@ export function OnboardingDesignEditor({
                 </AnimatePresence>
             </div>
 
-            {/* Advanced Effects Section */}
+            {/* Glow Border Section */}
             <div className="rounded-xl border border-white/10 overflow-hidden">
-                <button
-                    onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/[0.07] transition-colors"
-                >
-                    <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-amber-400" />
-                        <span className="text-sm font-medium text-white">Effekte & Erweitert</span>
-                    </div>
-                    {showAdvanced ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
-                </button>
-
-                <AnimatePresence>
-                    {showAdvanced && (
-                        <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden"
+                <div className="p-3 bg-white/5">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-amber-400" />
+                            <span className="text-sm font-medium text-white">Glow-Rahmen separat</span>
+                        </div>
+                        <button
+                            onClick={() => onChange({
+                                ...config,
+                                useSeparateGlowColor: !config.useSeparateGlowColor,
+                                glowBorderColor: config.glowBorderColor || defaultColors.accentColor
+                            })}
+                            className={cn(
+                                "relative w-10 h-5 rounded-full transition-colors",
+                                config.useSeparateGlowColor ? "bg-emerald-500" : "bg-zinc-700"
+                            )}
                         >
-                            <div className="p-4 pt-2 border-t border-white/5 space-y-4">
-                                {/* Glassmorphism Toggle */}
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/5">
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <Eye className="w-4 h-4 text-cyan-400" />
-                                            <span className="text-sm font-medium text-white">Glassmorphism</span>
-                                        </div>
-                                        <p className="text-[10px] text-white/40 mt-0.5">Frosted-Glass Effekt für die Form-Card</p>
-                                    </div>
-                                    <button
-                                        onClick={() => onChange({ ...config, formGlassmorphism: !config.formGlassmorphism })}
-                                        className={cn(
-                                            "relative w-10 h-5 rounded-full transition-colors",
-                                            config.formGlassmorphism ? "bg-emerald-500" : "bg-zinc-700"
-                                        )}
+                            <div className={cn(
+                                "absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform",
+                                config.useSeparateGlowColor ? "translate-x-5" : "translate-x-0.5"
+                            )} />
+                        </button>
+                    </div>
+
+                    <AnimatePresence>
+                        {config.useSeparateGlowColor && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                            >
+                                <div className="flex items-center gap-3 pt-3 mt-3 border-t border-white/10">
+                                    <div
+                                        className="w-10 h-10 rounded-lg border border-white/20 cursor-pointer relative overflow-hidden"
+                                        style={{ backgroundColor: config.glowBorderColor || defaultColors.accentColor }}
                                     >
-                                        <div className={cn(
-                                            "absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform",
-                                            config.formGlassmorphism ? "translate-x-5" : "translate-x-0.5"
-                                        )} />
-                                    </button>
-                                </div>
-
-                                {/* Glow Border Separation */}
-                                <div className="p-3 rounded-lg bg-white/[0.02] border border-white/5 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <Sparkles className="w-4 h-4 text-violet-400" />
-                                                <span className="text-sm font-medium text-white">Glow-Rahmen separat</span>
-                                            </div>
-                                            <p className="text-[10px] text-white/40 mt-0.5">Andere Farbe für den animierten Rahmen</p>
-                                        </div>
-                                        <button
-                                            onClick={() => onChange({
-                                                ...config,
-                                                useSeparateGlowColor: !config.useSeparateGlowColor,
-                                                glowBorderColor: config.glowBorderColor || defaultColors.accentColor
-                                            })}
-                                            className={cn(
-                                                "relative w-10 h-5 rounded-full transition-colors",
-                                                config.useSeparateGlowColor ? "bg-emerald-500" : "bg-zinc-700"
-                                            )}
-                                        >
-                                            <div className={cn(
-                                                "absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform",
-                                                config.useSeparateGlowColor ? "translate-x-5" : "translate-x-0.5"
-                                            )} />
-                                        </button>
+                                        <input
+                                            type="color"
+                                            value={config.glowBorderColor || defaultColors.accentColor}
+                                            onChange={(e) => onChange({ ...config, glowBorderColor: e.target.value })}
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                        />
                                     </div>
-
-                                    {/* Glow Color Picker - only show when enabled */}
-                                    <AnimatePresence>
-                                        {config.useSeparateGlowColor && (
-                                            <motion.div
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: 'auto', opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                className="overflow-hidden"
-                                            >
-                                                <div className="flex items-center gap-3 pt-2 border-t border-white/5">
-                                                    <div
-                                                        className="w-10 h-10 rounded-lg border border-white/20 overflow-hidden cursor-pointer shadow-lg relative"
-                                                        style={{ backgroundColor: config.glowBorderColor || defaultColors.accentColor }}
-                                                    >
-                                                        <input
-                                                            type="color"
-                                                            value={config.glowBorderColor || defaultColors.accentColor}
-                                                            onChange={(e) => onChange({ ...config, glowBorderColor: e.target.value })}
-                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-xs text-white/60">Glow-Rahmen Farbe</span>
-                                                        <p className="text-[10px] text-white/40 font-mono">{config.glowBorderColor || defaultColors.accentColor}</p>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
+                                    <div>
+                                        <span className="text-xs text-white/60">Glow-Rahmen Farbe</span>
+                                        <p className="text-[10px] text-white/40 font-mono">{config.glowBorderColor || defaultColors.accentColor}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
 
             {/* Preview Section */}
@@ -501,14 +775,16 @@ export function OnboardingDesignEditor({
                     )}
                 </AnimatePresence>
             </div>
-
-            {/* Info */}
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20">
-                <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
-                <span className="text-[10px] text-violet-300">
-                    Standard: Farben werden automatisch von der Wallet-Karte übernommen
-                </span>
-            </div>
         </div>
     )
+}
+
+// Helper function
+function adjustColor(hex: string, percent: number): string {
+    const num = parseInt(hex.replace('#', ''), 16)
+    const amt = Math.round(2.55 * percent)
+    const R = Math.max(0, Math.min(255, (num >> 16) + amt))
+    const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amt))
+    const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt))
+    return `#${(1 << 24 | R << 16 | G << 8 | B).toString(16).slice(1)}`
 }

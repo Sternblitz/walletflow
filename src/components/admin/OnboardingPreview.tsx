@@ -4,30 +4,55 @@ import { motion } from 'framer-motion'
 
 type BackgroundStyle = 'solid' | 'gradient' | 'radial' | 'animated' | 'mesh' | 'noise'
 
+interface GradientSettings {
+    direction: 'to-bottom' | 'to-top' | 'to-right' | 'to-left' | 'diagonal'
+    intensity: number
+    secondaryColor?: string
+}
+
+interface RadialSettings {
+    centerX: number
+    centerY: number
+    intensity: number
+    secondaryColor?: string
+}
+
+interface AnimatedSettings {
+    speed: 'slow' | 'normal' | 'fast'
+    colors: string[]
+}
+
+interface MeshSettings {
+    color1?: string
+    color2?: string
+    opacity1: number
+    opacity2: number
+    blur: number
+}
+
+interface NoiseSettings {
+    intensity: number
+    scale: 'fine' | 'medium' | 'coarse'
+}
+
 interface OnboardingPreviewProps {
     config: {
         clientName: string
         logoUrl?: string | null
-
-        // Background
         backgroundStyle?: BackgroundStyle
-
-        // Colors
         bgColor: string
         fgColor: string
         accentColor: string
         formBgColor: string
         formTextColor: string
-
-        // Advanced
-        formGlassmorphism?: boolean
         glowBorderColor?: string
-
-        // Content
+        gradientSettings?: GradientSettings
+        radialSettings?: RadialSettings
+        animatedSettings?: AnimatedSettings
+        meshSettings?: MeshSettings
+        noiseSettings?: NoiseSettings
         title?: string
         description?: string
-
-        // Fields
         askName?: boolean
         nameRequired?: boolean
         namePlaceholder?: string
@@ -39,13 +64,10 @@ interface OnboardingPreviewProps {
         askPhone?: boolean
         phoneRequired?: boolean
         phonePlaceholder?: string
-
-        // Platform
         platform?: 'ios' | 'android'
     }
 }
 
-// Helper: darken/lighten color
 function adjustColor(hex: string, percent: number): string {
     const num = parseInt(hex.replace('#', ''), 16)
     const amt = Math.round(2.55 * percent)
@@ -55,23 +77,13 @@ function adjustColor(hex: string, percent: number): string {
     return `#${(1 << 24 | R << 16 | G << 8 | B).toString(16).slice(1)}`
 }
 
-// Get background style CSS
-function getBackgroundStyle(style: BackgroundStyle, bgColor: string): React.CSSProperties {
-    const darker = adjustColor(bgColor, -20)
-    const lighter = adjustColor(bgColor, 20)
-
-    switch (style) {
-        case 'gradient':
-            return { background: `linear-gradient(to bottom, ${bgColor}, ${darker})` }
-        case 'radial':
-            return { background: `radial-gradient(circle at center, ${lighter}, ${bgColor})` }
-        case 'animated':
-        case 'mesh':
-        case 'noise':
-            // These need special handling in the component
-            return { backgroundColor: bgColor }
-        default:
-            return { backgroundColor: bgColor }
+function getGradientDirection(dir: string): string {
+    switch (dir) {
+        case 'to-top': return 'to top'
+        case 'to-right': return 'to right'
+        case 'to-left': return 'to left'
+        case 'diagonal': return 'to bottom right'
+        default: return 'to bottom'
     }
 }
 
@@ -85,8 +97,12 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
         accentColor = '#8B5CF6',
         formBgColor = '#FFFFFF',
         formTextColor = '#1F2937',
-        formGlassmorphism = false,
         glowBorderColor,
+        gradientSettings = { direction: 'to-bottom', intensity: 50 },
+        radialSettings = { centerX: 50, centerY: 30, intensity: 50 },
+        animatedSettings = { speed: 'normal', colors: [bgColor, accentColor] },
+        meshSettings = { opacity1: 40, opacity2: 30, blur: 80 },
+        noiseSettings = { intensity: 20, scale: 'medium' },
         title,
         description,
         askName = true,
@@ -105,22 +121,29 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
 
     const hasFields = askName || askBirthday || askEmail || askPhone
     const effectiveGlowColor = glowBorderColor || accentColor
-    const bgStyle = getBackgroundStyle(backgroundStyle, bgColor)
 
-    // Form card styles
-    const formCardStyle: React.CSSProperties = formGlassmorphism
-        ? {
-            background: `rgba(255, 255, 255, 0.15)`,
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-        }
-        : {
-            backgroundColor: formBgColor,
-        }
+    // Calculate background based on style and settings
+    const getBackgroundStyle = (): React.CSSProperties => {
+        const darkAmount = -gradientSettings.intensity * 0.5
+        const lightAmount = radialSettings.intensity * 0.3
+        const secondaryGradient = gradientSettings.secondaryColor || adjustColor(bgColor, darkAmount)
+        const secondaryRadial = radialSettings.secondaryColor || adjustColor(bgColor, lightAmount)
 
-    // Text color for glassmorphism
-    const effectiveFormTextColor = formGlassmorphism ? fgColor : formTextColor
+        switch (backgroundStyle) {
+            case 'gradient':
+                return { background: `linear-gradient(${getGradientDirection(gradientSettings.direction)}, ${bgColor}, ${secondaryGradient})` }
+            case 'radial':
+                return { background: `radial-gradient(circle at ${radialSettings.centerX}% ${radialSettings.centerY}%, ${secondaryRadial}, ${bgColor})` }
+            default:
+                return { backgroundColor: bgColor }
+        }
+    }
+
+    // Animated speed
+    const animationDuration = animatedSettings.speed === 'slow' ? '12s' : animatedSettings.speed === 'fast' ? '4s' : '8s'
+
+    // Noise frequency based on scale
+    const noiseFrequency = noiseSettings.scale === 'fine' ? '1.2' : noiseSettings.scale === 'coarse' ? '0.5' : '0.9'
 
     return (
         <div className="flex items-center justify-center">
@@ -130,15 +153,16 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                     {/* Screen */}
                     <div
                         className="w-full h-full rounded-[32px] overflow-hidden relative"
-                        style={bgStyle}
+                        style={getBackgroundStyle()}
                     >
-                        {/* Animated Background Layer */}
+                        {/* Animated Background */}
                         {backgroundStyle === 'animated' && (
                             <div
-                                className="absolute inset-0 animate-gradient-xy"
+                                className="absolute inset-0"
                                 style={{
-                                    background: `linear-gradient(-45deg, ${bgColor}, ${adjustColor(bgColor, 20)}, ${accentColor}40, ${bgColor})`,
+                                    background: `linear-gradient(-45deg, ${animatedSettings.colors[0] || bgColor}, ${animatedSettings.colors[1] || accentColor}40, ${animatedSettings.colors[0] || bgColor})`,
                                     backgroundSize: '400% 400%',
+                                    animation: `gradient-xy ${animationDuration} ease infinite`,
                                 }}
                             />
                         )}
@@ -147,12 +171,21 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                         {backgroundStyle === 'mesh' && (
                             <div className="absolute inset-0">
                                 <div
-                                    className="absolute top-1/4 left-1/4 w-48 h-48 rounded-full blur-3xl opacity-40 animate-pulse"
-                                    style={{ backgroundColor: accentColor }}
+                                    className="absolute top-1/4 left-1/4 w-48 h-48 rounded-full animate-pulse"
+                                    style={{
+                                        backgroundColor: meshSettings.color1 || accentColor,
+                                        opacity: meshSettings.opacity1 / 100,
+                                        filter: `blur(${meshSettings.blur}px)`,
+                                    }}
                                 />
                                 <div
-                                    className="absolute bottom-1/4 right-1/4 w-32 h-32 rounded-full blur-3xl opacity-30 animate-pulse"
-                                    style={{ backgroundColor: adjustColor(accentColor, 40), animationDelay: '1s' }}
+                                    className="absolute bottom-1/4 right-1/4 w-32 h-32 rounded-full animate-pulse"
+                                    style={{
+                                        backgroundColor: meshSettings.color2 || adjustColor(accentColor, 40),
+                                        opacity: meshSettings.opacity2 / 100,
+                                        filter: `blur(${meshSettings.blur}px)`,
+                                        animationDelay: '1s'
+                                    }}
                                 />
                             </div>
                         )}
@@ -160,9 +193,10 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                         {/* Noise Overlay */}
                         {backgroundStyle === 'noise' && (
                             <div
-                                className="absolute inset-0 opacity-20"
+                                className="absolute inset-0 pointer-events-none"
                                 style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+                                    opacity: noiseSettings.intensity / 100,
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='${noiseFrequency}' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
                                 }}
                             />
                         )}
@@ -208,7 +242,7 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="rounded-2xl p-4 shadow-lg relative"
-                                style={formCardStyle}
+                                style={{ backgroundColor: formBgColor }}
                             >
                                 {/* Glow Border */}
                                 <div
@@ -217,21 +251,17 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                 />
 
                                 <div className="relative space-y-3">
-                                    {/* Name Field */}
                                     {askName && (
                                         <div>
-                                            <label
-                                                className="block text-[10px] font-medium mb-1"
-                                                style={{ color: effectiveFormTextColor }}
-                                            >
+                                            <label className="block text-[10px] font-medium mb-1" style={{ color: formTextColor }}>
                                                 Dein Name {!nameRequired && <span className="opacity-50">(optional)</span>}
                                             </label>
                                             <div
                                                 className="h-8 rounded-lg px-3 flex items-center text-[10px]"
                                                 style={{
-                                                    backgroundColor: formGlassmorphism ? 'rgba(255,255,255,0.1)' : `${effectiveFormTextColor}08`,
-                                                    color: `${effectiveFormTextColor}50`,
-                                                    border: `1px solid ${formGlassmorphism ? 'rgba(255,255,255,0.2)' : effectiveFormTextColor + '15'}`
+                                                    backgroundColor: `${formTextColor}08`,
+                                                    color: `${formTextColor}50`,
+                                                    border: `1px solid ${formTextColor}15`
                                                 }}
                                             >
                                                 {namePlaceholder}
@@ -239,22 +269,18 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                         </div>
                                     )}
 
-                                    {/* Birthday Field */}
                                     {askBirthday && (
                                         <div>
-                                            <label
-                                                className="block text-[10px] font-medium mb-1"
-                                                style={{ color: effectiveFormTextColor }}
-                                            >
+                                            <label className="block text-[10px] font-medium mb-1" style={{ color: formTextColor }}>
                                                 Geburtstag {!birthdayRequired && <span className="opacity-50">(optional)</span>}
                                             </label>
                                             <div className="flex gap-2">
                                                 <div
                                                     className="flex-1 h-8 rounded-lg px-2 flex items-center justify-between text-[10px]"
                                                     style={{
-                                                        backgroundColor: formGlassmorphism ? 'rgba(255,255,255,0.1)' : `${effectiveFormTextColor}08`,
-                                                        color: `${effectiveFormTextColor}50`,
-                                                        border: `1px solid ${formGlassmorphism ? 'rgba(255,255,255,0.2)' : effectiveFormTextColor + '15'}`
+                                                        backgroundColor: `${formTextColor}08`,
+                                                        color: `${formTextColor}50`,
+                                                        border: `1px solid ${formTextColor}15`
                                                     }}
                                                 >
                                                     <span>Tag</span>
@@ -263,36 +289,32 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                                 <div
                                                     className="flex-[1.5] h-8 rounded-lg px-2 flex items-center justify-between text-[10px]"
                                                     style={{
-                                                        backgroundColor: formGlassmorphism ? 'rgba(255,255,255,0.1)' : `${effectiveFormTextColor}08`,
-                                                        color: `${effectiveFormTextColor}50`,
-                                                        border: `1px solid ${formGlassmorphism ? 'rgba(255,255,255,0.2)' : effectiveFormTextColor + '15'}`
+                                                        backgroundColor: `${formTextColor}08`,
+                                                        color: `${formTextColor}50`,
+                                                        border: `1px solid ${formTextColor}15`
                                                     }}
                                                 >
                                                     <span>Monat</span>
                                                     <span>▼</span>
                                                 </div>
                                             </div>
-                                            <p className="text-[8px] mt-1 opacity-50" style={{ color: effectiveFormTextColor }}>
+                                            <p className="text-[8px] mt-1 opacity-50" style={{ color: formTextColor }}>
                                                 Für Geburtstagsüberraschungen 🎂
                                             </p>
                                         </div>
                                     )}
 
-                                    {/* Email Field */}
                                     {askEmail && (
                                         <div>
-                                            <label
-                                                className="block text-[10px] font-medium mb-1"
-                                                style={{ color: effectiveFormTextColor }}
-                                            >
+                                            <label className="block text-[10px] font-medium mb-1" style={{ color: formTextColor }}>
                                                 E-Mail {!emailRequired && <span className="opacity-50">(optional)</span>}
                                             </label>
                                             <div
                                                 className="h-8 rounded-lg px-3 flex items-center text-[10px]"
                                                 style={{
-                                                    backgroundColor: formGlassmorphism ? 'rgba(255,255,255,0.1)' : `${effectiveFormTextColor}08`,
-                                                    color: `${effectiveFormTextColor}50`,
-                                                    border: `1px solid ${formGlassmorphism ? 'rgba(255,255,255,0.2)' : effectiveFormTextColor + '15'}`
+                                                    backgroundColor: `${formTextColor}08`,
+                                                    color: `${formTextColor}50`,
+                                                    border: `1px solid ${formTextColor}15`
                                                 }}
                                             >
                                                 {emailPlaceholder}
@@ -300,21 +322,17 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                         </div>
                                     )}
 
-                                    {/* Phone Field */}
                                     {askPhone && (
                                         <div>
-                                            <label
-                                                className="block text-[10px] font-medium mb-1"
-                                                style={{ color: effectiveFormTextColor }}
-                                            >
+                                            <label className="block text-[10px] font-medium mb-1" style={{ color: formTextColor }}>
                                                 Telefon {!phoneRequired && <span className="opacity-50">(optional)</span>}
                                             </label>
                                             <div
                                                 className="h-8 rounded-lg px-3 flex items-center text-[10px]"
                                                 style={{
-                                                    backgroundColor: formGlassmorphism ? 'rgba(255,255,255,0.1)' : `${effectiveFormTextColor}08`,
-                                                    color: `${effectiveFormTextColor}50`,
-                                                    border: `1px solid ${formGlassmorphism ? 'rgba(255,255,255,0.2)' : effectiveFormTextColor + '15'}`
+                                                    backgroundColor: `${formTextColor}08`,
+                                                    color: `${formTextColor}50`,
+                                                    border: `1px solid ${formTextColor}15`
                                                 }}
                                             >
                                                 {phonePlaceholder}
@@ -325,7 +343,7 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                     {/* Wallet Button */}
                                     <div className="pt-2">
                                         <div className="flex justify-center mb-1">
-                                            <span className="text-[8px] animate-bounce" style={{ color: `${effectiveFormTextColor}40` }}>↓</span>
+                                            <span className="text-[8px] animate-bounce" style={{ color: `${formTextColor}40` }}>↓</span>
                                         </div>
                                         {platform === 'ios' ? (
                                             <div className="flex justify-center">
@@ -352,10 +370,7 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                             <p className="text-center text-[8px] mt-4" style={{ color: accentColor }}>
                                 Deine Daten werden sicher gespeichert
                             </p>
-                            <p
-                                className="text-center text-[7px] mt-2 uppercase tracking-widest"
-                                style={{ color: `${fgColor}30` }}
-                            >
+                            <p className="text-center text-[7px] mt-2 uppercase tracking-widest" style={{ color: `${fgColor}30` }}>
                                 Powered by <span className="font-bold">QARD</span>
                             </p>
                         </div>
@@ -365,18 +380,13 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                     </div>
                 </div>
 
-                {/* Phone Shadow */}
                 <div className="absolute -inset-4 bg-gradient-to-b from-violet-500/5 to-fuchsia-500/5 rounded-[50px] -z-10 blur-2xl" />
             </div>
 
-            {/* Animated gradient keyframes */}
             <style jsx global>{`
                 @keyframes gradient-xy {
                     0%, 100% { background-position: 0% 50%; }
                     50% { background-position: 100% 50%; }
-                }
-                .animate-gradient-xy {
-                    animation: gradient-xy 8s ease infinite;
                 }
             `}</style>
         </div>

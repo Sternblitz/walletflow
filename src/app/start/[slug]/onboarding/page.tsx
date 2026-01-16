@@ -48,10 +48,16 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
 
     // New design options
     const backgroundStyle = onboardingDesign.backgroundStyle || 'solid'
-    const formGlassmorphism = onboardingDesign.formGlassmorphism || false
     const glowBorderColor = onboardingDesign.useSeparateGlowColor
         ? (onboardingDesign.glowBorderColor || accentColor)
         : accentColor
+
+    // Effect-specific settings
+    const gradientSettings = onboardingDesign.gradientSettings
+    const radialSettings = onboardingDesign.radialSettings
+    const animatedSettings = onboardingDesign.animatedSettings
+    const meshSettings = onboardingDesign.meshSettings
+    const noiseSettings = onboardingDesign.noiseSettings
 
     // Extract logo - onboardingDesign logo > Campaign logo > Client logo
     const campaignLogo = designAssets.images?.logo?.url
@@ -74,8 +80,12 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
             formBgColor={formBgColor}
             formTextColor={formTextColor}
             backgroundStyle={backgroundStyle}
-            formGlassmorphism={formGlassmorphism}
             glowBorderColor={glowBorderColor}
+            gradientSettings={gradientSettings}
+            radialSettings={radialSettings}
+            animatedSettings={animatedSettings}
+            meshSettings={meshSettings}
+            noiseSettings={noiseSettings}
             customTitle={customTitle}
             customDescription={customDescription}
             personalization={personalization}

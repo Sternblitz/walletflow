@@ -27,6 +27,36 @@ interface PersonalizationConfig {
 
 type BackgroundStyle = 'solid' | 'gradient' | 'radial' | 'animated' | 'mesh' | 'noise'
 
+interface GradientSettings {
+    direction: 'to-bottom' | 'to-top' | 'to-right' | 'to-left' | 'diagonal'
+    intensity: number
+    secondaryColor?: string
+}
+
+interface RadialSettings {
+    centerX: number
+    centerY: number
+    intensity: number
+}
+
+interface AnimatedSettings {
+    speed: 'slow' | 'normal' | 'fast'
+    colors: string[]
+}
+
+interface MeshSettings {
+    color1?: string
+    color2?: string
+    opacity1: number
+    opacity2: number
+    blur: number
+}
+
+interface NoiseSettings {
+    intensity: number
+    scale: 'fine' | 'medium' | 'coarse'
+}
+
 interface OnboardingFormProps {
     slug: string
     campaignId: string
@@ -39,8 +69,12 @@ interface OnboardingFormProps {
     formBgColor?: string
     formTextColor?: string
     backgroundStyle?: BackgroundStyle
-    formGlassmorphism?: boolean
     glowBorderColor?: string
+    gradientSettings?: GradientSettings
+    radialSettings?: RadialSettings
+    animatedSettings?: AnimatedSettings
+    meshSettings?: MeshSettings
+    noiseSettings?: NoiseSettings
     customTitle?: string
     customDescription?: string
     personalization: PersonalizationConfig
@@ -58,8 +92,12 @@ export function OnboardingForm({
     formBgColor = '#FFFFFF',
     formTextColor = '#1F2937',
     backgroundStyle = 'solid',
-    formGlassmorphism = false,
     glowBorderColor,
+    gradientSettings = { direction: 'to-bottom', intensity: 50 },
+    radialSettings = { centerX: 50, centerY: 30, intensity: 50 },
+    animatedSettings = { speed: 'normal', colors: [] },
+    meshSettings = { opacity1: 40, opacity2: 30, blur: 80 },
+    noiseSettings = { intensity: 20, scale: 'medium' },
     customTitle,
     customDescription,
     personalization
@@ -130,9 +168,6 @@ export function OnboardingForm({
     const finalFormBgColor = p.design_form_bg || formBgColor
     const finalFormTextColor = p.design_form_text || formTextColor
 
-    // Effective form text color for glassmorphism
-    const effectiveFormTextColor = formGlassmorphism ? finalFgColor : finalFormTextColor
-
     // Title and description - prioritize customTitle/Description from onboardingDesign
     const displayTitle = customTitle || p.onboarding_title || clientName
     const displayDescription = customDescription || p.onboarding_description || (hasFields ? 'Personalisiere deine Karte' : 'Deine digitale Treuekarte')
@@ -147,32 +182,43 @@ export function OnboardingForm({
         return `#${(1 << 24 | R << 16 | G << 8 | B).toString(16).slice(1)}`
     }
 
-    // Get background style CSS
+    function getGradientDirection(dir: string): string {
+        switch (dir) {
+            case 'to-top': return 'to top'
+            case 'to-right': return 'to right'
+            case 'to-left': return 'to left'
+            case 'diagonal': return 'to bottom right'
+            default: return 'to bottom'
+        }
+    }
+
+    // Get background style CSS using effect settings
     function getBackgroundStyle(): React.CSSProperties {
-        const darker = adjustColor(finalBgColor, -20)
-        const lighter = adjustColor(finalBgColor, 20)
+        const darkAmount = -(gradientSettings.intensity || 50) * 0.5
+        const lightAmount = (radialSettings.intensity || 50) * 0.3
+        const secondaryGradient = gradientSettings.secondaryColor || adjustColor(finalBgColor, darkAmount)
+        const secondaryRadial = adjustColor(finalBgColor, lightAmount)
 
         switch (backgroundStyle) {
             case 'gradient':
-                return { background: `linear-gradient(to bottom, ${finalBgColor}, ${darker})` }
+                return { background: `linear-gradient(${getGradientDirection(gradientSettings.direction || 'to-bottom')}, ${finalBgColor}, ${secondaryGradient})` }
             case 'radial':
-                return { background: `radial-gradient(circle at center, ${lighter}, ${finalBgColor})` }
+                return { background: `radial-gradient(circle at ${radialSettings.centerX || 50}% ${radialSettings.centerY || 30}%, ${secondaryRadial}, ${finalBgColor})` }
             default:
                 return { backgroundColor: finalBgColor }
         }
     }
 
-    // Form card styles
-    const formCardStyle: React.CSSProperties = formGlassmorphism
-        ? {
-            background: `rgba(255, 255, 255, 0.15)`,
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-        }
-        : {
-            backgroundColor: finalFormBgColor,
-        }
+    // Animation speed
+    const animationDuration = animatedSettings.speed === 'slow' ? '12s' : animatedSettings.speed === 'fast' ? '4s' : '8s'
+
+    // Noise frequency
+    const noiseFrequency = noiseSettings.scale === 'fine' ? '1.2' : noiseSettings.scale === 'coarse' ? '0.5' : '0.9'
+
+    // Form card styles (simple, no glassmorphism)
+    const formCardStyle: React.CSSProperties = {
+        backgroundColor: finalFormBgColor,
+    }
 
     return (
         <div
@@ -203,10 +249,11 @@ export function OnboardingForm({
             {/* Animated Background */}
             {backgroundStyle === 'animated' && (
                 <div
-                    className="absolute inset-0 animate-gradient-xy"
+                    className="absolute inset-0"
                     style={{
-                        background: `linear-gradient(-45deg, ${finalBgColor}, ${adjustColor(finalBgColor, 20)}, ${finalAccentColor}40, ${finalBgColor})`,
+                        background: `linear-gradient(-45deg, ${animatedSettings.colors?.[0] || finalBgColor}, ${animatedSettings.colors?.[1] || finalAccentColor}40, ${animatedSettings.colors?.[0] || finalBgColor})`,
                         backgroundSize: '400% 400%',
+                        animation: `gradient-xy ${animationDuration} ease infinite`,
                     }}
                 />
             )}
@@ -215,12 +262,21 @@ export function OnboardingForm({
             {backgroundStyle === 'mesh' && (
                 <div className="absolute inset-0">
                     <div
-                        className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-40 animate-pulse"
-                        style={{ backgroundColor: finalAccentColor }}
+                        className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full animate-pulse"
+                        style={{
+                            backgroundColor: meshSettings.color1 || finalAccentColor,
+                            opacity: (meshSettings.opacity1 || 40) / 100,
+                            filter: `blur(${meshSettings.blur || 80}px)`,
+                        }}
                     />
                     <div
-                        className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full blur-3xl opacity-30 animate-pulse"
-                        style={{ backgroundColor: adjustColor(finalAccentColor, 40), animationDelay: '1s' }}
+                        className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full animate-pulse"
+                        style={{
+                            backgroundColor: meshSettings.color2 || adjustColor(finalAccentColor, 40),
+                            opacity: (meshSettings.opacity2 || 30) / 100,
+                            filter: `blur(${meshSettings.blur || 80}px)`,
+                            animationDelay: '1s'
+                        }}
                     />
                 </div>
             )}
@@ -228,9 +284,10 @@ export function OnboardingForm({
             {/* Noise Overlay */}
             {backgroundStyle === 'noise' && (
                 <div
-                    className="absolute inset-0 opacity-20 pointer-events-none"
+                    className="absolute inset-0 pointer-events-none"
                     style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+                        opacity: (noiseSettings.intensity || 20) / 100,
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='${noiseFrequency}' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
                     }}
                 />
             )}
