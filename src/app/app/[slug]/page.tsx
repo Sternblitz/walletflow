@@ -413,50 +413,55 @@ export default function POSPage() {
 
                 <main className="relative z-10 flex-1 p-6 overflow-y-auto w-full max-w-7xl mx-auto space-y-6 pb-32">
 
-                    {/* LOYALTY SCORE - ALWAYS POSITIVE */}
-                    {loyalty && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600/20 via-teal-600/10 to-cyan-600/20 border border-emerald-500/20 p-6"
-                        >
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
-                            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                                        <Crown className="w-8 h-8 text-white" />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-3xl font-black text-white">{loyalty.score}%</span>
-                                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full flex items-center gap-1">
-                                                <TrendingUp size={12} /> Steigend
-                                            </span>
-                                        </div>
-                                        <p className="text-emerald-100/80 text-sm font-medium">{loyalty.message}</p>
-                                    </div>
+                    {/* LOYALTY SCORE - ALWAYS SHOWN */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600/20 via-teal-600/10 to-cyan-600/20 border border-emerald-500/20 p-6"
+                    >
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
+                        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                                    <Crown className="w-8 h-8 text-white" />
                                 </div>
-                                {/* Milestones */}
-                                {loyalty.milestones?.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                        {loyalty.milestones.slice(0, 3).map((m: string, i: number) => (
-                                            <span key={i} className="px-3 py-1.5 bg-white/10 backdrop-blur-sm text-white text-xs font-bold rounded-full border border-white/10">
-                                                {m}
-                                            </span>
-                                        ))}
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-3xl font-black text-white">{loyalty?.score || 50}%</span>
+                                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full flex items-center gap-1">
+                                            <TrendingUp size={12} /> Steigend
+                                        </span>
                                     </div>
-                                )}
+                                    <p className="text-emerald-100/80 text-sm font-medium">{loyalty?.message || "Dein Loyalty-Programm ist bereit! 🚀"}</p>
+                                </div>
                             </div>
-                            {/* Progress Bar */}
-                            <div className="mt-4 h-2 bg-black/30 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${loyalty.score}%` }}
-                                    transition={{ duration: 1, ease: "easeOut" }}
-                                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"
-                                />
-                            </div>
-                        </motion.div>
+                            {/* Milestones */}
+                            {loyalty?.milestones && loyalty.milestones.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                    {loyalty.milestones.slice(0, 3).map((m: string, i: number) => (
+                                        <span key={i} className="px-3 py-1.5 bg-white/10 backdrop-blur-sm text-white text-xs font-bold rounded-full border border-white/10">
+                                            {m}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        {/* Progress Bar */}
+                        <div className="mt-4 h-2 bg-black/30 rounded-full overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${loyalty?.score || 50}%` }}
+                                transition={{ duration: 1, ease: "easeOut" }}
+                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"
+                            />
+                        </div>
+                    </motion.div>
+
+                    {/* GOOGLE REVIEWS */}
+                    {reviewStats && (
+                        <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4">
+                            <ReviewWidget stats={reviewStats} variant="card" />
+                        </div>
                     )}
 
                     {/* KEY STATS */}
@@ -488,14 +493,14 @@ export default function POSPage() {
 
                         {/* Actions */}
                         <div className="lg:col-span-1 flex flex-col gap-4">
-                            <button onClick={() => setShowPushModal(true)} className="flex-1 relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 transition-all shadow-lg shadow-emerald-900/20 group text-left p-6 flex flex-col justify-between min-h-[140px]">
-                                <div className="absolute top-0 right-0 p-24 bg-white/10 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:bg-white/20 transition-all" />
-                                <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl w-fit relative z-10 group-hover:scale-110 transition-transform">
+                            <button onClick={() => setShowPushModal(true)} className="flex-1 relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 hover:from-violet-500/30 hover:to-fuchsia-500/30 transition-all shadow-lg shadow-violet-900/20 group text-left p-6 flex flex-col justify-between min-h-[140px]">
+                                <div className="absolute top-0 right-0 p-24 bg-violet-500/10 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:bg-violet-500/20 transition-all" />
+                                <div className="p-3 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl w-fit relative z-10 group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/30">
                                     <Send className="w-6 h-6 text-white" />
                                 </div>
                                 <div className="relative z-10">
                                     <h3 className="text-xl font-bold text-white">Push Senden</h3>
-                                    <div className="flex items-center gap-2 text-emerald-100 text-xs font-medium opacity-80 mt-1">
+                                    <div className="flex items-center gap-2 text-violet-200 text-xs font-medium opacity-80 mt-1">
                                         <Users size={14} /> <span>Alle Kunden erreichen</span>
                                     </div>
                                 </div>
@@ -514,12 +519,12 @@ export default function POSPage() {
                         </div>
                     </div>
 
-                    {/* SCHEDULED PUSHES & AUTOMATIONS */}
-                    <div className="pt-6 border-t border-white/5 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-400" /> Geplante Nachrichten</h3>
-                        </div>
-                        {scheduledPushes.length > 0 ? (
+                    {/* SCHEDULED PUSHES - Only if exists */}
+                    {scheduledPushes.length > 0 && (
+                        <div className="pt-6 border-t border-white/5 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-400" /> Geplante Nachrichten</h3>
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {scheduledPushes.map((push) => (
                                     <div key={push.id} className="flex gap-4 items-center bg-zinc-900/60 p-4 rounded-2xl border border-white/5">
@@ -531,14 +536,11 @@ export default function POSPage() {
                                     </div>
                                 ))}
                             </div>
-                        ) : (
-                            <div className="p-6 border border-dashed border-zinc-800 rounded-2xl text-center text-zinc-600 text-sm">
-                                Keine geplanten Nachrichten
-                            </div>
-                        )}
+                        </div>
+                    )}
 
-                        <AutomationRulesManager slug={slug} />
-                    </div>
+                    {/* AUTOMATIONS */}
+                    <AutomationRulesManager slug={slug} />
 
                     <button onClick={handleLogout} className="mx-auto block mt-8 text-xs text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Abmelden</button>
                 </main>
@@ -579,7 +581,7 @@ export default function POSPage() {
                         </div>
                     )}
                 </AnimatePresence>
-            </div>
+            </div >
         )
     }
 
