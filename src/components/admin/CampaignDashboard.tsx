@@ -33,6 +33,9 @@ import {
     ChevronUp,
     History
 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import { getReviewStats, ReviewStats } from "@/lib/reviews"
+import { ReviewWidget } from "@/components/analytics/ReviewWidget"
 
 export interface PosCredential {
     id?: string
@@ -144,6 +147,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
     // Push History State
     const [pushHistory, setPushHistory] = useState<PushRequest[]>([])
     const [loadingPushHistory, setLoadingPushHistory] = useState(false)
+    const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null)
 
     useEffect(() => {
         if (campaignId) {
@@ -151,6 +155,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
             fetchPosCredentials()
             fetchAutomations()
             fetchPushHistory()
+            fetchReviews()
         } else {
             setLoading(false)
         }
@@ -208,6 +213,17 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
             console.error('Failed to fetch push history:', e)
         } finally {
             setLoadingPushHistory(false)
+        }
+    }
+
+    const fetchReviews = async () => {
+        if (!campaignId) return
+        try {
+            const supabase = createClient()
+            const stats = await getReviewStats(supabase, campaignId)
+            setReviewStats(stats)
+        } catch (e) {
+            console.error('Failed to fetch review stats:', e)
         }
     }
 
@@ -379,7 +395,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
             </div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
@@ -413,6 +429,9 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                         </div>
                     </div>
                 </div>
+                {reviewStats && (
+                    <ReviewWidget stats={reviewStats} />
+                )}
             </div>
 
             {/* Distribution Card & Message Card Grid */}
@@ -751,41 +770,43 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
             </div>
 
             {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-md mx-4 space-y-4">
-                        <h3 className="text-xl font-bold text-red-400">⚠️ Kampagne löschen?</h3>
-                        <p className="text-zinc-300">
-                            Bist du sicher, dass du <strong>"{campaign.client?.name || campaign.name}"</strong> dauerhaft löschen möchtest?
-                        </p>
-                        <p className="text-sm text-zinc-500">
-                            Dies löscht auch alle Kundenkarten. Diese Aktion kann nicht rückgängig gemacht werden.
-                        </p>
-                        <div className="flex gap-3 pt-2">
-                            <Button
-                                variant="outline"
-                                className="flex-1"
-                                onClick={() => setShowDeleteConfirm(false)}
-                                disabled={deleting}
-                            >
-                                Abbrechen
-                            </Button>
-                            <Button
-                                className="flex-1 bg-red-600 hover:bg-red-500 text-white"
-                                onClick={handleDelete}
-                                disabled={deleting}
-                            >
-                                {deleting ? (
-                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                ) : (
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                )}
-                                Endgültig löschen
-                            </Button>
+            {
+                showDeleteConfirm && (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+                        <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-md mx-4 space-y-4">
+                            <h3 className="text-xl font-bold text-red-400">⚠️ Kampagne löschen?</h3>
+                            <p className="text-zinc-300">
+                                Bist du sicher, dass du <strong>"{campaign.client?.name || campaign.name}"</strong> dauerhaft löschen möchtest?
+                            </p>
+                            <p className="text-sm text-zinc-500">
+                                Dies löscht auch alle Kundenkarten. Diese Aktion kann nicht rückgängig gemacht werden.
+                            </p>
+                            <div className="flex gap-3 pt-2">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1"
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                    disabled={deleting}
+                                >
+                                    Abbrechen
+                                </Button>
+                                <Button
+                                    className="flex-1 bg-red-600 hover:bg-red-500 text-white"
+                                    onClick={handleDelete}
+                                    disabled={deleting}
+                                >
+                                    {deleting ? (
+                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                    ) : (
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                    )}
+                                    Endgültig löschen
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Customer List */}
             <div className="space-y-4">
@@ -882,6 +903,6 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     )
 }

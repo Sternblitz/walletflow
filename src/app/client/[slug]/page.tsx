@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Users, QrCode, Activity, ArrowUpRight, TrendingUp } from "lucide-react"
+import { getReviewStats } from "@/lib/reviews"
+import { ReviewWidget } from "@/components/analytics/ReviewWidget"
 
 export default async function ClientDashboardPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params
@@ -62,6 +64,9 @@ export default async function ClientDashboardPage({ params }: { params: Promise<
         .eq('campaign_id', campaign.id)
         .gte('created_at', todayStart.toISOString())
 
+    // 4. Fetch Review Stats
+    const reviewStats = await getReviewStats(supabase, campaign.id)
+
     return (
         <div className="min-h-screen bg-zinc-950 text-white pb-20">
             {/* Header */}
@@ -117,6 +122,9 @@ export default async function ClientDashboardPage({ params }: { params: Promise<
                             {totalScans} Gesamt
                         </div>
                     </div>
+
+                    {/* Review Stats */}
+                    <ReviewWidget stats={reviewStats} />
                 </div>
 
                 {/* Recent Activity */}
