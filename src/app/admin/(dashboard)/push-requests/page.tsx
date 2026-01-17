@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Check, X, Clock, Send, AlertTriangle, ArrowLeft, Calendar, Users, PlayCircle, Edit2, Save } from 'lucide-react'
+import { Check, X, Clock, Send, AlertTriangle, ArrowLeft, Calendar, Users, PlayCircle, Edit2, Save, Zap, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -38,8 +38,14 @@ export default function PushRequestsPage() {
     const [editMessage, setEditMessage] = useState('')
     const [originalMessage, setOriginalMessage] = useState('')
 
+    // Calendar & Automations State
+    const [automations, setAutomations] = useState<any[]>([])
+    const [automationsLoading, setAutomationsLoading] = useState(true)
+    const [calendarMonth, setCalendarMonth] = useState(new Date())
+
     useEffect(() => {
         fetchRequests()
+        fetchAutomations()
     }, [])
 
     const fetchRequests = async () => {
@@ -53,6 +59,21 @@ export default function PushRequestsPage() {
             console.error('Failed to fetch:', e)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const fetchAutomations = async () => {
+        setAutomationsLoading(true)
+        try {
+            const res = await fetch('/api/automations')
+            if (res.ok) {
+                const data = await res.json()
+                setAutomations(data.rules || [])
+            }
+        } catch (e) {
+            console.error('Failed to fetch automations:', e)
+        } finally {
+            setAutomationsLoading(false)
         }
     }
 
@@ -411,6 +432,146 @@ export default function PushRequestsPage() {
                             )}
                         </tbody>
                     </table>
+                </div>
+            </section>
+
+            {/* Calendar & Automations Section */}
+            <section className="pt-8 border-t border-white/5">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                        <Calendar className="text-blue-500" /> Kalender & Automatisierungen
+                    </h2>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Mini Calendar */}
+                    <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1))} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                                <ChevronLeft size={16} />
+                            </button>
+                            <h3 className="font-bold text-white">
+                                {calendarMonth.toLocaleString('de-DE', { month: 'long', year: 'numeric' })}
+                            </h3>
+                            <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1))} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+
+                        {/* Weekday Headers */}
+                        <div className="grid grid-cols-7 gap-1 mb-2">
+                            {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => (
+                                <div key={d} className="text-center text-xs text-zinc-500 font-medium py-1">{d}</div>
+                            ))}
+                        </div>
+
+                        {/* Calendar Days */}
+                        <div className="grid grid-cols-7 gap-1">
+                            {(() => {
+                                const year = calendarMonth.getFullYear()
+                                const month = calendarMonth.getMonth()
+                                const firstDay = new Date(year, month, 1)
+                                const lastDay = new Date(year, month + 1, 0)
+                                const startOffset = (firstDay.getDay() + 6) % 7 // Monday = 0
+                                const days = []
+
+                                // Empty cells for offset
+                                for (let i = 0; i < startOffset; i++) {
+                                    days.push(<div key={`empty-${i}`} />)
+                                }
+
+                                // Calendar days
+                                for (let d = 1; d <= lastDay.getDate(); d++) {
+                                    const date = new Date(year, month, d)
+                                    const dayOfWeek = date.getDay()
+                                    const isToday = new Date().toDateString() === date.toDateString()
+
+                                    // Check for scheduled pushes on this day
+                                    const dayPushes = scheduledRequests.filter(r => {
+                                        if (!r.scheduled_at) return false
+                                        const pushDate = new Date(r.scheduled_at)
+                                        return pushDate.getFullYear() === year && pushDate.getMonth() === month && pushDate.getDate() === d
+                                    })
+
+                                    // Check for weekday automations
+                                    const hasWeekdayAutomation = automations.some(a => {
+                                        if (a.rule_type !== 'weekday_schedule' || !a.is_enabled) return false
+                                        const days = a.config?.days || []
+                                        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+                                        return days.includes(dayNames[dayOfWeek])
+                                    })
+
+                                    days.push(
+                                        <div
+                                            key={d}
+                                            className={`relative p-2 text-center rounded-lg text-sm transition-colors
+                                                ${isToday ? 'bg-emerald-500/20 text-emerald-400 font-bold' : 'hover:bg-white/5'}
+                                                ${dayPushes.length > 0 ? 'ring-2 ring-blue-500/50' : ''}
+                                            `}
+                                        >
+                                            {d}
+                                            {(dayPushes.length > 0 || hasWeekdayAutomation) && (
+                                                <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+                                                    {dayPushes.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                                                    {hasWeekdayAutomation && <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                }
+                                return days
+                            })()}
+                        </div>
+
+                        {/* Legend */}
+                        <div className="flex gap-4 mt-4 pt-4 border-t border-white/5 text-xs text-zinc-500">
+                            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" /> Geplante Nachrichten</span>
+                            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Automatisierungen</span>
+                        </div>
+                    </div>
+
+                    {/* Automations List */}
+                    <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6">
+                        <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                            <Zap size={18} className="text-yellow-500" /> Aktive Automatisierungen
+                        </h3>
+                        {automationsLoading ? (
+                            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-yellow-500" /></div>
+                        ) : automations.filter(a => a.is_enabled).length === 0 ? (
+                            <div className="p-6 border border-dashed border-zinc-800 rounded-xl text-center text-zinc-600 text-sm">
+                                Keine aktiven Automatisierungen
+                            </div>
+                        ) : (
+                            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                                {automations.filter(a => a.is_enabled).map(rule => {
+                                    const typeConfig: Record<string, { icon: string; label: string; color: string }> = {
+                                        birthday: { icon: '🎂', label: 'Geburtstag', color: 'text-pink-400' },
+                                        weekday_schedule: { icon: '📅', label: 'Wochentag', color: 'text-blue-400' },
+                                        inactivity: { icon: '👋', label: 'Inaktivität', color: 'text-amber-400' },
+                                        custom: { icon: '⚡', label: 'Benutzerdefiniert', color: 'text-purple-400' },
+                                    }
+                                    const type = typeConfig[rule.rule_type] || typeConfig.custom
+
+                                    return (
+                                        <div key={rule.id} className="flex items-center gap-3 p-3 bg-black/30 rounded-xl border border-white/5">
+                                            <span className="text-xl">{type.icon}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-white truncate">{rule.name}</p>
+                                                <p className="text-xs text-zinc-500 truncate">
+                                                    {rule.rule_type === 'weekday_schedule' && rule.config?.days?.length > 0 && (
+                                                        <>Jeden {rule.config.days.map((d: string) => d.charAt(0).toUpperCase() + d.slice(1, 2)).join(', ')}</>
+                                                    )}
+                                                    {rule.rule_type === 'birthday' && 'Automatisch an Geburtstagen'}
+                                                    {rule.rule_type === 'inactivity' && `Nach ${rule.config?.days_inactive || 7} Tagen Inaktivität`}
+                                                </p>
+                                            </div>
+                                            <span className={`text-xs font-bold ${type.color}`}>{type.label}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </section>
 

@@ -6,20 +6,48 @@ import {
     Zap, Camera, Users, ChevronRight, Send, X, Sparkles, Clock,
     Calendar, Trophy, Target, Bell, Check, RotateCcw, Cake, Mail,
     Phone, BarChart3, Star, TrendingUp, PieChart as PieChartIcon,
-    Settings, LogOut, ArrowRight, Sun, CloudRain, Flame, Crown, AlertTriangle, Layers
+    Settings, LogOut, ArrowRight, Crown, AlertTriangle, Layers, Gift
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'sonner'
 import { ActivityChart } from '@/components/app/POSCharts'
 import { Background } from '@/components/app/Background'
 import { AutomationRulesManager } from '@/components/app/AutomationRulesManager'
-import { ThemeToggle } from '@/components/app/ThemeToggle'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { getReviewStats, ReviewStats } from "@/lib/reviews"
 import { ReviewWidget } from "@/components/analytics/ReviewWidget"
 
 type Role = 'none' | 'staff' | 'chef'
 type Mode = 'idle' | 'camera' | 'result'
+
+// Helper: Format birthday as "15. März" (day first, never year)
+function formatBirthday(dateStr: string | null | undefined): string {
+    if (!dateStr) return ''
+    try {
+        const date = new Date(dateStr)
+        const day = date.getDate()
+        const month = date.toLocaleString('de-DE', { month: 'long' })
+        return `${day}. ${month}`
+    } catch {
+        return ''
+    }
+}
+
+// Helper: Format last scan
+function formatLastScan(dateStr: string | null | undefined): string {
+    if (!dateStr) return 'Noch nie'
+    try {
+        const date = new Date(dateStr)
+        return date.toLocaleString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+    } catch {
+        return 'Noch nie'
+    }
+}
 
 export default function POSPage() {
     const params = useParams()
@@ -43,11 +71,11 @@ export default function POSPage() {
 
     // Dashboard
     const [stats, setStats] = useState<any>(null)
+    const [statsLoading, setStatsLoading] = useState(false)
     const [statsRange, setStatsRange] = useState<'24h' | '7d' | '30d'>('7d')
     const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null)
     const [customers, setCustomers] = useState<any[]>([])
     const [customersLoading, setCustomersLoading] = useState(false)
-    const [customersRange, setCustomersRange] = useState<'24h' | '7d' | '30d' | 'all'>('all')
     const [view, setView] = useState<'scanner' | 'dashboard' | 'customers'>('scanner')
     const [greeting, setGreeting] = useState('')
 
@@ -72,20 +100,18 @@ export default function POSPage() {
     }, [slug])
 
     useEffect(() => {
-        if (role === 'chef' && view === 'dashboard') {
+        if (role === 'chef' && view === 'dashboard' && campaignData?.campaign?.id) {
             loadStats()
-            if (campaignData?.campaign?.id) {
-                loadReviews()
-                loadScheduledPushes()
-            }
+            loadReviews()
+            loadScheduledPushes()
         }
     }, [role, view, campaignData, statsRange])
 
     useEffect(() => {
-        if (role === 'chef' && view === 'customers') {
+        if (role === 'chef' && view === 'customers' && campaignData?.campaign?.id) {
             loadCustomers()
         }
-    }, [role, view, customersRange])
+    }, [role, view, campaignData])
 
     const loadCampaignData = async () => {
         try {
@@ -97,11 +123,18 @@ export default function POSPage() {
     }
 
     const loadStats = async () => {
+        if (!campaignData?.campaign?.id) return
+        setStatsLoading(true)
         try {
-            const res = await fetch(`/api/app/stats?slug=${slug}&range=${statsRange}`)
-            if (res.ok) setStats(await res.json())
+            const res = await fetch(`/api/campaign/${campaignData.campaign.id}/stats?period=${statsRange}`)
+            if (res.ok) {
+                const data = await res.json()
+                setStats(data)
+            }
         } catch (e) {
             console.error('Failed to load stats:', e)
+        } finally {
+            setStatsLoading(false)
         }
     }
 
@@ -120,9 +153,10 @@ export default function POSPage() {
     }
 
     const loadCustomers = async () => {
+        if (!campaignData?.campaign?.id) return
         setCustomersLoading(true)
         try {
-            const res = await fetch(`/api/app/customers?slug=${slug}&range=${customersRange}`)
+            const res = await fetch(`/api/campaign/${campaignData.campaign.id}/customers`)
             if (res.ok) {
                 const data = await res.json()
                 setCustomers(data.customers || [])
@@ -184,7 +218,7 @@ export default function POSPage() {
     }
 
     // ===============================================
-    // SCANNER (RESTORED)
+    // SCANNER
     // ===============================================
 
     useEffect(() => {
@@ -252,7 +286,6 @@ export default function POSPage() {
             setError('Netzwerkfehler')
             setMode('idle')
         } finally {
-            // Prevent multiple scans
             setTimeout(() => { isProcessing.current = false }, 2000)
         }
     }
@@ -304,14 +337,12 @@ export default function POSPage() {
     }
 
     // ===============================================
-    // RENDER
+    // RENDER: LOGIN
     // ===============================================
 
     if (role === 'none') {
-        // ... Login Screen ...
         return (
-            <div className="min-h-screen relative flex flex-col items-center justify-center p-6 overflow-hidden bg-background text-foreground transition-colors duration-500">
-                <div className="absolute top-4 right-4 z-50"><ThemeToggle /></div>
+            <div className="min-h-screen relative flex flex-col items-center justify-center p-6 overflow-hidden bg-black text-white">
                 <Background />
                 <div className="relative z-10 w-full max-w-sm space-y-8 animate-in fade-in zoom-in duration-500">
                     <div className="text-center space-y-4">
@@ -323,21 +354,22 @@ export default function POSPage() {
                             <p className="text-emerald-500 font-medium mt-1 uppercase tracking-widest text-xs">{slug}</p>
                         </div>
                     </div>
-                    <div className="bg-white/50 dark:bg-black/30 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-3xl p-8 shadow-2xl">
+                    <div className="bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
                         <form onSubmit={handlePinSubmit} className="space-y-6">
                             <div>
-                                <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-3 text-center">Zugangspin eingeben</label>
+                                <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-3 text-center">Zugangspin eingeben</label>
                                 <input
                                     type="password" inputMode="numeric" pattern="[0-9]*" maxLength={6}
                                     value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
                                     placeholder="••••"
-                                    className="w-full px-4 py-4 bg-transparent border-2 border-dashed border-black/10 dark:border-white/20 rounded-xl text-center text-3xl tracking-[0.6em] placeholder:tracking-normal focus:outline-none focus:border-emerald-500 focus:ring-0 transition-all font-mono"
+                                    className="w-full px-4 py-4 bg-transparent border-2 border-dashed border-white/20 rounded-xl text-center text-3xl tracking-[0.6em] placeholder:tracking-normal focus:outline-none focus:border-emerald-500 focus:ring-0 transition-all font-mono"
                                     autoFocus
                                 />
                             </div>
+                            {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
                             <button
                                 type="submit" disabled={pin.length < 4}
-                                className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white rounded-xl font-bold text-lg shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
+                                className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-400 text-white rounded-xl font-bold text-lg shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
                             >
                                 Anmelden
                             </button>
@@ -348,14 +380,19 @@ export default function POSPage() {
         )
     }
 
+    // ===============================================
+    // RENDER: CHEF DASHBOARD
+    // ===============================================
+
     if (role === 'chef' && view === 'dashboard') {
-        const rangeLabels: Record<string, string> = { '24h': 'Letzte 24 Stunden', '7d': 'Letzte 7 Tage', '30d': 'Letzte 30 Tage' }
+        const rangeLabels: Record<string, string> = { '24h': '24h', '7d': '7 Tage', '30d': '30 Tage' }
+        const loyalty = stats?.loyalty
 
         return (
-            <div className="dark min-h-screen bg-black text-foreground flex flex-col relative overflow-hidden transition-colors duration-500">
+            <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
                 <Background />
 
-                {/* Header: Clean & Minimal */}
+                {/* Header */}
                 <header className="relative z-10 px-6 py-4 flex items-center justify-between backdrop-blur-md bg-black/40 border-b border-white/5 sticky top-0">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
@@ -363,149 +400,150 @@ export default function POSPage() {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold leading-tight tracking-tight">Dashboard</h1>
-                            <p className="text-xs text-muted-foreground font-medium">{greeting}, Chef 👋</p>
+                            <p className="text-xs text-zinc-500 font-medium">{greeting}, Chef 👋</p>
                         </div>
                     </div>
-                    {/* Range Selector in Header */}
+                    {/* Time Range Selector */}
                     <div className="flex bg-zinc-900/80 border border-white/10 rounded-lg p-1">
                         {(['24h', '7d', '30d'] as const).map(r => (
-                            <button key={r} onClick={() => setStatsRange(r)} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsRange === r ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/50' : 'text-zinc-500 hover:text-white'}`}>{rangeLabels[r].replace('Letzte ', '')}</button>
+                            <button key={r} onClick={() => setStatsRange(r)} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsRange === r ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/50' : 'text-zinc-500 hover:text-white'}`}>{rangeLabels[r]}</button>
                         ))}
                     </div>
                 </header>
 
-                <main className="relative z-10 flex-1 p-6 overflow-y-auto w-full max-w-7xl mx-auto space-y-6 custom-scrollbar pb-32">
+                <main className="relative z-10 flex-1 p-6 overflow-y-auto w-full max-w-7xl mx-auto space-y-6 pb-32">
 
-                    {/* ROW 1: KEY STATS (Professional Bento) */}
+                    {/* LOYALTY SCORE - ALWAYS POSITIVE */}
+                    {loyalty && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600/20 via-teal-600/10 to-cyan-600/20 border border-emerald-500/20 p-6"
+                        >
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
+                            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                                        <Crown className="w-8 h-8 text-white" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-3xl font-black text-white">{loyalty.score}%</span>
+                                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full flex items-center gap-1">
+                                                <TrendingUp size={12} /> Steigend
+                                            </span>
+                                        </div>
+                                        <p className="text-emerald-100/80 text-sm font-medium">{loyalty.message}</p>
+                                    </div>
+                                </div>
+                                {/* Milestones */}
+                                {loyalty.milestones?.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {loyalty.milestones.slice(0, 3).map((m: string, i: number) => (
+                                            <span key={i} className="px-3 py-1.5 bg-white/10 backdrop-blur-sm text-white text-xs font-bold rounded-full border border-white/10">
+                                                {m}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            {/* Progress Bar */}
+                            <div className="mt-4 h-2 bg-black/30 rounded-full overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${loyalty.score}%` }}
+                                    transition={{ duration: 1, ease: "easeOut" }}
+                                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"
+                                />
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* KEY STATS */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <StatCard label="Gesamt Stempel" value={stats?.summary?.stamps || 0} icon={<Zap size={18} />} color="emerald" trend={null} />
-                        <StatCard label="Einlösungen" value={stats?.summary?.redemptions || 0} icon={<Trophy size={18} />} color="purple" trend={null} />
-                        <StatCard label="Neue Kunden" value={stats?.summary?.newPasses || 0} icon={<Users size={18} />} color="blue" trend={"+12%"} />
-                        <StatCard label="Aktive Pässe" value={stats?.summary?.totalInstalled || 0} icon={<Check size={18} />} color="zinc" trend={null} />
+                        <StatCard label="Stempel" value={stats?.stats?.stamps || 0} icon={<Zap size={18} />} color="emerald" />
+                        <StatCard label="Einlösungen" value={stats?.stats?.redemptions || 0} icon={<Gift size={18} />} color="purple" />
+                        <StatCard label="Neue Kunden" value={stats?.stats?.newPasses || 0} icon={<Users size={18} />} color="blue" />
+                        <StatCard label="Aktive Pässe" value={stats?.stats?.totalPasses || 0} icon={<Check size={18} />} color="zinc" />
                     </div>
 
-                    {/* ROW 2: COMMAND CENTER (Chart + Actions) */}
+                    {/* CHART + ACTIONS */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                        {/* LEFT: ACTIVITY CHART (2/3 width) */}
-                        <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-sm min-h-[350px]">
+                        {/* Activity Chart */}
+                        <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-sm min-h-[300px]">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-lg text-white flex items-center gap-2"><BarChart3 size={20} className="text-emerald-500" /> Entwicklung</h3>
-                                <div className="text-xs font-mono text-zinc-500">{rangeLabels[statsRange]}</div>
+                                <h3 className="font-bold text-lg text-white flex items-center gap-2"><BarChart3 size={20} className="text-emerald-500" /> Aktivität</h3>
+                                <span className="text-xs font-mono text-zinc-500">{rangeLabels[statsRange]}</span>
                             </div>
                             <div className="flex-1 w-full">
-                                <ActivityChart data={stats?.history || []} />
+                                {statsLoading ? (
+                                    <div className="h-full flex items-center justify-center">
+                                        <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+                                    </div>
+                                ) : (
+                                    <ActivityChart data={stats?.chartData || []} />
+                                )}
                             </div>
                         </div>
 
-                        {/* RIGHT: ACTION PANEL (1/3 width) */}
-                        <div className="lg:col-span-1 flex flex-col gap-4 h-full">
-                            {/* Primary Action: PUSH */}
-                            <button onClick={() => setShowPushModal(true)} className="flex-1 relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 transition-all shadow-lg shadow-emerald-900/20 group text-left p-6 flex flex-col justify-between min-h-[160px]">
+                        {/* Actions */}
+                        <div className="lg:col-span-1 flex flex-col gap-4">
+                            <button onClick={() => setShowPushModal(true)} className="flex-1 relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 transition-all shadow-lg shadow-emerald-900/20 group text-left p-6 flex flex-col justify-between min-h-[140px]">
                                 <div className="absolute top-0 right-0 p-24 bg-white/10 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:bg-white/20 transition-all" />
                                 <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl w-fit relative z-10 group-hover:scale-110 transition-transform">
                                     <Send className="w-6 h-6 text-white" />
                                 </div>
                                 <div className="relative z-10">
-                                    <h3 className="text-2xl font-bold text-white mb-1">Push Senden</h3>
+                                    <h3 className="text-xl font-bold text-white">Push Senden</h3>
                                     <div className="flex items-center gap-2 text-emerald-100 text-xs font-medium opacity-80 mt-1">
                                         <Users size={14} /> <span>Alle Kunden erreichen</span>
                                     </div>
                                 </div>
-                                <div className="absolute bottom-6 right-6 text-white/30 group-hover:translate-x-1 transition-transform"><ChevronRight size={24} /></div>
                             </button>
 
-                            {/* Secondary Actions Grid */}
-                            <div className="grid grid-cols-2 gap-4 h-[140px]">
-                                <button onClick={() => setView('scanner')} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-3xl flex flex-col items-center justify-center gap-3 text-zinc-400 hover:text-white transition-all group hover:border-emerald-500/30">
-                                    <div className="p-3 rounded-xl bg-zinc-900/80 group-hover:bg-emerald-500/20 group-hover:text-emerald-500 transition-colors shadow-lg"><Camera size={22} /></div>
-                                    <span className="text-xs font-bold uppercase tracking-wider">Scanner</span>
+                            <div className="grid grid-cols-2 gap-4 h-[100px]">
+                                <button onClick={() => setView('scanner')} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-emerald-500/30">
+                                    <Camera size={20} className="group-hover:text-emerald-500 transition-colors" />
+                                    <span className="text-xs font-bold">Scanner</span>
                                 </button>
-                                <button onClick={() => setView('customers')} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-3xl flex flex-col items-center justify-center gap-3 text-zinc-400 hover:text-white transition-all group hover:border-blue-500/30">
-                                    <div className="p-3 rounded-xl bg-zinc-900/80 group-hover:bg-blue-500/20 group-hover:text-blue-500 transition-colors shadow-lg"><Users size={22} /></div>
-                                    <span className="text-xs font-bold uppercase tracking-wider">Kunden</span>
+                                <button onClick={() => setView('customers')} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-blue-500/30">
+                                    <Users size={20} className="group-hover:text-blue-500 transition-colors" />
+                                    <span className="text-xs font-bold">Kunden</span>
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* ROW 3: FEED & REVIEWS */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Feed */}
-                        <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 h-[400px] flex flex-col">
-                            <h3 className="font-bold text-lg text-white mb-4 flex items-center gap-2"><Bell size={20} className="text-blue-500" /> Letzte Aktivitäten</h3>
-                            <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-2">
-                                {stats?.recentActivity?.length > 0 ? (
-                                    stats.recentActivity.map((activity: any) => (
-                                        <div key={activity.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activity.action === 'redeem' ? 'bg-purple-500/20 text-purple-500' : 'bg-emerald-500/20 text-emerald-500'}`}>
-                                                    {activity.action === 'redeem' ? <Trophy size={16} /> : <Zap size={16} />}
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">{activity.action === 'redeem' ? 'Prämie eingelöst' : 'Stempel gesammelt'}</p>
-                                                    <p className="text-xs text-zinc-500 mt-0.5 font-mono">{new Date(activity.created_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr</p>
-                                                </div>
-                                            </div>
-                                            <div className="w-2 h-2 rounded-full bg-emerald-500/50"></div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="h-full flex items-center justify-center text-zinc-600 text-sm">Keine Aktivitäten</div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Reviews */}
-                        <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 h-[400px] relative overflow-hidden flex flex-col">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-bold text-lg text-white flex items-center gap-2"><Star size={20} className="text-yellow-500" /> Bewertungen</h3>
-                                <div className="px-2 py-1 rounded-lg bg-yellow-500/10 text-yellow-500 text-xs font-bold">Google</div>
-                            </div>
-                            {reviewStats ? (
-                                <div className="flex-1">
-                                    <ReviewWidget stats={reviewStats} variant="card" />
-                                </div>
-                            ) : (
-                                <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm"><div className="w-6 h-6 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin" /></div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* ROW 4: AUTOMATIONS FOOTER */}
-                    <div className="pt-8 border-t border-white/5 space-y-6">
+                    {/* SCHEDULED PUSHES & AUTOMATIONS */}
+                    <div className="pt-6 border-t border-white/5 space-y-4">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold flex items-center gap-2"><Layers className="w-5 h-5 text-purple-400" /> Automatisierung</h3>
-                            <div className="flex items-center gap-2 text-xs font-medium text-zinc-500">
-                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /> System aktiv
-                            </div>
+                            <h3 className="text-lg font-bold flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-400" /> Geplante Nachrichten</h3>
                         </div>
-
-                        {/* Planned Pushes */}
-                        {scheduledPushes.length > 0 && (
+                        {scheduledPushes.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {scheduledPushes.map((push) => (
-                                    <div key={push.id} className="flex gap-4 items-center bg-zinc-900/60 p-4 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+                                    <div key={push.id} className="flex gap-4 items-center bg-zinc-900/60 p-4 rounded-2xl border border-white/5">
                                         <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 shrink-0"><Clock className="w-5 h-5" /></div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-white truncate">{push.message}</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-xs text-zinc-500 bg-black/50 px-2 py-0.5 rounded-md font-mono">{new Date(push.scheduled_at).toLocaleDateString('de-DE')}</span>
-                                                <span className="text-xs text-zinc-500 font-mono">{new Date(push.scheduled_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span>
-                                            </div>
+                                            <p className="text-xs text-zinc-500 font-mono mt-1">{new Date(push.scheduled_at).toLocaleString('de-DE')}</p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
+                        ) : (
+                            <div className="p-6 border border-dashed border-zinc-800 rounded-2xl text-center text-zinc-600 text-sm">
+                                Keine geplanten Nachrichten
+                            </div>
                         )}
+
                         <AutomationRulesManager slug={slug} />
                     </div>
 
-                    <button onClick={handleLogout} className="mx-auto block mt-12 mb-8 text-xs text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Abmelden</button>
-                    <div className="h-10"></div>
+                    <button onClick={handleLogout} className="mx-auto block mt-8 text-xs text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Abmelden</button>
                 </main>
 
-                {/* PUSH MODAL (Unchanged Logic, just ensuring it's here) */}
+                {/* PUSH MODAL */}
                 <AnimatePresence>
                     {showPushModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
@@ -520,11 +558,11 @@ export default function POSPage() {
                                     <div className="grid grid-cols-2 gap-4 mb-6 relative z-10">
                                         <button onClick={() => setPushMode('now')} className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${pushMode === 'now' ? 'bg-emerald-500/20 border-emerald-500 text-white' : 'bg-zinc-900/50 border-white/5 text-zinc-500 hover:bg-white/5'}`}>
                                             <Zap className={pushMode === 'now' ? 'text-emerald-500' : 'text-zinc-600'} />
-                                            <span className="text-sm font-bold">Sofort</span>
+                                            <span className="text-sm font-bold">⚡ Jetzt senden</span>
                                         </button>
                                         <button onClick={() => setPushMode('schedule')} className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${pushMode === 'schedule' ? 'bg-blue-500/20 border-blue-500 text-white' : 'bg-zinc-900/50 border-white/5 text-zinc-500 hover:bg-white/5'}`}>
                                             <Calendar className={pushMode === 'schedule' ? 'text-blue-500' : 'text-zinc-600'} />
-                                            <span className="text-sm font-bold">Planen</span>
+                                            <span className="text-sm font-bold">📅 Später planen</span>
                                         </button>
                                     </div>
 
@@ -534,7 +572,7 @@ export default function POSPage() {
                                             <div className="absolute bottom-3 right-3 text-xs text-zinc-600 font-mono">{pushMessage.length} Zeichen</div>
                                         </div>
                                         {pushMode === 'schedule' && <input type="datetime-local" value={pushScheduleTime} onChange={(e) => setPushScheduleTime(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-blue-500/50 font-mono text-sm" />}
-                                        <button type="submit" disabled={pushLoading || !pushMessage.trim()} className="w-full py-4 bg-white text-black rounded-xl font-bold hover:bg-zinc-200 transition-colors disabled:opacity-50 shadow-lg shadow-white/5">{pushLoading ? 'Wird gesendet...' : (pushMode === 'now' ? 'Jetzt absenden' : 'Einplanen')}</button>
+                                        <button type="submit" disabled={pushLoading || !pushMessage.trim()} className="w-full py-4 bg-white text-black rounded-xl font-bold hover:bg-zinc-200 transition-colors disabled:opacity-50 shadow-lg shadow-white/5">{pushLoading ? 'Wird gesendet...' : (pushMode === 'now' ? '⚡ Jetzt absenden' : '📅 Einplanen')}</button>
                                     </form>
                                 </div>
                             </motion.div>
@@ -545,43 +583,77 @@ export default function POSPage() {
         )
     }
 
-    // CUSTOMERS VIEW
+    // ===============================================
+    // RENDER: CUSTOMERS VIEW
+    // ===============================================
+
     if (role === 'chef' && view === 'customers') {
         return (
-            <div className="dark min-h-screen bg-black text-foreground flex flex-col relative w-full">
+            <div className="min-h-screen bg-black text-white flex flex-col relative w-full">
                 <Background />
                 <header className="relative z-10 p-6 flex items-center justify-between border-b border-white/5 bg-black/50 backdrop-blur-md">
                     <h1 className="text-xl font-bold flex items-center gap-2"><Users className="text-cyan-500" /> Kundenliste</h1>
                     <button onClick={() => setView('dashboard')} className="p-2 bg-zinc-800 rounded-full hover:bg-zinc-700 transition-colors"><X size={16} /></button>
                 </header>
-                <main className="relative z-10 flex-1 p-6 overflow-y-auto max-w-4xl mx-auto w-full custom-scrollbar">
-                    <div className="flex gap-2 mb-6">
-                        {(['all', '24h', '7d', '30d'] as const).map(r => (
-                            <button key={r} onClick={() => setCustomersRange(r)} className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${customersRange === r ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400' : 'bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}>{r === 'all' ? 'Alle' : r}</button>
-                        ))}
-                    </div>
-                    {customersLoading ? <div className="text-center py-20"><div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto" /></div> :
-                        customers.length === 0 ? <div className="text-center py-20 text-muted-foreground">Keine Kunden gefunden</div> :
-                            <div className="space-y-3">{customers.map((c: any) => (
-                                <div key={c.id} className="p-4 bg-zinc-900/50 border border-white/5 rounded-2xl flex justify-between items-center hover:bg-zinc-900/80 transition-colors">
-                                    <div>
-                                        <h3 className="font-semibold text-white">{c.name || `Kunde #${c.customerNumber || '???'}`}</h3>
-                                        <div className="flex gap-2 text-xs text-zinc-500 mt-1"><span>{c.platform === 'apple' ? 'iOS' : 'Android'}</span>{c.lastActivity && <span>• {new Date(c.lastActivity).toLocaleDateString()}</span>}</div>
+                <main className="relative z-10 flex-1 p-6 overflow-y-auto max-w-4xl mx-auto w-full">
+                    {customersLoading ? (
+                        <div className="text-center py-20"><div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto" /></div>
+                    ) : customers.length === 0 ? (
+                        <div className="text-center py-20 text-zinc-500">Keine Kunden gefunden</div>
+                    ) : (
+                        <div className="space-y-3">
+                            {customers.map((c: any) => (
+                                <div key={c.id} className={`p-4 bg-zinc-900/50 border border-white/5 rounded-2xl hover:bg-zinc-900/80 transition-colors ${c.deleted_at ? 'opacity-50' : ''}`}>
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex-1 min-w-0">
+                                            {/* Name or Customer Number */}
+                                            <h3 className={`font-semibold ${c.deleted_at ? 'text-zinc-500 line-through' : 'text-white'}`}>
+                                                {c.customer_name || `Kunde #${c.current_state?.customer_number || c.serial_number?.slice(0, 6)}`}
+                                            </h3>
+
+                                            {/* Contact Info - Only show what exists */}
+                                            <div className="flex flex-wrap gap-3 mt-2 text-xs text-zinc-500">
+                                                {c.customer_email && (
+                                                    <span className="flex items-center gap-1"><Mail size={12} /> {c.customer_email}</span>
+                                                )}
+                                                {c.customer_phone && (
+                                                    <span className="flex items-center gap-1"><Phone size={12} /> {c.customer_phone}</span>
+                                                )}
+                                                {c.customer_birthday && (
+                                                    <span className="flex items-center gap-1"><Cake size={12} /> {formatBirthday(c.customer_birthday)}</span>
+                                                )}
+                                            </div>
+
+                                            {/* Last Scan & Platform */}
+                                            <div className="flex items-center gap-3 mt-2 text-xs text-zinc-600">
+                                                <span>{c.wallet_type === 'google' || c.is_installed_on_android ? '🤖 Android' : '🍎 iOS'}</span>
+                                                <span>• Letzter Scan: {formatLastScan(c.last_scan_at)}</span>
+                                                {c.deleted_at && <span className="text-red-400">• Gelöscht</span>}
+                                            </div>
+                                        </div>
+
+                                        {/* Stamps/Points */}
+                                        <div className="text-lg font-bold text-emerald-500 flex items-center gap-1 shrink-0">
+                                            <Zap size={14} /> {c.current_state?.stamps || 0}/{c.current_state?.max_stamps || 10}
+                                        </div>
                                     </div>
-                                    <div className="text-lg font-bold text-emerald-500 flex items-center gap-1"><Zap size={14} /> {c.stamps}/{c.maxStamps}</div>
                                 </div>
-                            ))}</div>}
+                            ))}
+                        </div>
+                    )}
                 </main>
             </div>
         )
     }
 
-    // SCANNER VIEW
+    // ===============================================
+    // RENDER: SCANNER VIEW
+    // ===============================================
+
     return (
         <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
             <div className="absolute top-4 right-4 z-50 flex gap-2">
                 {role === 'chef' && <button onClick={() => setView('dashboard')} className="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 hover:bg-white/20 transition-all"><ArrowRight className="w-5 h-5" /></button>}
-                <ThemeToggle />
             </div>
             <Background />
             <main className="flex-1 flex flex-col items-center justify-center p-6 relative z-10 w-full max-w-md mx-auto">
@@ -619,18 +691,20 @@ export default function POSPage() {
     )
 }
 
-function StatCard({ label, value, icon, color, trend }: any) {
-    const colors: any = { emerald: 'text-emerald-500 bg-emerald-500/10', purple: 'text-purple-500 bg-purple-500/10', blue: 'text-blue-500 bg-blue-500/10', zinc: 'text-zinc-400 bg-zinc-800' }
+function StatCard({ label, value, icon, color }: { label: string; value: number; icon: React.ReactNode; color: string }) {
+    const colors: Record<string, string> = {
+        emerald: 'text-emerald-500 bg-emerald-500/10',
+        purple: 'text-purple-500 bg-purple-500/10',
+        blue: 'text-blue-500 bg-blue-500/10',
+        zinc: 'text-zinc-400 bg-zinc-800'
+    }
     return (
         <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-5 relative overflow-hidden group hover:bg-zinc-900/60 transition-all backdrop-blur-sm">
             <div className="flex justify-between items-start mb-3">
                 <span className="text-zinc-500 text-xs font-bold uppercase tracking-wider">{label}</span>
                 <div className={`p-2 rounded-lg ${colors[color]} group-hover:scale-110 transition-transform`}>{icon}</div>
             </div>
-            <div className="flex items-baseline gap-2">
-                <div className="text-3xl font-bold text-white">{value}</div>
-                {trend && <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">{trend}</span>}
-            </div>
+            <div className="text-3xl font-bold text-white">{value}</div>
         </div>
     )
 }

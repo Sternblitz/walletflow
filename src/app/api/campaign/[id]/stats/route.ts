@@ -1,0 +1,214 @@
+import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
+
+/**
+ * GET /api/campaign/[id]/stats
+ * 
+ * Returns time-based statistics for a campaign
+ * Query params:
+ *   - period: '24h' | '7d' | '30d' (default: '7d')
+ * 
+ * Response:
+ *   - stamps: number of stamps added
+ *   - redemptions: number of redemptions
+ *   - newPasses: new passes created
+ *   - activeCustomers: customers who scanned in period
+ *   - chartData: daily breakdown for charts
+ *   - loyalty: loyalty score and message (always positive!)
+ */
+export async function GET(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const { id: campaignId } = await params
+    const { searchParams } = new URL(req.url)
+    const period = searchParams.get('period') || '7d'
+
+    const supabase = await createClient()
+
+    // Calculate date range
+    const now = new Date()
+    let startDate: Date
+
+    switch (period) {
+        case '24h':
+            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+            break
+        case '30d':
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+            break
+        case '7d':
+        default:
+            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    }
+
+    try {
+        // 1. Get scan statistics for the period
+        const { data: scans, error: scansError } = await supabase
+            .from('scans')
+            .select('id, action_type, created_at, delta_value')
+            .eq('campaign_id', campaignId)
+            .gte('created_at', startDate.toISOString())
+            .order('created_at', { ascending: true })
+
+        if (scansError) {
+            console.error('Error fetching scans:', scansError)
+            return NextResponse.json({ error: 'Failed to fetch scan data' }, { status: 500 })
+        }
+
+        // 2. Get new passes for the period
+        const { count: newPassesCount, error: passesError } = await supabase
+            .from('passes')
+            .select('id', { count: 'exact', head: true })
+            .eq('campaign_id', campaignId)
+            .gte('created_at', startDate.toISOString())
+            .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
+
+        if (passesError) {
+            console.error('Error fetching passes:', passesError)
+        }
+
+        // 3. Get total passes for loyalty calculation
+        const { count: totalPasses } = await supabase
+            .from('passes')
+            .select('id', { count: 'exact', head: true })
+            .eq('campaign_id', campaignId)
+            .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
+
+        // 4. Calculate stats from scans
+        const stamps = scans?.filter(s => s.action_type === 'ADD_STAMP').length || 0
+        const redemptions = scans?.filter(s => s.action_type === 'REDEEM').length || 0
+
+        // 5. Get unique active customers (passes that were scanned)
+        const uniquePassIds = new Set(scans?.map(s => s.pass_id) || [])
+        const activeCustomers = uniquePassIds.size
+
+        // 6. Build chart data (daily breakdown)
+        const dayMs = 24 * 60 * 60 * 1000
+        const days = period === '24h' ? 1 : period === '7d' ? 7 : 30
+        const chartData: { date: string; stamps: number; redemptions: number; newPasses: number }[] = []
+
+        for (let i = days - 1; i >= 0; i--) {
+            const dayStart = new Date(now.getTime() - (i + 1) * dayMs)
+            const dayEnd = new Date(now.getTime() - i * dayMs)
+            const dateStr = dayStart.toISOString().split('T')[0]
+
+            const dayScans = scans?.filter(s => {
+                const scanDate = new Date(s.created_at)
+                return scanDate >= dayStart && scanDate < dayEnd
+            }) || []
+
+            chartData.push({
+                date: dateStr,
+                stamps: dayScans.filter(s => s.action_type === 'ADD_STAMP').length,
+                redemptions: dayScans.filter(s => s.action_type === 'REDEEM').length,
+                newPasses: 0 // Would need separate query per day for accurate count
+            })
+        }
+
+        // 7. Calculate Loyalty Score (ALWAYS positive!)
+        const loyalty = calculateLoyaltyScore({
+            stamps,
+            redemptions,
+            newPasses: newPassesCount || 0,
+            activeCustomers,
+            totalPasses: totalPasses || 0,
+            activeDays: chartData.filter(d => d.stamps > 0 || d.redemptions > 0).length
+        })
+
+        return NextResponse.json({
+            period,
+            stats: {
+                stamps,
+                redemptions,
+                newPasses: newPassesCount || 0,
+                activeCustomers,
+                totalPasses: totalPasses || 0
+            },
+            chartData,
+            loyalty
+        })
+
+    } catch (error) {
+        console.error('Stats API error:', error)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+}
+
+interface LoyaltyInput {
+    stamps: number
+    redemptions: number
+    newPasses: number
+    activeCustomers: number
+    totalPasses: number
+    activeDays: number
+}
+
+interface LoyaltyResult {
+    score: number
+    message: string
+    trend: 'up' // Always up!
+    milestones: string[]
+}
+
+function calculateLoyaltyScore(input: LoyaltyInput): LoyaltyResult {
+    // Base score: ALWAYS at least 50%
+    let score = 50
+
+    // Bonuses (only positive additions, never subtract)
+    score += Math.min(20, input.activeDays * 3)      // Up to 20 for active days
+    score += Math.min(15, input.stamps * 0.5)        // Up to 15 for stamps
+    score += Math.min(10, input.redemptions * 2)     // Up to 10 for redemptions
+    score += Math.min(5, input.newPasses)            // Up to 5 for new passes
+
+    // Cap at 100
+    score = Math.min(100, Math.round(score))
+
+    // Collect milestones (achievements)
+    const milestones: string[] = []
+
+    if (input.stamps >= 100) milestones.push("🎉 100 Stempel geknackt!")
+    else if (input.stamps >= 50) milestones.push("🔥 50 Stempel diese Woche!")
+    else if (input.stamps >= 20) milestones.push("⭐ 20+ Stempel gesammelt!")
+
+    if (input.activeDays >= 7) milestones.push("💪 7 Tage in Folge aktiv!")
+    else if (input.activeDays >= 5) milestones.push("🌟 5 aktive Tage!")
+
+    if (input.newPasses >= 10) milestones.push("🚀 +10 neue Kunden!")
+    else if (input.newPasses >= 5) milestones.push("📈 +5 neue Kunden!")
+
+    if (input.redemptions >= 5) milestones.push("🎁 5 Prämien eingelöst!")
+
+    // Select motivating message (always positive!)
+    let message: string
+
+    if (milestones.length >= 3) {
+        message = "Unglaublich! Du bist on fire! 🔥"
+    } else if (milestones.length >= 2) {
+        message = "Super Woche! Deine Kunden lieben es! 💫"
+    } else if (input.stamps > 0 || input.redemptions > 0) {
+        const positiveMessages = [
+            "Deine Kunden lieben es! Weiter so! 🔥",
+            "Dein Loyalty-Programm wächst! 📈",
+            "Super Fortschritt diese Woche! 💪",
+            "Die Treue deiner Kunden zahlt sich aus! ⭐"
+        ]
+        message = positiveMessages[Math.floor(Math.random() * positiveMessages.length)]
+    } else {
+        // Even when nothing happened - stay positive!
+        const encouragingMessages = [
+            "Perfekte Zeit für einen Push! 📱",
+            "Bereit für den nächsten Ansturm! 🚀",
+            "Dein System ist startklar! 💫",
+            "Nutze die ruhige Zeit für Marketing! 📣"
+        ]
+        message = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)]
+    }
+
+    return {
+        score,
+        message,
+        trend: 'up', // ALWAYS up!
+        milestones
+    }
+}

@@ -873,6 +873,16 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                                                             📱 {pass.customer_phone}
                                                         </div>
                                                     )}
+                                                    {pass.customer_birthday && (
+                                                        <div className="flex items-center gap-1.5">
+                                                            🎂 {(() => {
+                                                                try {
+                                                                    const d = new Date(pass.customer_birthday)
+                                                                    return `${d.getDate()}. ${d.toLocaleString('de-DE', { month: 'long' })}`
+                                                                } catch { return '' }
+                                                            })()}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
