@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Check, Star, ExternalLink, Send, Heart, Loader2 } from 'lucide-react'
+import { Check, Star, Send, Heart, Loader2 } from 'lucide-react'
 
 interface SuccessPageContentProps {
     slug: string
@@ -13,7 +13,7 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
     const [step, setStep] = useState<'loading' | 'success' | 'review'>('loading')
     const [selectedRating, setSelectedRating] = useState(0)
     const [hoveredRating, setHoveredRating] = useState(0)
-    const [reviewStep, setReviewStep] = useState<'rating' | 'negative' | 'positive' | 'thanks'>('rating')
+    const [reviewStep, setReviewStep] = useState<'rating' | 'negative' | 'thanks'>('rating')
     const [feedbackText, setFeedbackText] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -60,25 +60,18 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
             ...(phone && { phone }),
         })
 
-        // Small delay then trigger download
         const timer = setTimeout(() => {
             if (platform === 'android') {
                 window.location.href = `/api/pass/issue?${params.toString()}`
             } else {
-                // Apple: Download via hidden iframe
                 const iframe = document.createElement('iframe')
                 iframe.style.display = 'none'
                 iframe.src = `/api/pass/issue?${params.toString()}`
                 document.body.appendChild(iframe)
             }
 
-            // Show success state
             setStep('success')
-
-            // After 2 seconds, show review section
-            setTimeout(() => {
-                setStep('review')
-            }, 2000)
+            setTimeout(() => setStep('review'), 2000)
         }, 300)
 
         return () => clearTimeout(timer)
@@ -105,13 +98,22 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
     const handleRating = async (rating: number) => {
         setSelectedRating(rating)
         await trackEvent('rating_clicked', rating)
-        setTimeout(() => {
-            if (rating <= 3) {
-                setReviewStep('negative')
-            } else {
-                setReviewStep('positive')
-            }
-        }, 400)
+
+        // 4-5 Stars: Direct redirect to Google Reviews
+        if (rating >= 4 && campaignData?.placeId) {
+            await trackEvent('google_redirect', rating)
+            // Small delay for visual feedback then redirect
+            setTimeout(() => {
+                window.open(`https://search.google.com/local/writereview?placeid=${campaignData.placeId}`, '_blank')
+                setReviewStep('thanks')
+            }, 300)
+        } else if (rating >= 4 && !campaignData?.placeId) {
+            // No placeId configured - just say thanks
+            setTimeout(() => setReviewStep('thanks'), 300)
+        } else {
+            // 1-3 Stars: Show feedback form
+            setTimeout(() => setReviewStep('negative'), 400)
+        }
     }
 
     // Submit feedback
@@ -134,19 +136,10 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
         setIsSubmitting(false)
     }
 
-    // Google redirect
-    const handleGoogleRedirect = async () => {
-        await trackEvent('google_redirect', selectedRating)
-        if (campaignData?.placeId) {
-            window.open(`https://search.google.com/local/writereview?placeid=${campaignData.placeId}`, '_blank')
-        }
-        setReviewStep('thanks')
-    }
-
     return (
         <div className="min-h-screen bg-white flex flex-col items-center justify-start pt-16 px-6 pb-20">
 
-            {/* Confetti - always shows on success/review */}
+            {/* Confetti */}
             {step !== 'loading' && (
                 <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
                     {Array.from({ length: 50 }).map((_, i) => (
@@ -168,26 +161,29 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
             <style jsx global>{`
                 @keyframes confetti {
                     0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
-                    100% { transform: translateY(100vh) rotate(${Math.random() > 0.5 ? '' : '-'}720deg) scale(0.5); opacity: 0; }
+                    100% { transform: translateY(100vh) rotate(720deg) scale(0.5); opacity: 0; }
                 }
                 @keyframes bounce-in {
-                    0% { transform: scale(0); }
-                    50% { transform: scale(1.3); }
-                    70% { transform: scale(0.85); }
-                    100% { transform: scale(1); }
+                    0% { transform: scale(0) translateY(0); }
+                    50% { transform: scale(1.2) translateY(-10px); }
+                    70% { transform: scale(0.9) translateY(5px); }
+                    100% { transform: scale(1) translateY(0); }
+                }
+                @keyframes float {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-8px); }
                 }
                 @keyframes fade-slide-up {
                     0% { opacity: 0; transform: translateY(30px); }
                     100% { opacity: 1; transform: translateY(0); }
                 }
-                @keyframes pulse-glow {
-                    0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
-                    50% { box-shadow: 0 0 0 15px rgba(139, 92, 246, 0); }
+                @keyframes pulse-ring {
+                    0% { transform: scale(1); opacity: 0.8; }
+                    100% { transform: scale(1.4); opacity: 0; }
                 }
-                @keyframes wiggle {
-                    0%, 100% { transform: rotate(0deg); }
-                    25% { transform: rotate(-5deg); }
-                    75% { transform: rotate(5deg); }
+                @keyframes glow-pulse {
+                    0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.5), 0 0 40px rgba(139, 92, 246, 0.3); }
+                    50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.7), 0 0 60px rgba(139, 92, 246, 0.4); }
                 }
             `}</style>
 
@@ -203,12 +199,16 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
             {step !== 'loading' && (
                 <div className="text-center max-w-sm mx-auto relative z-10 w-full">
 
-                    {/* Bouncing Checkmark */}
+                    {/* Floating Bouncing Checkmark */}
                     <div
                         className="inline-flex mb-5"
-                        style={{ animation: 'bounce-in 0.6s ease-out forwards' }}
+                        style={{
+                            animation: step === 'success'
+                                ? 'bounce-in 0.6s ease-out forwards'
+                                : 'bounce-in 0.6s ease-out forwards, float 2s ease-in-out 0.6s infinite'
+                        }}
                     >
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-lg">
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-lg shadow-green-500/30">
                             <Check className="w-10 h-10 text-white" strokeWidth={3} />
                         </div>
                     </div>
@@ -228,21 +228,24 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
                         Füge sie jetzt zu deiner Wallet hinzu!
                     </p>
 
-                    {/* Review Section - Always shows after success */}
+                    {/* Review Section */}
                     {step === 'review' && (
                         <div
-                            className="bg-gradient-to-b from-violet-50 to-white rounded-3xl border-2 border-violet-100 p-6 shadow-xl"
-                            style={{ animation: 'fade-slide-up 0.6s ease-out both' }}
+                            className="relative bg-gradient-to-b from-violet-50 to-white rounded-3xl border-2 border-violet-200 p-6 shadow-xl overflow-hidden"
+                            style={{
+                                animation: 'fade-slide-up 0.6s ease-out both, glow-pulse 2s ease-in-out infinite'
+                            }}
                         >
+                            {/* Animated pulse ring behind */}
+                            <div
+                                className="absolute inset-0 rounded-3xl border-4 border-violet-400 opacity-0"
+                                style={{ animation: 'pulse-ring 2s ease-out infinite' }}
+                            />
+
                             {/* Rating Step */}
                             {reviewStep === 'rating' && (
-                                <>
-                                    <div
-                                        className="text-4xl mb-3"
-                                        style={{ animation: 'wiggle 0.5s ease-in-out' }}
-                                    >
-                                        ⭐
-                                    </div>
+                                <div className="relative z-10">
+                                    <div className="text-4xl mb-3">⭐</div>
                                     <p className="text-lg font-bold text-zinc-800 mb-1">
                                         Eine Sekunde noch?
                                     </p>
@@ -262,7 +265,7 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
                                             >
                                                 <Star
                                                     className={`w-11 h-11 transition-all duration-150 ${(hoveredRating || selectedRating) >= star
-                                                            ? 'text-amber-400 fill-amber-400 drop-shadow-md'
+                                                            ? 'text-amber-400 fill-amber-400 drop-shadow-lg'
                                                             : 'text-zinc-200'
                                                         }`}
                                                 />
@@ -271,14 +274,14 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
                                     </div>
 
                                     <p className="text-xs text-zinc-400">
-                                        Tippe auf die Sterne ✨
+                                        4-5 ⭐ = Direkt zu Google Bewertung
                                     </p>
-                                </>
+                                </div>
                             )}
 
                             {/* Negative Feedback (1-3 stars) */}
                             {reviewStep === 'negative' && (
-                                <>
+                                <div className="relative z-10">
                                     <div className="text-4xl mb-3">🙏</div>
                                     <p className="text-lg font-bold text-zinc-800 mb-2">
                                         Danke für dein Feedback!
@@ -310,43 +313,12 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
                                     >
                                         Überspringen
                                     </button>
-                                </>
-                            )}
-
-                            {/* Positive → Google (4-5 stars) */}
-                            {reviewStep === 'positive' && (
-                                <>
-                                    <div className="text-5xl mb-3">🤩</div>
-                                    <p className="text-xl font-bold text-zinc-800 mb-2">
-                                        Wow, danke!
-                                    </p>
-                                    <p className="text-sm text-zinc-600 mb-5">
-                                        Würdest du das auch auf <strong>Google</strong> teilen?<br />
-                                        <span className="text-violet-600 font-medium">Das hilft uns riesig! 🚀</span>
-                                    </p>
-
-                                    <button
-                                        onClick={handleGoogleRedirect}
-                                        className="w-full py-4 bg-gradient-to-r from-violet-600 to-fuchsia-500 hover:from-violet-700 hover:to-fuchsia-600 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-violet-400/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                                        style={{ animation: 'pulse-glow 2s ease-in-out infinite' }}
-                                    >
-                                        <Star className="w-5 h-5 fill-white" />
-                                        Auf Google bewerten
-                                        <ExternalLink className="w-4 h-4" />
-                                    </button>
-
-                                    <button
-                                        onClick={() => setReviewStep('thanks')}
-                                        className="mt-4 text-xs text-zinc-400 hover:text-zinc-600"
-                                    >
-                                        Vielleicht später
-                                    </button>
-                                </>
+                                </div>
                             )}
 
                             {/* Thank You */}
                             {reviewStep === 'thanks' && (
-                                <div style={{ animation: 'fade-slide-up 0.4s ease-out' }}>
+                                <div className="relative z-10" style={{ animation: 'fade-slide-up 0.4s ease-out' }}>
                                     <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
                                         <Heart className="w-8 h-8 text-white fill-white" />
                                     </div>
