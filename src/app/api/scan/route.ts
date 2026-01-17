@@ -22,10 +22,10 @@ export async function POST(req: NextRequest) {
 
         const supabase = await createClient()
 
-        // 1. Fetch the pass with full campaign data including design_assets
+        // 1. Fetch the pass with full campaign data including design_assets and google_place_id
         const { data: pass, error: fetchError } = await supabase
             .from('passes')
-            .select('*, campaign:campaigns(concept, config, design_assets)')
+            .select('*, campaign:campaigns(id, concept, config, design_assets, google_place_id, client:clients(name))')
             .eq('id', passId)
             .single()
 
@@ -288,7 +288,15 @@ export async function POST(req: NextRequest) {
             push: {
                 sent: pushStatus.sent,
                 errors: pushStatus.errors
-            }
+            },
+            // Review Gate data (for customer-facing popup)
+            reviewGate: pass.campaign?.google_place_id ? {
+                placeId: pass.campaign.google_place_id,
+                campaignId: pass.campaign.id,
+                businessName: pass.campaign.client?.name || 'Unbekannt',
+                logoUrl: pass.campaign.design_assets?.images?.logo?.url || null,
+                accentColor: pass.campaign.design_assets?.colors?.backgroundColor || '#8B5CF6'
+            } : null
         })
 
     } catch (e) {

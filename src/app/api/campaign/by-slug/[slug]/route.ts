@@ -34,7 +34,8 @@ export async function GET(
             is_active,
             created_at,
             config,
-            design_assets
+            design_assets,
+            google_place_id
         `)
         .eq('client_id', client.id)
         .eq('is_active', true)

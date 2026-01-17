@@ -19,6 +19,7 @@ export async function GET(
             created_at,
             config,
             design_assets,
+            google_place_id,
             client:clients(name, slug)
         `)
         .eq('id', id)

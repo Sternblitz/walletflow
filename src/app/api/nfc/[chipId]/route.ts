@@ -70,8 +70,8 @@ export async function GET(req: NextRequest, { params }: Params) {
                 const scanData = await scanRes.json()
 
                 if (scanRes.ok) {
-                    // Show success page
-                    return new NextResponse(generateSuccessHtml(scanData, chip.location_label), {
+                    // Show success page with review gate data
+                    return new NextResponse(generateSuccessHtml(scanData, chip.location_label, passId), {
                         headers: { 'Content-Type': 'text/html' }
                     })
                 }
@@ -99,13 +99,146 @@ export async function GET(req: NextRequest, { params }: Params) {
 }
 
 /**
- * Generate a success HTML page for NFC stamp
+ * Generate a success HTML page for NFC stamp with optional review popup
  */
-function generateSuccessHtml(scanData: any, locationLabel?: string): string {
+function generateSuccessHtml(scanData: any, locationLabel?: string, passId?: string): string {
     const stamps = scanData.newState?.stamps || 0
     const maxStamps = scanData.newState?.max_stamps || 10
     const celebration = scanData.celebration
     const message = scanData.message || 'Stempel hinzugefügt!'
+    const reviewGate = scanData.reviewGate
+
+    // Review popup HTML (shown if google_place_id is set)
+    const reviewPopupHtml = reviewGate ? `
+        <div id="reviewOverlay" class="review-overlay" style="display: none;">
+            <div class="review-backdrop"></div>
+            <div class="review-modal">
+                <button class="review-close" onclick="closeReview()">&times;</button>
+                <div class="review-content">
+                    ${reviewGate.logoUrl ? `<img src="${reviewGate.logoUrl}" alt="${reviewGate.businessName}" class="review-logo">` : ''}
+                    <h2 class="review-title">Danke für deinen Besuch! 🙏</h2>
+                    <p class="review-subtitle">Eine Sekunde Zeit?<br><span style="color: ${reviewGate.accentColor}">Deine Meinung bedeutet uns wirklich viel! 💜</span></p>
+                    
+                    <div class="stars-container" id="starsContainer">
+                        ${[1, 2, 3, 4, 5].map(i => `<button class="star" onclick="selectRating(${i})" data-rating="${i}">★</button>`).join('')}
+                    </div>
+                    
+                    <button class="review-skip" onclick="closeReview()">Später</button>
+                </div>
+                
+                <!-- Negative feedback (1-3 stars) -->
+                <div class="review-content" id="negativeFeedback" style="display: none;">
+                    <div class="emoji-icon">😔</div>
+                    <h2 class="review-title">Das tut uns leid!</h2>
+                    <p class="review-subtitle">Was können wir verbessern?</p>
+                    <textarea id="feedbackText" class="feedback-textarea" placeholder="Dein Feedback hilft uns... (optional)"></textarea>
+                    <button class="review-submit" onclick="submitFeedback()">Absenden</button>
+                    <button class="review-skip" onclick="closeReview()">Überspringen</button>
+                </div>
+                
+                <!-- Positive redirect (4-5 stars) -->
+                <div class="review-content" id="positiveRedirect" style="display: none;">
+                    <div class="emoji-icon">🎉</div>
+                    <h2 class="review-title">Wow, danke!</h2>
+                    <p class="review-subtitle">Würdest du das auch auf <strong>Google</strong> teilen?<br><span style="font-size: 0.875rem">Das hilft uns enorm! 🙏</span></p>
+                    <a href="https://search.google.com/local/writereview?placeid=${reviewGate.placeId}" target="_blank" class="review-google-btn" onclick="trackGoogleRedirect()">
+                        ⭐ Auf Google bewerten
+                    </a>
+                    <button class="review-skip" onclick="closeReview()">Nein danke</button>
+                </div>
+                
+                <!-- Thank you -->
+                <div class="review-content" id="thankYou" style="display: none;">
+                    <div class="emoji-icon">💚</div>
+                    <h2 class="review-title">Danke!</h2>
+                    <p class="review-subtitle">Dein Feedback hilft uns, besser zu werden.</p>
+                    <button class="review-submit" onclick="closeReview()">Schließen</button>
+                </div>
+            </div>
+        </div>
+    ` : ''
+
+    const reviewStyles = reviewGate ? `
+        .review-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        .review-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
+        .review-modal { position: relative; background: white; border-radius: 1.5rem; padding: 2rem; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .review-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; color: #999; cursor: pointer; }
+        .review-content { display: flex; flex-direction: column; align-items: center; }
+        .review-logo { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; margin-bottom: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .review-title { color: #111; font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .review-subtitle { color: #666; margin-bottom: 1.5rem; line-height: 1.5; }
+        .stars-container { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+        .star { background: none; border: none; font-size: 3rem; color: #ddd; cursor: pointer; transition: all 0.2s; }
+        .star:hover, .star.active { color: #fbbf24; transform: scale(1.1); }
+        .review-skip { background: none; border: none; color: #999; font-size: 0.875rem; cursor: pointer; margin-top: 0.5rem; }
+        .review-skip:hover { color: #666; }
+        .emoji-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .feedback-textarea { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 0.75rem; resize: none; height: 80px; margin-bottom: 1rem; font-family: inherit; }
+        .review-submit { background: #111; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; }
+        .review-google-btn { background: linear-gradient(135deg, #8B5CF6, #D946EF); color: white; text-decoration: none; padding: 1rem 2rem; border-radius: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 15px rgba(139,92,246,0.4); }
+    ` : ''
+
+    const reviewScript = reviewGate ? `
+        let selectedRating = 0;
+        const campaignId = '${reviewGate.campaignId}';
+        const passId = '${passId || ''}';
+        const placeId = '${reviewGate.placeId}';
+        
+        // Show review popup after 1.5 seconds
+        setTimeout(() => {
+            document.getElementById('reviewOverlay').style.display = 'flex';
+            trackEvent('popup_shown');
+        }, 1500);
+        
+        function selectRating(rating) {
+            selectedRating = rating;
+            document.querySelectorAll('.star').forEach((star, i) => {
+                star.classList.toggle('active', i < rating);
+            });
+            trackEvent('rating_clicked', rating);
+            
+            setTimeout(() => {
+                if (rating <= 3) {
+                    showStep('negativeFeedback');
+                } else {
+                    showStep('positiveRedirect');
+                }
+            }, 300);
+        }
+        
+        function showStep(stepId) {
+            document.querySelectorAll('.review-content').forEach(el => el.style.display = 'none');
+            document.getElementById(stepId).style.display = 'flex';
+        }
+        
+        function submitFeedback() {
+            const text = document.getElementById('feedbackText').value;
+            fetch('/api/reviews/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ passId, campaignId, rating: selectedRating, feedbackText: text })
+            });
+            trackEvent('feedback_submitted', selectedRating);
+            showStep('thankYou');
+        }
+        
+        function trackGoogleRedirect() {
+            trackEvent('google_redirect', selectedRating);
+        }
+        
+        function closeReview() {
+            if (!selectedRating) trackEvent('dismissed');
+            document.getElementById('reviewOverlay').style.display = 'none';
+        }
+        
+        function trackEvent(eventType, rating) {
+            fetch('/api/reviews/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ passId, campaignId, eventType, rating, metadata: { trigger: 'qr_scan' } })
+            }).catch(console.error);
+        }
+    ` : ''
 
     return `
 <!DOCTYPE html>
@@ -188,6 +321,7 @@ function generateSuccessHtml(scanData: any, locationLabel?: string): string {
             to { transform: translateY(100vh) rotate(720deg); }
         }
         ` : ''}
+        ${reviewStyles}
     </style>
 </head>
 <body>
@@ -200,6 +334,8 @@ function generateSuccessHtml(scanData: any, locationLabel?: string): string {
         <div class="label">Stempel gesammelt</div>
     </div>
     ${locationLabel ? `<p class="location">📍 ${locationLabel}</p>` : ''}
+    
+    ${reviewPopupHtml}
     
     ${celebration ? `
     <script>
@@ -215,9 +351,11 @@ function generateSuccessHtml(scanData: any, locationLabel?: string): string {
     </script>
     ` : ''}
     
+    ${reviewScript ? `<script>${reviewScript}</script>` : ''}
+    
     <script>
-        // Auto-close after 5 seconds
-        setTimeout(() => window.close(), 5000);
+        // Don't auto-close if review popup will show
+        ${!reviewGate ? "setTimeout(() => window.close(), 5000);" : ""}
     </script>
 </body>
 </html>

@@ -12,7 +12,7 @@ export async function POST(
     try {
         const { id: campaignId } = await params
         const body = await req.json()
-        const { design_assets, config } = body
+        const { design_assets, config, google_place_id } = body
 
         if (!campaignId) {
             return NextResponse.json({ error: 'Missing campaign ID' }, { status: 400 })
@@ -33,6 +33,11 @@ export async function POST(
 
         // Prepare update object
         const updateData: any = {}
+
+        // Handle google_place_id (can be set to null to remove)
+        if (google_place_id !== undefined) {
+            updateData.google_place_id = google_place_id
+        }
 
         if (design_assets) {
             // Process images - upload data URLs to storage

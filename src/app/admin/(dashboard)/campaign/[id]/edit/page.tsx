@@ -16,6 +16,7 @@ import { LocationsEditor } from '@/components/wallet/locations-editor'
 import { PersonalizationConfig } from '@/components/wallet/personalization-editor'
 import { Location } from '@/components/ui/location-picker'
 import { OnboardingDesignEditor } from '@/components/admin/OnboardingDesignEditor'
+import { PlaceIdSearcher } from '@/components/admin/PlaceIdSearcher'
 
 // Dynamic import to avoid hydration mismatch
 const PersonalizationEditor = dynamic(
@@ -33,7 +34,8 @@ import {
     Sparkles,
     Smartphone,
     MapPin,
-    Users
+    Users,
+    Star
 } from 'lucide-react'
 
 interface Campaign {
@@ -42,6 +44,7 @@ interface Campaign {
     concept: string
     config: any
     design_assets: WalletPassDraft
+    google_place_id?: string | null
     client: {
         name: string
         slug: string
@@ -57,6 +60,7 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
     const [locations, setLocations] = useState<Location[]>([])
     const [personalization, setPersonalization] = useState<Partial<PersonalizationConfig>>({})
     const [onboardingDesign, setOnboardingDesign] = useState<any>({})
+    const [googlePlaceId, setGooglePlaceId] = useState<string | null>(null)
 
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -89,6 +93,9 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                     if (data.campaign.config?.onboardingDesign) {
                         setOnboardingDesign(data.campaign.config.onboardingDesign)
                     }
+                    if (data.campaign.google_place_id) {
+                        setGooglePlaceId(data.campaign.google_place_id)
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching campaign:', error)
@@ -120,6 +127,11 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
         setSaveResult(null)
     }, [])
 
+    const handleGooglePlaceIdChange = useCallback((placeId: string | null) => {
+        setGooglePlaceId(placeId)
+        setSaveResult(null)
+    }, [])
+
     const handleColorChange = useCallback((newColors: WalletPassDraft['colors']) => {
         if (!draft) return
         handleDraftChange({
@@ -137,6 +149,7 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     design_assets: draft,
+                    google_place_id: googlePlaceId,
                     config: {
                         ...campaign?.config,
                         locations: locations,
@@ -168,6 +181,7 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     design_assets: draft,
+                    google_place_id: googlePlaceId,
                     config: {
                         ...campaign?.config,
                         locations: locations,
@@ -411,6 +425,37 @@ export default function CampaignEditPage({ params }: { params: Promise<{ id: str
                                 emailRequired={personalization.email_required}
                                 phoneRequired={personalization.phone_required}
                             />
+                        </section>
+
+                        <div className="h-px bg-white/5" />
+
+                        {/* Google Reviews */}
+                        <section className="space-y-4">
+                            <div className="flex items-center gap-2 mb-6">
+                                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
+                                    <Star className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-white">Google Bewertungen</h2>
+                                    <p className="text-xs text-zinc-500">Kunden nach dem Karten-Hinzufügen bewerten lassen.</p>
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <p className="text-xs text-zinc-400">
+                                    Verbinde dein Google-Unternehmen, um nach dem Karten-Hinzufügen
+                                    und bei jedem Scan ein Bewertungs-Popup zu zeigen.
+                                </p>
+                                <PlaceIdSearcher
+                                    value={googlePlaceId}
+                                    onChange={(placeId) => handleGooglePlaceIdChange(placeId)}
+                                />
+                                {googlePlaceId && (
+                                    <p className="text-xs text-green-500 flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                        Bewertungs-Popup ist aktiv
+                                    </p>
+                                )}
+                            </div>
                         </section>
 
                     </div>
