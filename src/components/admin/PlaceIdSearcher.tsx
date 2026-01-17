@@ -57,9 +57,9 @@ export function PlaceIdSearcher({ value, onChange, className = '' }: PlaceIdSear
     const [showDropdown, setShowDropdown] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const searchTimeout = useRef<NodeJS.Timeout>()
+    const searchTimeout = useRef<NodeJS.Timeout | undefined>(undefined)
     const serviceRef = useRef<google.maps.places.PlacesService | null>(null)
-    const containerRef = useRef<HTMLDivElement>(null)
+    const containerRef = useRef<HTMLDivElement | null>(null)
 
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
