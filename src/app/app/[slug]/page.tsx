@@ -802,42 +802,31 @@ export default function POSPage() {
 
                                     <div className="grid grid-cols-2 gap-4 mb-6">
                                         <div className="bg-black/40 rounded-xl p-4 text-center border border-white/5">
-                                            <div className="text-3xl font-bold text-yellow-500">{reviewStats.averageRating?.toFixed(1) || '—'}</div>
+                                            <div className="text-3xl font-bold text-yellow-500">{reviewStats.average?.toFixed(1) || '—'}</div>
                                             <div className="text-xs text-zinc-500 mt-1">Durchschnitt</div>
                                             <div className="flex justify-center gap-0.5 mt-2">
                                                 {[1, 2, 3, 4, 5].map(s => (
-                                                    <Star key={s} size={14} className={s <= Math.round(reviewStats.averageRating || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-700'} />
+                                                    <Star key={s} size={14} className={s <= Math.round(reviewStats.average || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-700'} />
                                                 ))}
                                             </div>
                                         </div>
                                         <div className="bg-black/40 rounded-xl p-4 text-center border border-white/5">
-                                            <div className="text-3xl font-bold text-white">{reviewStats.totalReviews || 0}</div>
+                                            <div className="text-3xl font-bold text-white">{reviewStats.total || 0}</div>
                                             <div className="text-xs text-zinc-500 mt-1">Bewertungen gesamt</div>
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        {[5, 4, 3, 2, 1].map(rating => {
-                                            const count = reviewStats.ratingDistribution?.[rating] || 0
-                                            const total = reviewStats.totalReviews || 1
-                                            const pct = Math.round((count / total) * 100)
-                                            return (
-                                                <div key={rating} className="flex items-center gap-2">
-                                                    <span className="text-xs text-zinc-500 w-6">{rating}★</span>
-                                                    <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-yellow-500 rounded-full" style={{ width: `${pct}%` }} />
-                                                    </div>
-                                                    <span className="text-xs text-zinc-500 w-8 text-right">{count}</span>
+                                        {reviewStats.breakdown?.map(item => (
+                                            <div key={item.rating} className="flex items-center gap-2">
+                                                <span className="text-xs text-zinc-500 w-6">{item.rating}★</span>
+                                                <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-yellow-500 rounded-full" style={{ width: `${item.percentage}%` }} />
                                                 </div>
-                                            )
-                                        })}
+                                                <span className="text-xs text-zinc-500 w-8 text-right">{item.count}</span>
+                                            </div>
+                                        ))}
                                     </div>
-
-                                    {reviewStats.googlePlaceUrl && (
-                                        <a href={reviewStats.googlePlaceUrl} target="_blank" rel="noopener noreferrer" className="mt-6 block w-full py-3 text-center bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold rounded-xl hover:from-yellow-400 hover:to-orange-400 transition-all">
-                                            Auf Google Maps öffnen →
-                                        </a>
-                                    )}
                                 </div>
                             </motion.div>
                         </div>
