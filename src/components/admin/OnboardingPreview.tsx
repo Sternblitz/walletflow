@@ -63,6 +63,7 @@ interface OnboardingPreviewProps {
         orbsSettings?: OrbsSettings
         title?: string
         description?: string
+        showTitle?: boolean
         askName?: boolean
         nameRequired?: boolean
         namePlaceholder?: string
@@ -115,6 +116,7 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
         noiseSettings = { intensity: 20, scale: 'medium' },
         orbsSettings = { blur: 120, opacity: 15, speed: 'normal' },
         title,
+        showTitle = false,
         description,
         askName = true,
         nameRequired = false,
@@ -281,9 +283,11 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                         {clientName.charAt(0).toUpperCase()}
                                     </div>
                                 )}
-                                <h1 className="text-lg font-bold mb-1" style={{ color: fgColor }}>
-                                    {title || clientName}
-                                </h1>
+                                {showTitle && (
+                                    <h1 className="text-lg font-bold mb-1" style={{ color: fgColor }}>
+                                        {title || clientName}
+                                    </h1>
+                                )}
                                 <p className="text-xs" style={{ color: accentColor }}>
                                     {description || (hasFields ? 'Personalisiere deine Karte' : 'Deine digitale Treuekarte')}
                                 </p>

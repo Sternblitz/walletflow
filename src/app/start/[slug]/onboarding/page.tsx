@@ -67,6 +67,7 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
     // Custom title/description from onboardingDesign
     const customTitle = onboardingDesign.title
     const customDescription = onboardingDesign.description
+    const showTitle = onboardingDesign.showTitle ?? false
 
     return (
         <OnboardingForm
@@ -90,6 +91,7 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
             orbsSettings={orbsSettings}
             customTitle={customTitle}
             customDescription={customDescription}
+            showTitle={showTitle}
             personalization={personalization}
         />
     )

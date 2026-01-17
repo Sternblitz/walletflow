@@ -87,6 +87,7 @@ interface OnboardingFormProps {
     orbsSettings?: OrbsSettings
     customTitle?: string
     customDescription?: string
+    showTitle?: boolean
     personalization: PersonalizationConfig
 }
 
@@ -111,6 +112,7 @@ export function OnboardingForm({
     orbsSettings = { blur: 120, opacity: 15, speed: 'normal' },
     customTitle,
     customDescription,
+    showTitle = false,
     personalization
 }: OnboardingFormProps) {
     const [name, setName] = useState('')
@@ -371,9 +373,11 @@ export function OnboardingForm({
                             {clientName.charAt(0).toUpperCase()}
                         </div>
                     )}
-                    <h1 className="text-3xl font-bold mb-2" style={{ color: finalFgColor }}>
-                        {displayTitle}
-                    </h1>
+                    {showTitle && (
+                        <h1 className="text-3xl font-bold mb-2" style={{ color: finalFgColor }}>
+                            {displayTitle}
+                        </h1>
+                    )}
                     <p style={{ color: finalAccentColor }}>
                         {displayDescription}
                     </p>

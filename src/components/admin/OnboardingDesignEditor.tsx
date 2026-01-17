@@ -57,6 +57,7 @@ interface OrbsSettings {
 interface OnboardingDesignConfig {
     title?: string
     description?: string
+    showTitle?: boolean  // Whether to show the page title (default: false)
     logoUrl?: string | null
     logoSource?: 'wallet' | 'custom' | 'none'
     backgroundStyle?: BackgroundStyle
@@ -223,6 +224,7 @@ export function OnboardingDesignEditor({
         orbsSettings,
         title: config.title,
         description: config.description,
+        showTitle: config.showTitle ?? false, // Default: hidden
         askName, nameRequired, namePlaceholder: 'Max Mustermann',
         askBirthday, birthdayRequired,
         askEmail, emailRequired, emailPlaceholder: 'max@beispiel.de',
@@ -233,16 +235,38 @@ export function OnboardingDesignEditor({
     return (
         <div className="space-y-4">
             {/* Content Fields */}
-            <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                    <Label className="text-[10px] text-white/50">Seitentitel</Label>
-                    <Input
-                        value={config.title || ''}
-                        onChange={(e) => onChange({ ...config, title: e.target.value })}
-                        placeholder={clientName}
-                        className="bg-white/5 border-white/10 h-9 text-sm"
-                    />
+            <div className="space-y-3">
+                {/* Show Title Toggle */}
+                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-white">Seitentitel anzeigen</span>
+                    </div>
+                    <button
+                        onClick={() => onChange({ ...config, showTitle: !(config.showTitle ?? false) })}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${(config.showTitle ?? false) ? 'bg-violet-500' : 'bg-white/20'
+                            }`}
+                    >
+                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(config.showTitle ?? false) ? 'translate-x-5' : 'translate-x-0.5'
+                            }`} />
+                    </button>
                 </div>
+
+                {/* Title Input - only show if showTitle is true */}
+                {(config.showTitle ?? false) && (
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                            <Label className="text-[10px] text-white/50">Seitentitel</Label>
+                            <Input
+                                value={config.title || ''}
+                                onChange={(e) => onChange({ ...config, title: e.target.value })}
+                                placeholder={clientName}
+                                className="bg-white/5 border-white/10 h-9 text-sm"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Description - always visible */}
                 <div className="space-y-1.5">
                     <Label className="text-[10px] text-white/50">Beschreibung</Label>
                     <Input
