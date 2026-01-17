@@ -43,8 +43,7 @@ export async function POST(request: Request) {
                 campaign_id: campaignId,
                 message: message,
                 status: 'pending', // Always pending - admin must approve!
-                scheduled_at: scheduleTime || null,
-                created_by: (await supabase.auth.getUser()).data.user?.id
+                scheduled_at: scheduleTime || null
             })
             .select()
             .single()

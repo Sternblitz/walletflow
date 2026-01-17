@@ -6,7 +6,8 @@ import {
     Zap, Camera, Users, ChevronRight, Send, X, Sparkles, Clock,
     Calendar, Trophy, Target, Bell, Check, RotateCcw, Cake, Mail,
     Phone, BarChart3, Star, TrendingUp, PieChart as PieChartIcon,
-    Settings, LogOut, ArrowRight, Crown, AlertTriangle, Layers, Gift
+    Settings, LogOut, ArrowRight, Crown, AlertTriangle, Layers, Gift,
+    MessageSquare
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'sonner'
@@ -617,9 +618,14 @@ export default function POSPage() {
                                     <span className="text-xs font-bold">Kunden</span>
                                 </button>
                                 {reviewStats && (
-                                    <button onClick={() => setShowReviewsModal(true)} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-yellow-500/30">
+                                    <button onClick={() => setShowReviewsModal(true)} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-yellow-500/30 relative">
                                         <Star size={20} className="group-hover:text-yellow-500 transition-colors" />
                                         <span className="text-xs font-bold">Bewertungen</span>
+                                        {reviewStats.total > 0 && (
+                                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 text-black text-[10px] font-bold rounded-full flex items-center justify-center">
+                                                {reviewStats.total > 99 ? '99+' : reviewStats.total}
+                                            </span>
+                                        )}
                                     </button>
                                 )}
                             </div>
@@ -697,12 +703,21 @@ export default function POSPage() {
                                         // Check for events on this day
                                         const dayHistory = pushHistory.filter(p => p.sent_at?.startsWith(dateStr))
                                         const dayScheduled = scheduledPushes.filter(p => p.scheduled_at?.startsWith(dateStr))
+
+                                        // Check for automations
                                         const hasWeekdayAutomation = automations.some(a => {
                                             if (a.rule_type !== 'weekday_schedule') return false
-                                            const days = a.config?.days || []
+                                            const configDays = a.config?.days || []
                                             const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-                                            return days.includes(dayNames[dayOfWeek])
+                                            return configDays.includes(dayNames[dayOfWeek])
                                         })
+
+                                        // For birthday/inactivity automations - show a general indicator if any are active
+                                        const hasOtherAutomations = automations.some(a =>
+                                            a.rule_type === 'birthday' || a.rule_type === 'inactivity'
+                                        )
+
+                                        const hasAutomation = hasWeekdayAutomation || (hasOtherAutomations && isToday)
 
                                         days.push(
                                             <div
@@ -715,15 +730,15 @@ export default function POSPage() {
                                                 title={[
                                                     dayHistory.length > 0 ? `${dayHistory.length} gesendet` : '',
                                                     dayScheduled.length > 0 ? `${dayScheduled.length} geplant` : '',
-                                                    hasWeekdayAutomation ? 'Automatisierung aktiv' : ''
+                                                    hasAutomation ? 'Automatisierung aktiv' : ''
                                                 ].filter(Boolean).join(', ') || undefined}
                                             >
                                                 {d}
-                                                {(dayHistory.length > 0 || dayScheduled.length > 0 || hasWeekdayAutomation) && (
+                                                {(dayHistory.length > 0 || dayScheduled.length > 0 || hasAutomation) && (
                                                     <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
                                                         {dayHistory.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
                                                         {dayScheduled.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
-                                                        {hasWeekdayAutomation && <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />}
+                                                        {hasAutomation && <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />}
                                                     </div>
                                                 )}
                                             </div>
@@ -827,6 +842,37 @@ export default function POSPage() {
                                             </div>
                                         ))}
                                     </div>
+
+                                    {/* Activity Feed */}
+                                    {reviewStats.recentActivity && reviewStats.recentActivity.length > 0 && (
+                                        <div className="mt-6 pt-4 border-t border-white/10">
+                                            <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                                                <MessageSquare size={14} className="text-yellow-500" /> Letzte Bewertungen
+                                            </h4>
+                                            <div className="space-y-3 max-h-60 overflow-y-auto">
+                                                {reviewStats.recentActivity.slice(0, 10).map(activity => (
+                                                    <div key={activity.id} className="bg-black/30 rounded-xl p-3 border border-white/5">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <div className="flex items-center gap-1">
+                                                                {[1, 2, 3, 4, 5].map(s => (
+                                                                    <Star key={s} size={12} className={s <= activity.rating ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-700'} />
+                                                                ))}
+                                                            </div>
+                                                            <span className="text-[10px] text-zinc-600">
+                                                                {new Date(activity.createdAt).toLocaleDateString('de-DE')}
+                                                            </span>
+                                                        </div>
+                                                        {activity.comment && (
+                                                            <p className="text-sm text-zinc-300 mt-1">„{activity.comment}"</p>
+                                                        )}
+                                                        {!activity.comment && activity.rating >= 4 && (
+                                                            <p className="text-xs text-zinc-500 italic">→ An Google weitergeleitet</p>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
                         </div>
