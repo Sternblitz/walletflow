@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Check, Star, Send, Heart, Loader2 } from 'lucide-react'
 
@@ -17,11 +17,13 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
     const [feedbackText, setFeedbackText] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    const [campaignData, setCampaignData] = useState<{
+    const campaignDataRef = useRef<{
         campaignId: string
         placeId: string | null
         businessName: string
     } | null>(null)
+
+    const [, forceUpdate] = useState(0)
 
     const campaignId = searchParams.get('campaignId')
     const platform = searchParams.get('platform') || 'ios'
@@ -30,18 +32,20 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
     const email = searchParams.get('email')
     const phone = searchParams.get('phone')
 
-    // Fetch campaign data
+    // Fetch campaign data FIRST
     useEffect(() => {
         if (!slug) return
         fetch(`/api/campaign/by-slug/${slug}`)
             .then(res => res.json())
             .then(data => {
                 if (data.campaign) {
-                    setCampaignData({
+                    campaignDataRef.current = {
                         campaignId: data.campaign.id,
                         placeId: data.campaign.google_place_id,
                         businessName: data.campaign.client?.name || ''
-                    })
+                    }
+                    forceUpdate(n => n + 1)
+                    console.log('Campaign data loaded:', campaignDataRef.current)
                 }
             })
             .catch(console.error)
@@ -77,28 +81,29 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
         return () => clearTimeout(timer)
     }, [campaignId, platform, name, birthday, email, phone, step])
 
-    // Track event - saves to review_funnel_events table
+    // Track event
     const trackEvent = async (eventType: string, rating?: number) => {
-        if (!campaignData?.campaignId) return
+        const data = campaignDataRef.current
+        if (!data?.campaignId) return
         try {
             await fetch('/api/reviews/track', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    campaignId: campaignData.campaignId,
+                    campaignId: data.campaignId,
                     eventType,
                     rating,
                     metadata: {
                         trigger: 'pass_added',
-                        businessName: campaignData.businessName,
-                        hasPlaceId: !!campaignData.placeId
+                        businessName: data.businessName,
+                        hasPlaceId: !!data.placeId
                     }
                 })
             })
         } catch (e) { console.error(e) }
     }
 
-    // Track popup shown when review step appears
+    // Track popup shown
     useEffect(() => {
         if (step === 'review') {
             trackEvent('popup_shown')
@@ -108,18 +113,21 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
     // Handle rating click
     const handleRating = async (rating: number) => {
         setSelectedRating(rating)
+        const data = campaignDataRef.current
+
+        console.log('Rating clicked:', rating, 'placeId:', data?.placeId)
 
         // Track which star was clicked
         await trackEvent('rating_clicked', rating)
 
         // 4-5 Stars: Direct redirect to Google Reviews
-        if (rating >= 4 && campaignData?.placeId) {
+        if (rating >= 4 && data?.placeId) {
             await trackEvent('google_redirect', rating)
-            setTimeout(() => {
-                window.open(`https://search.google.com/local/writereview?placeid=${campaignData.placeId}`, '_blank')
-                setReviewStep('thanks')
-            }, 300)
-        } else if (rating >= 4 && !campaignData?.placeId) {
+            const googleUrl = `https://search.google.com/local/writereview?placeid=${data.placeId}`
+            console.log('Opening Google URL:', googleUrl)
+            window.open(googleUrl, '_blank')
+            setTimeout(() => setReviewStep('thanks'), 500)
+        } else if (rating >= 4) {
             setTimeout(() => setReviewStep('thanks'), 300)
         } else {
             setTimeout(() => setReviewStep('negative'), 400)
@@ -128,14 +136,15 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
 
     // Submit feedback
     const handleSubmitFeedback = async () => {
-        if (!campaignData?.campaignId) return
+        const data = campaignDataRef.current
+        if (!data?.campaignId) return
         setIsSubmitting(true)
         try {
             await fetch('/api/reviews/feedback', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    campaignId: campaignData.campaignId,
+                    campaignId: data.campaignId,
                     rating: selectedRating,
                     feedbackText: feedbackText.trim() || null
                 })
@@ -187,13 +196,15 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
                     0% { opacity: 0; transform: translateY(20px); }
                     100% { opacity: 1; transform: translateY(0); }
                 }
-                @keyframes border-pulse {
-                    0%, 100% { border-color: rgb(16, 185, 129); }
-                    50% { border-color: rgb(52, 211, 153); }
-                }
-                @keyframes shine {
-                    0% { background-position: -200% center; }
-                    100% { background-position: 200% center; }
+                @keyframes shadow-pulse {
+                    0%, 100% { 
+                        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4), 
+                                    0 10px 25px -5px rgba(16, 185, 129, 0.3);
+                    }
+                    50% { 
+                        box-shadow: 0 0 0 12px rgba(16, 185, 129, 0), 
+                                    0 20px 40px -10px rgba(16, 185, 129, 0.5);
+                    }
                 }
             `}</style>
 
@@ -238,25 +249,14 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
                         Füge sie jetzt zu deiner Wallet hinzu!
                     </p>
 
-                    {/* Review Section - GREEN theme, attention-seeking */}
+                    {/* Review Section - GREEN shadow animation */}
                     {step === 'review' && (
                         <div
-                            className="relative bg-gradient-to-b from-emerald-50 to-white rounded-3xl border-3 border-emerald-400 p-6 shadow-xl"
+                            className="relative bg-gradient-to-b from-emerald-50 to-white rounded-3xl border-2 border-emerald-300 p-6"
                             style={{
-                                animation: 'fade-slide-up 0.5s ease-out both, border-pulse 1.5s ease-in-out infinite',
-                                borderWidth: '3px'
+                                animation: 'fade-slide-up 0.5s ease-out both, shadow-pulse 2s ease-in-out infinite'
                             }}
                         >
-                            {/* Shine overlay */}
-                            <div
-                                className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none"
-                                style={{
-                                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-                                    backgroundSize: '200% 100%',
-                                    animation: 'shine 3s ease-in-out infinite'
-                                }}
-                            />
-
                             {/* Rating Step */}
                             {reviewStep === 'rating' && (
                                 <div className="relative z-10">
@@ -270,7 +270,7 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
                                     </p>
 
                                     {/* Clickable Stars */}
-                                    <div className="flex justify-center gap-1 mb-3">
+                                    <div className="flex justify-center gap-1 mb-2">
                                         {[1, 2, 3, 4, 5].map((star) => (
                                             <button
                                                 key={star}
@@ -281,17 +281,13 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
                                             >
                                                 <Star
                                                     className={`w-12 h-12 transition-colors duration-100 ${(hoveredRating || selectedRating) >= star
-                                                            ? 'text-amber-400 fill-amber-400'
-                                                            : 'text-zinc-200'
+                                                        ? 'text-amber-400 fill-amber-400'
+                                                        : 'text-zinc-200'
                                                         }`}
                                                 />
                                             </button>
                                         ))}
                                     </div>
-
-                                    <p className="text-xs text-emerald-600 font-medium">
-                                        ⭐ 4-5 Sterne öffnet Google Bewertung
-                                    </p>
                                 </div>
                             )}
 
