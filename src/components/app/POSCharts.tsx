@@ -4,29 +4,34 @@ import { motion } from 'framer-motion'
 import { Wallet } from 'lucide-react'
 
 // --- Activity Chart (Bar) ---
-export function ActivityChart({ data }: { data: { date: string, stamps: number, redemptions: number }[] }) {
+export function ActivityChart({ data }: { data: { date: string, stamps: number, redemptions: number, newPasses?: number }[] }) {
     if (!data || data.length === 0) return <div className="text-zinc-500 text-sm">Keine Daten verfügbar</div>
 
     // Find max for scaling
-    const maxVal = Math.max(...data.map(d => Math.max(d.stamps, d.redemptions)), 10)
+    const maxVal = Math.max(...data.map(d => Math.max(d.stamps, d.redemptions, d.newPasses || 0)), 10)
 
     return (
         <div className="flex items-end gap-2 h-40 w-full pt-4">
             {data.map((day, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-2 group relative">
                     {/* Tooltip */}
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 whitespace-nowrap">
-                        {new Date(day.date).toLocaleDateString('de-DE', { weekday: 'short' })}: {day.stamps} Stempel
+                    <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-zinc-900 border border-white/10 text-white text-xs px-3 py-2 rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 whitespace-nowrap shadow-xl">
+                        <div className="font-bold mb-1">{new Date(day.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}</div>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px]">
+                            <span className="text-emerald-500">Stempel:</span> <span>{day.stamps}</span>
+                            <span className="text-purple-500">Einlösung:</span> <span>{day.redemptions}</span>
+                            <span className="text-blue-500">Neue Karten:</span> <span>{day.newPasses || 0}</span>
+                        </div>
                     </div>
 
                     {/* Bars Container */}
-                    <div className="w-full flex gap-1 items-end justify-center h-full">
+                    <div className="w-full flex gap-0.5 items-end justify-center h-full px-0.5">
                         {/* Stamp Bar */}
                         <motion.div
                             initial={{ height: 0 }}
                             animate={{ height: `${(day.stamps / maxVal) * 100}%` }}
                             transition={{ duration: 0.5, delay: i * 0.1 }}
-                            className="w-3 bg-emerald-500 rounded-t-sm"
+                            className="w-2 bg-emerald-500 rounded-t-sm"
                         />
                         {/* Redeem Bar */}
                         {day.redemptions > 0 && (
@@ -34,7 +39,16 @@ export function ActivityChart({ data }: { data: { date: string, stamps: number, 
                                 initial={{ height: 0 }}
                                 animate={{ height: `${(day.redemptions / maxVal) * 100}%` }}
                                 transition={{ duration: 0.5, delay: i * 0.1 + 0.05 }}
-                                className="w-3 bg-purple-500 rounded-t-sm opacity-80"
+                                className="w-2 bg-purple-500 rounded-t-sm opacity-90"
+                            />
+                        )}
+                        {/* New Passes Bar */}
+                        {(day.newPasses || 0) > 0 && (
+                            <motion.div
+                                initial={{ height: 0 }}
+                                animate={{ height: `${((day.newPasses || 0) / maxVal) * 100}%` }}
+                                transition={{ duration: 0.5, delay: i * 0.1 + 0.1 }}
+                                className="w-2 bg-blue-500 rounded-t-sm opacity-90"
                             />
                         )}
                     </div>

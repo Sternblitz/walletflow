@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { Camera, X, RotateCcw, Zap, BarChart3, Send, Users, TrendingUp, Wallet, Settings, LogOut, ChevronRight, Check, Sparkles, LayoutDashboard, Bell, ArrowRight, Search, Cake, Mail, Phone } from 'lucide-react'
+import { Zap, Camera, Users, LayoutDashboard, LogOut, ChevronRight, Send, X, Sparkles, TrendingUp, Clock, Calendar, Trophy, Target, Bell, Check, RotateCcw, Cake, Mail, Phone, BarChart3, Settings, ArrowRight, Search } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'sonner'
-import { ActivityChart, WalletDonut, RetentionGauge } from '@/components/app/POSCharts'
+import { ActivityChart } from '@/components/app/POSCharts'
+import { Background } from '@/components/app/Background'
 import { AutomationManager } from '@/components/app/AutomationManager'
 import { AutomationRulesManager } from '@/components/app/AutomationRulesManager'
 import { ThemeToggle } from '@/components/app/ThemeToggle'
@@ -37,16 +38,19 @@ export default function POSPage() {
 
     // Dashboard state
     const [stats, setStats] = useState<any>(null)
+    const [statsRange, setStatsRange] = useState<'24h' | '7d' | '30d'>('7d')
     const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null)
     const [customers, setCustomers] = useState<any[]>([])
     const [customersLoading, setCustomersLoading] = useState(false)
+    const [customersRange, setCustomersRange] = useState<'24h' | '7d' | '30d' | 'all'>('all')
     const [view, setView] = useState<'scanner' | 'dashboard' | 'push' | 'customers'>('scanner')
 
     // Push request state
+    const [pushMode, setPushMode] = useState<'now' | 'schedule'>('now')
     const [pushMessage, setPushMessage] = useState('')
-    const [pushSchedule, setPushSchedule] = useState('')
-    const [pushSubmitting, setPushSubmitting] = useState(false)
-    const [isScheduled, setIsScheduled] = useState(false)
+    const [pushScheduleTime, setPushScheduleTime] = useState('')
+    const [pushLoading, setPushLoading] = useState(false)
+    const [scheduledPushes, setScheduledPushes] = useState<any[]>([])
 
     // Load campaign data
     useEffect(() => {
@@ -64,7 +68,7 @@ export default function POSPage() {
         if (role === 'chef' && view === 'customers') {
             loadCustomers()
         }
-    }, [role, view, campaignData])
+    }, [role, view, campaignData, statsRange, customersRange])
 
     const loadCampaignData = async () => {
         try {
@@ -80,7 +84,7 @@ export default function POSPage() {
 
     const loadStats = async () => {
         try {
-            const res = await fetch(`/api/app/stats?slug=${slug}`)
+            const res = await fetch(`/api/app/stats?slug=${slug}&range=${statsRange}`)
             if (res.ok) {
                 const data = await res.json()
                 setStats(data)
@@ -107,7 +111,7 @@ export default function POSPage() {
     const loadCustomers = async () => {
         setCustomersLoading(true)
         try {
-            const res = await fetch(`/api/app/customers?slug=${slug}`)
+            const res = await fetch(`/api/app/customer-list?slug=${slug}&range=${customersRange}`)
             if (res.ok) {
                 const data = await res.json()
                 setCustomers(data.customers || [])
@@ -118,6 +122,29 @@ export default function POSPage() {
             setCustomersLoading(false)
         }
     }
+
+    const loadScheduledPushes = async () => {
+        if (!campaignData?.campaign?.id) return
+        const supabase = createSupabaseClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+        const { data } = await supabase
+            .from('push_requests')
+            .select('*')
+            .eq('campaign_id', campaignData.campaign.id)
+            .eq('status', 'scheduled')
+            .gt('scheduled_at', new Date().toISOString())
+            .order('scheduled_at', { ascending: true })
+
+        if (data) setScheduledPushes(data)
+    }
+
+    useEffect(() => {
+        if (role === 'chef' && view === 'push') {
+            loadScheduledPushes()
+        }
+    }, [role, view, campaignData])
 
     // PIN Authentication
     const handlePinSubmit = async (e: React.FormEvent) => {
@@ -243,41 +270,33 @@ export default function POSPage() {
         e.preventDefault()
         if (!pushMessage.trim()) return
 
-        setPushSubmitting(true)
+        setPushLoading(true)
         try {
-            const res = await fetch('/api/app/push-request', {
+            const res = await fetch('/api/push/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     slug,
                     message: pushMessage,
-                    scheduledAt: pushSchedule || null
+                    scheduleTime: pushMode === 'schedule' ? pushScheduleTime : null
                 })
             })
 
             if (res.ok) {
-                toast.success('Push-Nachricht beantragt!')
+                toast.success(pushMode === 'schedule' ? 'Nachricht eingeplant!' : 'Nachricht gesendet!')
                 setPushMessage('')
-                setPushSchedule('')
+                setPushScheduleTime('')
                 setView('dashboard')
+                loadStats()
             } else {
                 toast.error('Fehler beim Senden')
             }
         } catch (e) {
-            console.error('Push request failed:', e)
+            toast.error('Ein Fehler ist aufgetreten')
+        } finally {
+            setPushLoading(false)
         }
-        setPushSubmitting(false)
-    }
-
-    // --- Components ---
-
-    const Background = () => (
-        <div className="fixed inset-0 z-0 bg-background pointer-events-none">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 dark:bg-emerald-500/20 blur-[120px] rounded-full opacity-50 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/10 dark:bg-purple-500/20 blur-[120px] rounded-full opacity-50 pointer-events-none" />
-            <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.02]" />
-        </div>
-    )
+    } // --- Components ---
 
     // ========================================
     // RENDER: PIN Login Screen
@@ -349,7 +368,7 @@ export default function POSPage() {
         }
 
         return (
-            <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden transition-colors duration-500">
+            <div className="dark min-h-screen bg-black text-foreground flex flex-col relative overflow-hidden transition-colors duration-500">
                 <Background />
 
                 {/* Header */}
@@ -360,127 +379,127 @@ export default function POSPage() {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold leading-tight">Dashboard</h1>
-                            <p className="text-xs text-muted-foreground font-medium">Hallo {label || 'Chef'} 👋</p>
+                            <p className="text-xs text-muted-foreground font-medium">Willkommen zurück, Chef 👋</p>
                         </div>
                     </div>
                     <div className="flex gap-3">
-                        <ThemeToggle />
                         <button
                             onClick={() => setView('scanner')}
-                            className="h-12 px-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center hover:bg-emerald-500/20 transition-colors gap-2 text-sm font-semibold"
+                            className="h-10 px-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center hover:bg-emerald-500/20 transition-colors gap-2 text-sm font-semibold"
                         >
-                            <Camera className="w-5 h-5" />
+                            <Camera className="w-4 h-4" />
                             Scanner
                         </button>
                         <button
                             onClick={() => setView('customers')}
-                            className="h-12 px-4 bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 rounded-full flex items-center justify-center hover:bg-cyan-500/20 transition-colors gap-2 text-sm font-semibold"
+                            className="h-10 px-4 bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 rounded-full flex items-center justify-center hover:bg-cyan-500/20 transition-colors gap-2 text-sm font-semibold"
                         >
-                            <Users className="w-5 h-5" />
+                            <Users className="w-4 h-4" />
                             Kunden
                         </button>
                     </div>
                 </header>
 
-                {/* Main Grid */}
-                <main className="relative z-10 flex-1 p-6 overflow-y-auto max-w-7xl mx-auto w-full">
+                {/* Main Content */}
+                <main className="relative z-10 flex-1 p-6 overflow-y-auto max-w-7xl mx-auto w-full space-y-6">
 
-                    {/* Top Stats Row */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        {/* 1. Daily Stamps */}
-                        <div className="bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-5 shadow-sm">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="p-2 bg-emerald-500/10 rounded-xl">
-                                    <Sparkles className="w-5 h-5 text-emerald-500" />
-                                </div>
-                                <span className="text-xs font-bold bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full">
-                                    Today
-                                </span>
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                                <h2 className="text-4xl font-bold">{stats?.summary?.todayStamps || 0}</h2>
-                                <span className="text-sm text-emerald-500 font-semibold">+ {stats?.summary?.weekStamps || 0} Week</span>
-                            </div>
-                            <p className="text-muted-foreground text-xs mt-1">Stempel vergeben</p>
+                    {/* Range Selector & Insight */}
+                    <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                        <div className="flex bg-zinc-900 border border-white/10 rounded-xl p-1">
+                            {(['24h', '7d', '30d'] as const).map(r => (
+                                <button
+                                    key={r}
+                                    onClick={() => setStatsRange(r)}
+                                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${statsRange === r
+                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/50'
+                                        : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                                        }`}
+                                >
+                                    {r}
+                                </button>
+                            ))}
                         </div>
-
-                        {/* 2. Total Installs */}
-                        <div className="bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-5 shadow-sm">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="p-2 bg-blue-500/10 rounded-xl">
-                                    <Users className="w-5 h-5 text-blue-500" />
-                                </div>
+                        {stats?.insight && (
+                            <div className="flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 px-4 py-2 rounded-xl text-sm text-purple-200">
+                                <Sparkles className="w-4 h-4 text-purple-400" />
+                                {stats.insight}
                             </div>
-                            <h2 className="text-4xl font-bold">{stats?.summary?.totalPasses || 0}</h2>
-                            <p className="text-muted-foreground text-xs mt-1">Aktive Kunden (Installiert)</p>
-                        </div>
-
-                        {/* 3. Review Stats */}
-                        {reviewStats && (
-                            <ReviewWidget stats={reviewStats} />
                         )}
+                    </div>
 
-                        {/* 4. Retention Rate (Reduced to 1 col) */}
-                        <div className="col-span-1 bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
-                            <div className="flex justify-between items-center mb-2">
-                                <h3 className="font-bold text-muted-foreground text-sm uppercase">Kundenbindung</h3>
-                                <div className="p-1.5 bg-purple-500/10 rounded-lg">
-                                    <TrendingUp className="w-4 h-4 text-purple-500" />
-                                </div>
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* 1. Stamps */}
+                        <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-5 relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 blur-2xl -mr-10 -mt-10 transition-opacity opacity-50 group-hover:opacity-100" />
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="text-zinc-400 text-xs font-medium uppercase tracking-wider">Stempel</span>
+                                <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-500"><Zap className="w-4 h-4" /></div>
                             </div>
-                            <div className="flex items-end justify-between gap-4">
-                                <div className="flex-1">
-                                    <RetentionGauge rate={stats?.summary?.retentionRate || 0} />
-                                    <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
-                                        <span>{stats?.summary?.newCustomers || 0} Neue</span>
-                                        <span>{stats?.summary?.returningCustomers || 0} treue Fans</span>
-                                    </div>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-3xl font-bold text-white">{stats?.summary?.stamps || 0}</span>
+                                <span className="text-xs text-emerald-500">+{stats?.summary?.stamps || 0}</span>
+                            </div>
+                        </div>
+
+                        {/* 2. Redemptions */}
+                        <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-5 relative overflow-hidden group hover:border-purple-500/30 transition-all">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 blur-2xl -mr-10 -mt-10 transition-opacity opacity-50 group-hover:opacity-100" />
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="text-zinc-400 text-xs font-medium uppercase tracking-wider">Einlösungen</span>
+                                <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500"><Trophy className="w-4 h-4" /></div>
+                            </div>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-3xl font-bold text-white">{stats?.summary?.redemptions || 0}</span>
+                            </div>
+                        </div>
+
+                        {/* 3. New Customers */}
+                        <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-5 relative overflow-hidden group hover:border-blue-500/30 transition-all">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 blur-2xl -mr-10 -mt-10 transition-opacity opacity-50 group-hover:opacity-100" />
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="text-zinc-400 text-xs font-medium uppercase tracking-wider">Neue Kunden</span>
+                                <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500"><Users className="w-4 h-4" /></div>
+                            </div>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-3xl font-bold text-white">{stats?.summary?.newPasses || 0}</span>
+                            </div>
+                        </div>
+
+                        {/* 4. Total Installed / Ratio */}
+                        <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-5 relative overflow-hidden group">
+                            <div className="flex justify-between items-start mb-4">
+                                <span className="text-zinc-400 text-xs font-medium uppercase tracking-wider">Gesamt Aktiv</span>
+                                <div className="p-2 bg-zinc-800 rounded-lg text-zinc-400"><Target className="w-4 h-4" /></div>
+                            </div>
+                            <div className="flex items-end justify-between">
+                                <div>
+                                    <span className="text-2xl font-bold text-white">{stats?.summary?.totalInstalled || 0}</span>
+                                    <p className="text-[10px] text-zinc-500 mt-1">Installierte Karten</p>
+                                </div>
+                                <div className="flex gap-2 text-[10px] text-zinc-400">
+                                    <span>🍏 {stats?.summary?.apple || 0}</span>
+                                    <span>🤖 {stats?.summary?.google || 0}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Middle Row: Charts */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    {/* Charts Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Bar Chart (Activity) */}
-                        <div className="lg:col-span-2 bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-6 shadow-sm min-h-[300px] flex flex-col">
+                        <div className="lg:col-span-2 bg-zinc-900/50 border border-white/5 rounded-3xl p-6 min-h-[300px] flex flex-col">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-lg">Aktivitäten</h3>
-                                <select className="bg-background border border-border text-xs rounded-lg px-2 py-1 outline-none">
-                                    <option>Letzte 7 Tage</option>
-                                </select>
+                                <h3 className="font-bold text-lg text-white">Verlauf</h3>
+                                <div className="text-xs text-zinc-500 bg-white/5 px-2 py-1 rounded-lg">
+                                    Letzte {statsRange}
+                                </div>
                             </div>
-                            <div className="flex-1 w-full">
+                            <div className="flex-1 w-full relative">
                                 <ActivityChart data={stats?.history || []} />
                             </div>
                         </div>
 
-                        {/* Donut Chart (Wallet Share) */}
-                        <div className="bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-6 shadow-sm flex flex-col items-center justify-center relative">
-                            <h3 className="absolute top-6 left-6 font-bold text-lg">Platform</h3>
-                            <WalletDonut
-                                apple={stats?.summary?.appleCount || 0}
-                                google={stats?.summary?.googleCount || 0}
-                            />
-                            <div className="flex gap-6 mt-8 w-full justify-center">
-                                <div className="flex items-center gap-2 text-sm">
-                                    <div className="w-3 h-3 rounded-full bg-white border border-gray-300" />
-                                    <span>Apple</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                    <div className="w-3 h-3 rounded-full bg-zinc-800" />
-                                    <span>Google</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Bottom Row: Automation & Feed */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-                        {/* Automation Rules Manager (new) */}
-                        <div className="h-[400px]">
-                            <AutomationRulesManager slug={slug} />
-                        </div>
 
                         {/* Feed */}
                         <div className="bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-6 h-[400px] flex flex-col">
@@ -551,130 +570,123 @@ export default function POSPage() {
     // ========================================
     // RENDER: Push Request Form
     // ========================================
+    // ========================================
+    // RENDER: Push Request Form
+    // ========================================
     if (role === 'chef' && view === 'push') {
         return (
-            <div className="min-h-screen bg-background text-foreground flex flex-col relative">
-                <header className="relative z-10 p-6 flex items-center justify-between">
-                    <h1 className="text-xl font-bold">Nachricht senden</h1>
-                    <button
-                        onClick={() => setView('dashboard')}
-                        className="w-8 h-8 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-full"
-                    >
-                        <X size={16} />
+            <div className="dark min-h-screen bg-black text-foreground flex flex-col relative overflow-hidden">
+                <Background />
+
+                {/* Header */}
+                <header className="relative z-10 px-6 py-4 flex items-center gap-4 border-b border-white/5 bg-black/50 backdrop-blur-md">
+                    <button onClick={() => setView('dashboard')} className="p-2 -ml-2 hover:bg-white/10 rounded-full transition-colors">
+                        <ChevronRight className="w-6 h-6 rotate-180" />
                     </button>
+                    <h1 className="text-lg font-bold">Nachricht senden</h1>
                 </header>
 
-                <main className="relative z-10 flex-1 p-6 max-w-lg mx-auto w-full">
+                <main className="relative z-10 flex-1 p-6 overflow-y-auto w-full max-w-2xl mx-auto space-y-8">
+
+                    {/* Mode Toggle as Big Cards */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                            onClick={() => setPushMode('now')}
+                            className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${pushMode === 'now'
+                                ? 'bg-emerald-500/20 border-emerald-500 ring-2 ring-emerald-500/20'
+                                : 'bg-zinc-900/50 border-white/5 hover:border-white/10'}`}
+                        >
+                            <div className={`p-3 rounded-full ${pushMode === 'now' ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-400'}`}>
+                                <Send className="w-5 h-5" />
+                            </div>
+                            <span className={`text-sm font-bold ${pushMode === 'now' ? 'text-white' : 'text-zinc-400'}`}>Jetzt senden</span>
+                        </button>
+
+                        <button
+                            onClick={() => setPushMode('schedule')}
+                            className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${pushMode === 'schedule'
+                                ? 'bg-blue-500/20 border-blue-500 ring-2 ring-blue-500/20'
+                                : 'bg-zinc-900/50 border-white/5 hover:border-white/10'}`}
+                        >
+                            <div className={`p-3 rounded-full ${pushMode === 'schedule' ? 'bg-blue-500 text-white' : 'bg-zinc-800 text-zinc-400'}`}>
+                                <Calendar className="w-5 h-5" />
+                            </div>
+                            <span className={`text-sm font-bold ${pushMode === 'schedule' ? 'text-white' : 'text-zinc-400'}`}>Später planen</span>
+                        </button>
+                    </div>
+
+                    {/* Form */}
                     <form onSubmit={handlePushRequest} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-sm text-muted-foreground font-medium ml-1">Deine Nachricht</label>
-                            <div className="relative">
-                                <textarea
-                                    value={pushMessage}
-                                    onChange={(e) => setPushMessage(e.target.value)}
-                                    placeholder="Deine Nachricht an alle Kunden..."
-                                    rows={5}
-                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl placeholder:text-muted-foreground focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none text-lg shadow-sm"
+                            <label className="text-sm font-medium text-zinc-400 ml-1">Nachricht</label>
+                            <textarea
+                                value={pushMessage}
+                                onChange={(e) => setPushMessage(e.target.value)}
+                                placeholder="Was möchtest du deinen Kunden mitteilen?"
+                                className="w-full h-32 bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/50 transition-colors resize-none"
+                            />
+                        </div>
+
+                        {pushMode === 'schedule' && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                <label className="text-sm font-medium text-zinc-400 ml-1">Zeitpunkt</label>
+                                <input
+                                    type="datetime-local"
+                                    value={pushScheduleTime}
+                                    onChange={(e) => setPushScheduleTime(e.target.value)}
+                                    className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-blue-500/50 transition-colors"
                                 />
-                                <div className="absolute bottom-3 right-3 text-xs text-muted-foreground font-mono">
-                                    {pushMessage.length}
-                                </div>
                             </div>
-                            <p className="text-xs text-muted-foreground ml-1">
-                                Tipp: Halte es kurz und knackig. Emojis helfen! 🍕
-                            </p>
-                        </div>
-
-                        {/* Scheduling Toggle */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-4">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setIsScheduled(false)
-                                        setPushSchedule('')
-                                    }}
-                                    className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all ${!isScheduled
-                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                                        : 'bg-card border border-border text-muted-foreground hover:bg-accent'
-                                        }`}
-                                >
-                                    Sofort senden
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsScheduled(true)}
-                                    className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all ${isScheduled
-                                        ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/20'
-                                        : 'bg-card border border-border text-muted-foreground hover:bg-accent'
-                                        }`}
-                                >
-                                    Für später planen
-                                </button>
-                            </div>
-
-                            {/* DateTime Inputs (shown when scheduling) */}
-                            {isScheduled && (
-                                <div className="space-y-3 p-4 bg-card border border-border rounded-2xl animate-in slide-in-from-top-2">
-                                    <label className="text-sm text-muted-foreground font-medium">Wann soll die Nachricht gesendet werden?</label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="text-xs text-muted-foreground ml-1">Datum</label>
-                                            <input
-                                                type="date"
-                                                value={pushSchedule.split('T')[0] || ''}
-                                                onChange={(e) => {
-                                                    const time = pushSchedule.split('T')[1] || '12:00'
-                                                    setPushSchedule(`${e.target.value}T${time}`)
-                                                }}
-                                                min={new Date().toISOString().split('T')[0]}
-                                                className="w-full px-4 py-3 bg-background border border-border rounded-xl text-sm focus:outline-none focus:border-violet-500"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-muted-foreground ml-1">Uhrzeit</label>
-                                            <input
-                                                type="time"
-                                                value={pushSchedule.split('T')[1] || '12:00'}
-                                                onChange={(e) => {
-                                                    const date = pushSchedule.split('T')[0] || new Date().toISOString().split('T')[0]
-                                                    setPushSchedule(`${date}T${e.target.value}`)
-                                                }}
-                                                className="w-full px-4 py-3 bg-background border border-border rounded-xl text-sm focus:outline-none focus:border-violet-500"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        )}
 
                         <button
                             type="submit"
-                            disabled={!pushMessage.trim() || pushSubmitting || (isScheduled && !pushSchedule)}
-                            className={`w-full py-5 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-[0.98] ${isScheduled
-                                ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 shadow-violet-500/20'
-                                : 'bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 shadow-blue-500/20'
-                                }`}
+                            disabled={pushLoading || !pushMessage.trim() || (pushMode === 'schedule' && !pushScheduleTime)}
+                            className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${pushMode === 'now'
+                                    ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg shadow-emerald-500/20'
+                                    : 'bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/20'
+                                } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
-                            {pushSubmitting ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : isScheduled ? (
-                                <>
-                                    <Bell className="w-5 h-5" />
-                                    Zur Genehmigung einreichen
-                                </>
+                            {pushLoading ? (
+                                <span className="animate-pulse">Sende...</span>
                             ) : (
                                 <>
-                                    <Send className="w-5 h-5" />
-                                    Zur Genehmigung einreichen
+                                    {pushMode === 'now' ? <Send className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                                    {pushMode === 'now' ? 'Jetzt senden' : 'Einplanen'}
                                 </>
                             )}
                         </button>
-
-                        <p className="text-center text-xs text-muted-foreground">
-                            Nachrichten müssen von der Agentur genehmigt werden.
-                        </p>
                     </form>
+
+                    {/* Overview: Automations & Planned */}
+                    <div className="pt-8 border-t border-white/5 space-y-6">
+                        <h3 className="text-lg font-bold flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-purple-400" />
+                            Kalender & Regeln
+                        </h3>
+
+                        {/* Scheduled Pushes List */}
+                        {scheduledPushes.length > 0 && (
+                            <div className="bg-zinc-900/30 border border-white/10 rounded-2xl p-4 space-y-3">
+                                <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Geplante Nachrichten</h4>
+                                {scheduledPushes.map((push) => (
+                                    <div key={push.id} className="flex gap-3 items-center bg-black/40 p-3 rounded-xl border border-white/5">
+                                        <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                                            <Clock className="w-4 h-4" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-white truncate">{push.message}</p>
+                                            <p className="text-xs text-zinc-500">
+                                                Geplant für: {new Date(push.scheduled_at).toLocaleString('de-DE')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <AutomationRulesManager slug={slug} />
+                    </div>
                 </main>
             </div>
         )
@@ -743,10 +755,28 @@ export default function POSPage() {
                                                 )}
                                             </div>
                                             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                                {customer.lastActivity && (
+                                                    <span className="flex items-center gap-1.5 bg-zinc-900/50 px-2 py-1 rounded-md border border-white/5">
+                                                        <Clock className="w-3 h-3 text-zinc-400" />
+                                                        {(() => {
+                                                            const d = new Date(customer.lastActivity)
+                                                            const now = new Date()
+                                                            const diff = now.getTime() - d.getTime()
+                                                            const mins = Math.floor(diff / 60000)
+                                                            if (mins < 60) return `${mins} Min`
+                                                            const hours = Math.floor(mins / 60)
+                                                            if (hours < 24) return `${hours} Std`
+                                                            return `${Math.floor(hours / 24)} Tage`
+                                                        })()}
+                                                    </span>
+                                                )}
+
+                                                <span className="w-px h-3 bg-white/20 hidden sm:block"></span>
+
                                                 {customer.birthday && (
                                                     <span className="flex items-center gap-1.5">
-                                                        <Cake className="w-3 h-3" />
-                                                        {new Date(customer.birthday).toLocaleDateString('de-DE')}
+                                                        <Cake className="w-3 h-3 text-purple-400" />
+                                                        {new Date(customer.birthday).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}.
                                                     </span>
                                                 )}
                                                 {customer.email && (

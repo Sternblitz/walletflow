@@ -15,18 +15,20 @@ export async function GET(req: NextRequest) {
 
     const supabase = await createClient()
 
-    // 1. Find client and campaign by slug
+    // 1. Find client and active campaign by slug
     const { data: client, error: clientError } = await supabase
         .from('clients')
-        .select('id, campaigns(id)')
+        .select('id, campaigns(id, is_active)')
         .eq('slug', slug)
         .single()
 
-    if (clientError || !client || !client.campaigns?.length) {
+    const activeCampaign = client?.campaigns?.find((c: any) => c.is_active) || client?.campaigns?.[0]
+
+    if (clientError || !client || !activeCampaign) {
         return NextResponse.json({ error: "Restaurant not found" }, { status: 404 })
     }
 
-    const campaignId = client.campaigns[0].id
+    const campaignId = activeCampaign.id
 
     // 2. Fetch all passes with customer data
     const { data: passes, error: passesError } = await supabase
