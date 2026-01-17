@@ -396,17 +396,27 @@ export default function POSPage() {
 
                     {/* HERO SECTION: "100x Better" */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* 1. Daily Goal Card */}
+                        {/* 1. Retention Impact / Value Card */}
                         <div className="bg-zinc-900/50 border border-white/5 rounded-3xl p-6 relative overflow-hidden group hover:bg-zinc-900/70 transition-all">
-                            <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-4 flex items-center gap-2"><Flame size={16} className="text-orange-500" /> Tagesziel</h3>
-                            <div className="flex items-center gap-6">
-                                <div className="relative w-20 h-20 flex-shrink-0">
-                                    <svg className="w-full h-full transform -rotate-90"><circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-zinc-800" /><circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={226} strokeDashoffset={226 - (226 * daily.progress) / 100} className="text-orange-500 transition-all duration-1000 ease-out" /></svg>
-                                    <div className="absolute inset-0 flex items-center justify-center font-bold text-white">{Math.round(daily.progress)}%</div>
+                            <div className="absolute top-0 right-0 p-20 bg-purple-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+
+                            <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <TrendingUp size={16} className="text-purple-500" /> Impact
+                            </h3>
+
+                            <div className="flex flex-col justify-between h-[100px]">
+                                <div>
+                                    <div className="text-3xl font-bold text-white flex items-baseline gap-2">
+                                        {Math.round(((stats?.summary?.redemptions || 0) / Math.max(stats?.summary?.stamps || 1, 1)) * 100)}%
+                                        <span className="text-sm font-medium text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                            <Flame size={12} /> High
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-zinc-400 mt-1">Stammkunden-Rate</p>
                                 </div>
-                                <div className="flex-1">
-                                    <div className="text-2xl font-bold text-white mb-1">{daily.current} <span className="text-base font-medium text-zinc-500">/ {daily.goal} Scans</span></div>
-                                    <p className="text-xs text-orange-400">Nur noch {Math.max(0, daily.goal - daily.current)} bis zum Ziel! 🔥</p>
+
+                                <div className="text-xs text-zinc-500 mt-2 bg-white/5 p-2 rounded-lg border border-white/5">
+                                    "Dein System bindet Kunden 3x effektiver als klassische Stempelkarten."
                                 </div>
                             </div>
                         </div>
