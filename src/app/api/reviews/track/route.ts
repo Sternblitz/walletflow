@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
     try {
@@ -21,7 +21,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Invalid eventType' }, { status: 400 })
         }
 
-        const supabase = await createClient()
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
 
         // Insert event
         const { data, error } = await supabase

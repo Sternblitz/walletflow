@@ -92,7 +92,7 @@ export async function getReviewStats(supabase: SupabaseClient, campaignId: strin
                 id: e.id,
                 type: 'rating_only',
                 rating: e.rating,
-                comment: e.rating >= 4 ? 'Wurde zu Google weitergeleitet' : undefined,
+                comment: undefined,
                 createdAt: e.created_at
             })
         }

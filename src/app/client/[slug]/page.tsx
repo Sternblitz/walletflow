@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Users, QrCode, Activity, ArrowUpRight, TrendingUp } from "lucide-react"
@@ -64,8 +65,12 @@ export default async function ClientDashboardPage({ params }: { params: Promise<
         .eq('campaign_id', campaign.id)
         .gte('created_at', todayStart.toISOString())
 
-    // 4. Fetch Review Stats
-    const reviewStats = await getReviewStats(supabase, campaign.id)
+    // 4. Fetch Review Stats (Use Anon Client)
+    const supabaseAnon = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const reviewStats = await getReviewStats(supabaseAnon, campaign.id)
 
     return (
         <div className="min-h-screen bg-zinc-950 text-white pb-20">

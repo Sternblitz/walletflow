@@ -9,6 +9,9 @@ import { ActivityChart, WalletDonut, RetentionGauge } from '@/components/app/POS
 import { AutomationManager } from '@/components/app/AutomationManager'
 import { AutomationRulesManager } from '@/components/app/AutomationRulesManager'
 import { ThemeToggle } from '@/components/app/ThemeToggle'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { getReviewStats, ReviewStats } from "@/lib/reviews"
+import { ReviewWidget } from "@/components/analytics/ReviewWidget"
 
 type Role = 'none' | 'staff' | 'chef'
 type Mode = 'idle' | 'scanning' | 'camera' | 'result'
@@ -34,6 +37,7 @@ export default function POSPage() {
 
     // Dashboard state
     const [stats, setStats] = useState<any>(null)
+    const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null)
     const [customers, setCustomers] = useState<any[]>([])
     const [customersLoading, setCustomersLoading] = useState(false)
     const [view, setView] = useState<'scanner' | 'dashboard' | 'push' | 'customers'>('scanner')
@@ -54,10 +58,13 @@ export default function POSPage() {
         if (role === 'chef' && view === 'dashboard') {
             loadStats()
         }
+        if (role === 'chef' && view === 'dashboard' && campaignData?.campaign?.id) {
+            loadReviews()
+        }
         if (role === 'chef' && view === 'customers') {
             loadCustomers()
         }
-    }, [role, view])
+    }, [role, view, campaignData])
 
     const loadCampaignData = async () => {
         try {
@@ -80,6 +87,20 @@ export default function POSPage() {
             }
         } catch (e) {
             console.error('Failed to load stats:', e)
+        }
+    }
+
+    const loadReviews = async () => {
+        if (!campaignData?.campaign?.id) return
+        try {
+            const supabase = createSupabaseClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            )
+            const stats = await getReviewStats(supabase, campaignData.campaign.id)
+            setReviewStats(stats)
+        } catch (e) {
+            console.error('Failed to load reviews:', e)
         }
     }
 
@@ -394,8 +415,13 @@ export default function POSPage() {
                             <p className="text-muted-foreground text-xs mt-1">Aktive Kunden (Installiert)</p>
                         </div>
 
-                        {/* 3. Retention Rate */}
-                        <div className="col-span-2 bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
+                        {/* 3. Review Stats */}
+                        {reviewStats && (
+                            <ReviewWidget stats={reviewStats} />
+                        )}
+
+                        {/* 4. Retention Rate (Reduced to 1 col) */}
+                        <div className="col-span-1 bg-card dark:bg-zinc-900/50 border border-border dark:border-white/10 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
                             <div className="flex justify-between items-center mb-2">
                                 <h3 className="font-bold text-muted-foreground text-sm uppercase">Kundenbindung</h3>
                                 <div className="p-1.5 bg-purple-500/10 rounded-lg">

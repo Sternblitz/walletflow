@@ -131,7 +131,7 @@ export function ReviewWidget({ stats, variant = 'card' }: ReviewWidgetProps) {
                                                     ? "bg-green-500/10 border-green-500/20 text-green-400"
                                                     : "bg-orange-500/10 border-orange-500/20 text-orange-400"
                                             )}>
-                                                {activity.rating >= 4 ? "Google Redirect" : "Internes Feedback"}
+                                                {activity.rating >= 4 ? "Google Bewertung" : "Internes Feedback"}
                                             </div>
                                         </div>
                                     </div>
