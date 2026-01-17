@@ -35,14 +35,14 @@ export async function POST(request: Request) {
 
         const campaignId = activeCampaign.id
 
-        // 2. Create Push Request
-        const status = scheduleTime ? 'scheduled' : 'pending'
+        // 2. Create Push Request - ALL go as 'pending' for admin approval first
+        // Admin will approve → changes to 'approved' or 'scheduled' if has scheduleTime
         const { data: pushRequest, error: insertError } = await supabase
             .from('push_requests')
             .insert({
                 campaign_id: campaignId,
                 message: message,
-                status: status,
+                status: 'pending', // Always pending - admin must approve!
                 scheduled_at: scheduleTime || null,
                 created_by: (await supabase.auth.getUser()).data.user?.id
             })
@@ -54,27 +54,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to create request' }, { status: 500 })
         }
 
-        // 3. Process if Immediate
-        if (!scheduleTime) {
-            const pushService = await createPushService()
-
-            // Fire and forget processing to avoid timeout
-            pushService.processPushRequest(pushRequest.id).catch(err => {
-                console.error('Background push processing failed:', err)
-            })
-
-            return NextResponse.json({
-                success: true,
-                message: 'Push sending started',
-                id: pushRequest.id
-            })
-        }
-
+        // Return success - admin will see this in push-requests dashboard
         return NextResponse.json({
             success: true,
-            message: 'Push scheduled',
+            message: scheduleTime
+                ? 'Push-Anfrage für Genehmigung erstellt. Nach Genehmigung wird sie zum geplanten Zeitpunkt gesendet.'
+                : 'Push-Anfrage für Genehmigung erstellt.',
             id: pushRequest.id,
-            scheduledAt: scheduleTime
+            scheduledAt: scheduleTime,
+            needsApproval: true
         })
 
     } catch (e: any) {

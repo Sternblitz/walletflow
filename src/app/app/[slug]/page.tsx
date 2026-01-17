@@ -86,6 +86,14 @@ export default function POSPage() {
     const [pushScheduleTime, setPushScheduleTime] = useState('')
     const [pushLoading, setPushLoading] = useState(false)
     const [scheduledPushes, setScheduledPushes] = useState<any[]>([])
+    const [pushHistory, setPushHistory] = useState<any[]>([])
+
+    // Reviews
+    const [showReviewsModal, setShowReviewsModal] = useState(false)
+
+    // Calendar
+    const [calendarMonth, setCalendarMonth] = useState(new Date())
+    const [automations, setAutomations] = useState<any[]>([])
 
     // ===============================================
     // LOADERS & EFFECTS
@@ -104,6 +112,8 @@ export default function POSPage() {
             loadStats()
             loadReviews()
             loadScheduledPushes()
+            loadPushHistory()
+            loadAutomations()
         }
     }, [role, view, campaignData, statsRange])
 
@@ -178,11 +188,42 @@ export default function POSPage() {
             .from('push_requests')
             .select('*')
             .eq('campaign_id', campaignData.campaign.id)
-            .eq('status', 'scheduled')
-            .gt('scheduled_at', new Date().toISOString())
+            .in('status', ['pending', 'scheduled', 'approved'])
             .order('scheduled_at', { ascending: true })
 
-        if (data) setScheduledPushes(data)
+        if (data) setScheduledPushes(data.filter(p => p.scheduled_at && new Date(p.scheduled_at) > new Date()))
+    }
+
+    const loadPushHistory = async () => {
+        if (!campaignData?.campaign?.id) return
+        const supabase = createSupabaseClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+        const { data } = await supabase
+            .from('push_requests')
+            .select('*')
+            .eq('campaign_id', campaignData.campaign.id)
+            .in('status', ['sent', 'failed'])
+            .order('sent_at', { ascending: false })
+            .limit(30)
+
+        if (data) setPushHistory(data)
+    }
+
+    const loadAutomations = async () => {
+        if (!campaignData?.campaign?.id) return
+        const supabase = createSupabaseClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+        const { data } = await supabase
+            .from('automation_rules')
+            .select('*')
+            .eq('campaign_id', campaignData.campaign.id)
+            .eq('is_enabled', true)
+
+        if (data) setAutomations(data)
     }
 
     // ===============================================
@@ -321,7 +362,16 @@ export default function POSPage() {
                 })
             })
             if (res.ok) {
-                toast.success(pushMode === 'schedule' ? 'Nachricht eingeplant!' : 'Nachricht gesendet!')
+                const data = await res.json()
+                if (data.needsApproval) {
+                    toast.success('📬 Anfrage zur Genehmigung gesendet!', {
+                        description: pushMode === 'schedule'
+                            ? 'Nach Genehmigung wird sie zum geplanten Zeitpunkt gesendet.'
+                            : 'Der Admin wird benachrichtigt.'
+                    })
+                } else {
+                    toast.success(pushMode === 'schedule' ? 'Nachricht eingeplant!' : 'Nachricht gesendet!')
+                }
                 setPushMessage('')
                 setPushScheduleTime('')
                 setShowPushModal(false)
@@ -413,56 +463,107 @@ export default function POSPage() {
 
                 <main className="relative z-10 flex-1 p-6 overflow-y-auto w-full max-w-7xl mx-auto space-y-6 pb-32">
 
-                    {/* LOYALTY SCORE - ALWAYS SHOWN */}
+                    {/* ERFOLGS-BEREICH - Dein QARD Level */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600/20 via-teal-600/10 to-cyan-600/20 border border-emerald-500/20 p-6"
+                        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-600/20 via-orange-600/10 to-yellow-600/20 border border-amber-500/30 p-6"
                     >
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
-                        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                                    <Crown className="w-8 h-8 text-white" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-3xl font-black text-white">{loyalty?.score || 50}%</span>
-                                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full flex items-center gap-1">
-                                            <TrendingUp size={12} /> Steigend
-                                        </span>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
+                        <div className="relative z-10">
+                            {/* Header mit Level */}
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30 relative">
+                                        <Crown className="w-8 h-8 text-white" />
+                                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center text-xs font-black text-amber-600 shadow-lg">
+                                            {(() => {
+                                                const score = loyalty?.score || 50
+                                                if (score >= 90) return '💎'
+                                                if (score >= 75) return '🥇'
+                                                if (score >= 60) return '🥈'
+                                                return '🥉'
+                                            })()}
+                                        </div>
                                     </div>
-                                    <p className="text-emerald-100/80 text-sm font-medium">{loyalty?.message || "Dein Loyalty-Programm ist bereit! 🚀"}</p>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-2xl font-black text-white">
+                                                {(() => {
+                                                    const score = loyalty?.score || 50
+                                                    if (score >= 90) return 'Diamant-Status'
+                                                    if (score >= 75) return 'Gold-Status'
+                                                    if (score >= 60) return 'Silber-Status'
+                                                    return 'Bronze-Status'
+                                                })()}
+                                            </span>
+                                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full flex items-center gap-1">
+                                                <TrendingUp size={12} /> Steigend
+                                            </span>
+                                        </div>
+                                        <p className="text-amber-100/80 text-sm font-medium mt-1">
+                                            {loyalty?.message || "Dein Loyalty-Programm läuft! Weiter so! 🚀"}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-4xl font-black text-white">{loyalty?.score || 50}<span className="text-lg">%</span></div>
+                                    <p className="text-xs text-amber-200/60 font-medium">Erfolgs-Score</p>
                                 </div>
                             </div>
-                            {/* Milestones */}
+
+                            {/* Stats-Highlights */}
+                            <div className="grid grid-cols-3 gap-3 mb-4">
+                                <div className="bg-black/20 rounded-xl p-3 text-center backdrop-blur-sm border border-white/5">
+                                    <div className="text-xl font-bold text-white">{stats?.stats?.stamps || 0}</div>
+                                    <div className="text-xs text-amber-200/60">Stempel gesamt</div>
+                                </div>
+                                <div className="bg-black/20 rounded-xl p-3 text-center backdrop-blur-sm border border-white/5">
+                                    <div className="text-xl font-bold text-white">{stats?.stats?.redemptions || 0}</div>
+                                    <div className="text-xs text-amber-200/60">Einlösungen</div>
+                                </div>
+                                <div className="bg-black/20 rounded-xl p-3 text-center backdrop-blur-sm border border-white/5">
+                                    <div className="text-xl font-bold text-white">{stats?.stats?.newPasses || 0}</div>
+                                    <div className="text-xs text-amber-200/60">Neue Kunden</div>
+                                </div>
+                            </div>
+
+                            {/* Milestones/Achievements */}
                             {loyalty?.milestones && loyalty.milestones.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {loyalty.milestones.slice(0, 3).map((m: string, i: number) => (
-                                        <span key={i} className="px-3 py-1.5 bg-white/10 backdrop-blur-sm text-white text-xs font-bold rounded-full border border-white/10">
-                                            {m}
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {loyalty.milestones.slice(0, 4).map((m: string, i: number) => (
+                                        <span key={i} className="px-3 py-1.5 bg-amber-500/20 text-amber-200 text-xs font-bold rounded-full border border-amber-500/30 flex items-center gap-1">
+                                            <Star size={10} className="text-amber-400" /> {m}
                                         </span>
                                     ))}
                                 </div>
                             )}
-                        </div>
-                        {/* Progress Bar */}
-                        <div className="mt-4 h-2 bg-black/30 rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${loyalty?.score || 50}%` }}
-                                transition={{ duration: 1, ease: "easeOut" }}
-                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"
-                            />
+
+                            {/* Progress Bar zum nächsten Level */}
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-xs text-amber-200/60">
+                                    <span>Fortschritt zum nächsten Level</span>
+                                    <span>
+                                        {(() => {
+                                            const score = loyalty?.score || 50
+                                            if (score >= 90) return 'Max erreicht! 🏆'
+                                            if (score >= 75) return `${90 - score}% bis Diamant`
+                                            if (score >= 60) return `${75 - score}% bis Gold`
+                                            return `${60 - score}% bis Silber`
+                                        })()}
+                                    </span>
+                                </div>
+                                <div className="h-2.5 bg-black/30 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${loyalty?.score || 50}%` }}
+                                        transition={{ duration: 1, ease: "easeOut" }}
+                                        className="h-full bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-400 rounded-full"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
-
-                    {/* GOOGLE REVIEWS */}
-                    {reviewStats && (
-                        <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4">
-                            <ReviewWidget stats={reviewStats} variant="card" />
-                        </div>
-                    )}
 
                     {/* KEY STATS */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -506,7 +607,7 @@ export default function POSPage() {
                                 </div>
                             </button>
 
-                            <div className="grid grid-cols-2 gap-4 h-[100px]">
+                            <div className="grid grid-cols-3 gap-4 h-[100px]">
                                 <button onClick={() => setView('scanner')} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-emerald-500/30">
                                     <Camera size={20} className="group-hover:text-emerald-500 transition-colors" />
                                     <span className="text-xs font-bold">Scanner</span>
@@ -515,6 +616,12 @@ export default function POSPage() {
                                     <Users size={20} className="group-hover:text-blue-500 transition-colors" />
                                     <span className="text-xs font-bold">Kunden</span>
                                 </button>
+                                {reviewStats && (
+                                    <button onClick={() => setShowReviewsModal(true)} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-yellow-500/30">
+                                        <Star size={20} className="group-hover:text-yellow-500 transition-colors" />
+                                        <span className="text-xs font-bold">Bewertungen</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -541,6 +648,99 @@ export default function POSPage() {
 
                     {/* AUTOMATIONS */}
                     <AutomationRulesManager slug={slug} />
+
+                    {/* KALENDER - Push History, Scheduled, Automations */}
+                    <div className="pt-6 border-t border-white/5">
+                        <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><Calendar className="w-5 h-5 text-blue-400" /> Kalender-Übersicht</h3>
+
+                        <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-6">
+                            {/* Month Navigation */}
+                            <div className="flex items-center justify-between mb-4">
+                                <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1))} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white">
+                                    <ArrowRight className="rotate-180" size={16} />
+                                </button>
+                                <h4 className="font-bold text-white">
+                                    {calendarMonth.toLocaleString('de-DE', { month: 'long', year: 'numeric' })}
+                                </h4>
+                                <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1))} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white">
+                                    <ArrowRight size={16} />
+                                </button>
+                            </div>
+
+                            {/* Weekday Headers */}
+                            <div className="grid grid-cols-7 gap-1 mb-2">
+                                {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => (
+                                    <div key={d} className="text-center text-xs text-zinc-500 font-medium py-2">{d}</div>
+                                ))}
+                            </div>
+
+                            {/* Calendar Days */}
+                            <div className="grid grid-cols-7 gap-1">
+                                {(() => {
+                                    const year = calendarMonth.getFullYear()
+                                    const month = calendarMonth.getMonth()
+                                    const firstDay = new Date(year, month, 1)
+                                    const lastDay = new Date(year, month + 1, 0)
+                                    const startOffset = (firstDay.getDay() + 6) % 7
+                                    const days: React.ReactNode[] = []
+
+                                    for (let i = 0; i < startOffset; i++) {
+                                        days.push(<div key={`empty-${i}`} className="p-2" />)
+                                    }
+
+                                    for (let d = 1; d <= lastDay.getDate(); d++) {
+                                        const date = new Date(year, month, d)
+                                        const dayOfWeek = date.getDay()
+                                        const isToday = new Date().toDateString() === date.toDateString()
+                                        const dateStr = date.toISOString().split('T')[0]
+
+                                        // Check for events on this day
+                                        const dayHistory = pushHistory.filter(p => p.sent_at?.startsWith(dateStr))
+                                        const dayScheduled = scheduledPushes.filter(p => p.scheduled_at?.startsWith(dateStr))
+                                        const hasWeekdayAutomation = automations.some(a => {
+                                            if (a.rule_type !== 'weekday_schedule') return false
+                                            const days = a.config?.days || []
+                                            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+                                            return days.includes(dayNames[dayOfWeek])
+                                        })
+
+                                        days.push(
+                                            <div
+                                                key={d}
+                                                className={`relative p-2 text-center rounded-lg text-sm transition-colors cursor-default
+                                                    ${isToday ? 'bg-emerald-500/20 text-emerald-400 font-bold' : 'hover:bg-white/5 text-zinc-400'}
+                                                    ${dayHistory.length > 0 ? 'ring-1 ring-violet-500/50' : ''}
+                                                    ${dayScheduled.length > 0 ? 'ring-1 ring-blue-500/50' : ''}
+                                                `}
+                                                title={[
+                                                    dayHistory.length > 0 ? `${dayHistory.length} gesendet` : '',
+                                                    dayScheduled.length > 0 ? `${dayScheduled.length} geplant` : '',
+                                                    hasWeekdayAutomation ? 'Automatisierung aktiv' : ''
+                                                ].filter(Boolean).join(', ') || undefined}
+                                            >
+                                                {d}
+                                                {(dayHistory.length > 0 || dayScheduled.length > 0 || hasWeekdayAutomation) && (
+                                                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+                                                        {dayHistory.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
+                                                        {dayScheduled.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                                                        {hasWeekdayAutomation && <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    }
+                                    return days
+                                })()}
+                            </div>
+
+                            {/* Legend */}
+                            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/5 text-xs text-zinc-500">
+                                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-violet-500" /> Gesendet</span>
+                                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" /> Geplant/Wartend</span>
+                                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Automatisierung</span>
+                            </div>
+                        </div>
+                    </div>
 
                     <button onClick={handleLogout} className="mx-auto block mt-8 text-xs text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Abmelden</button>
                 </main>
@@ -576,6 +776,68 @@ export default function POSPage() {
                                         {pushMode === 'schedule' && <input type="datetime-local" value={pushScheduleTime} onChange={(e) => setPushScheduleTime(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-blue-500/50 font-mono text-sm" />}
                                         <button type="submit" disabled={pushLoading || !pushMessage.trim()} className="w-full py-4 bg-white text-black rounded-xl font-bold hover:bg-zinc-200 transition-colors disabled:opacity-50 shadow-lg shadow-white/5">{pushLoading ? 'Wird gesendet...' : (pushMode === 'now' ? '⚡ Jetzt absenden' : '📅 Einplanen')}</button>
                                     </form>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+
+                {/* REVIEWS MODAL */}
+                <AnimatePresence>
+                    {showReviewsModal && reviewStats && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-zinc-900 border border-white/10 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative">
+                                <button onClick={() => setShowReviewsModal(false)} className="absolute top-4 right-4 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors z-20"><X size={18} className="text-zinc-400" /></button>
+
+                                <div className="p-8">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+                                            <Star className="w-8 h-8 text-white" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-white">Google Bewertungen</h2>
+                                            <p className="text-zinc-400 text-sm">Übersicht deiner Kundenmeinungen</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                        <div className="bg-black/40 rounded-xl p-4 text-center border border-white/5">
+                                            <div className="text-3xl font-bold text-yellow-500">{reviewStats.averageRating?.toFixed(1) || '—'}</div>
+                                            <div className="text-xs text-zinc-500 mt-1">Durchschnitt</div>
+                                            <div className="flex justify-center gap-0.5 mt-2">
+                                                {[1, 2, 3, 4, 5].map(s => (
+                                                    <Star key={s} size={14} className={s <= Math.round(reviewStats.averageRating || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-700'} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="bg-black/40 rounded-xl p-4 text-center border border-white/5">
+                                            <div className="text-3xl font-bold text-white">{reviewStats.totalReviews || 0}</div>
+                                            <div className="text-xs text-zinc-500 mt-1">Bewertungen gesamt</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        {[5, 4, 3, 2, 1].map(rating => {
+                                            const count = reviewStats.ratingDistribution?.[rating] || 0
+                                            const total = reviewStats.totalReviews || 1
+                                            const pct = Math.round((count / total) * 100)
+                                            return (
+                                                <div key={rating} className="flex items-center gap-2">
+                                                    <span className="text-xs text-zinc-500 w-6">{rating}★</span>
+                                                    <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-yellow-500 rounded-full" style={{ width: `${pct}%` }} />
+                                                    </div>
+                                                    <span className="text-xs text-zinc-500 w-8 text-right">{count}</span>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+
+                                    {reviewStats.googlePlaceUrl && (
+                                        <a href={reviewStats.googlePlaceUrl} target="_blank" rel="noopener noreferrer" className="mt-6 block w-full py-3 text-center bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold rounded-xl hover:from-yellow-400 hover:to-orange-400 transition-all">
+                                            Auf Google Maps öffnen →
+                                        </a>
+                                    )}
                                 </div>
                             </motion.div>
                         </div>
