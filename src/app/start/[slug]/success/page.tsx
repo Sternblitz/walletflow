@@ -115,8 +115,6 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
         setSelectedRating(rating)
         const data = campaignDataRef.current
 
-        console.log('Rating clicked:', rating, 'placeId:', data?.placeId)
-
         // Track which star was clicked
         await trackEvent('rating_clicked', rating)
 
@@ -124,11 +122,10 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
         if (rating >= 4 && data?.placeId) {
             await trackEvent('google_redirect', rating)
             const googleUrl = `https://search.google.com/local/writereview?placeid=${data.placeId}`
-            console.log('Opening Google URL:', googleUrl)
-            window.open(googleUrl, '_blank')
-            setTimeout(() => setReviewStep('thanks'), 500)
+            // Use location.href instead of window.open (mobile blocks popups)
+            window.location.href = googleUrl
         } else if (rating >= 4) {
-            setTimeout(() => setReviewStep('thanks'), 300)
+            setReviewStep('thanks')
         } else {
             setTimeout(() => setReviewStep('negative'), 400)
         }
