@@ -46,7 +46,7 @@ export async function GET(
         // 1. Get scan statistics for the period
         const { data: scans, error: scansError } = await supabase
             .from('scans')
-            .select('id, action_type, created_at, delta_value')
+            .select('id, action_type, created_at, delta_value, pass_id')
             .eq('campaign_id', campaignId)
             .gte('created_at', startDate.toISOString())
             .order('created_at', { ascending: true })
