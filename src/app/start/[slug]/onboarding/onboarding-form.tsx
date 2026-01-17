@@ -162,8 +162,8 @@ export function OnboardingForm({
             ...(phone && { phone }),
         })
 
-        // Redirect to pass issue API
-        window.location.href = `/api/pass/issue?${params.toString()}`
+        // Redirect to success page (which will handle pass download + review popup)
+        window.location.href = `/start/${slug}/success?${params.toString()}`
     }
 
     // Check if any fields are configured
