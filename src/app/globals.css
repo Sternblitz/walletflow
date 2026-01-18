@@ -48,6 +48,8 @@
     --animate-glow: glow 2s ease-in-out infinite alternate;
 }
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Base Variables */
 @layer base {
     :root {
