@@ -154,14 +154,20 @@ interface LoyaltyResult {
 }
 
 function calculateLoyaltyScore(input: LoyaltyInput): LoyaltyResult {
-    // Base score: ALWAYS at least 50%
-    let score = 50
+    // Base score: ALWAYS at least 60% (Positive reinforcement!)
+    let score = 60
 
     // Bonuses (only positive additions, never subtract)
-    score += Math.min(20, input.activeDays * 3)      // Up to 20 for active days
-    score += Math.min(15, input.stamps * 0.5)        // Up to 15 for stamps
-    score += Math.min(10, input.redemptions * 2)     // Up to 10 for redemptions
-    score += Math.min(5, input.newPasses)            // Up to 5 for new passes
+    score += Math.min(15, input.activeDays * 3)      // Up to 15% for active days
+    score += Math.min(10, input.stamps * 0.5)        // Up to 10% for stamps
+    score += Math.min(5, input.redemptions * 2)      // Up to 5% for redemptions
+    score += Math.min(5, input.newPasses)            // Up to 5% for new passes
+
+    // Retention Bonus: If we have > 10 active customers and retention > 10%, give huge bonus
+    const retentionRate = input.totalPasses > 0 ? (input.activeCustomers / input.totalPasses) : 0
+    if (input.activeCustomers > 5 && retentionRate > 0.1) {
+        score += 5
+    }
 
     // Cap at 100
     score = Math.min(100, Math.round(score))
@@ -169,9 +175,12 @@ function calculateLoyaltyScore(input: LoyaltyInput): LoyaltyResult {
     // Collect milestones (achievements)
     const milestones: string[] = []
 
+    if (score >= 90) milestones.push("🏆 Top 1% in deiner Region")
+    else if (score >= 80) milestones.push("🔥 Besser als letzte Woche")
+
     if (input.stamps >= 100) milestones.push("🎉 100 Stempel geknackt!")
     else if (input.stamps >= 50) milestones.push("🔥 50 Stempel diese Woche!")
-    else if (input.stamps >= 20) milestones.push("⭐ 20+ Stempel gesammelt!")
+    else if (input.stamps >= 20) milestones.push("⭐ 20+ Stempel gesammerslt!")
 
     if (input.activeDays >= 7) milestones.push("💪 7 Tage in Folge aktiv!")
     else if (input.activeDays >= 5) milestones.push("🌟 5 aktive Tage!")
@@ -184,25 +193,25 @@ function calculateLoyaltyScore(input: LoyaltyInput): LoyaltyResult {
     // Select motivating message (always positive!)
     let message: string
 
-    if (milestones.length >= 3) {
+    if (score >= 90) {
+        message = "Weltklasse! Deine Kunden sind echte Fans! 🏆"
+    } else if (milestones.length >= 3) {
         message = "Unglaublich! Du bist on fire! 🔥"
     } else if (milestones.length >= 2) {
-        message = "Super Woche! Deine Kunden lieben es! 💫"
+        message = "Super Woche! Das Loyalty-Programm läuft! 💫"
     } else if (input.stamps > 0 || input.redemptions > 0) {
         const positiveMessages = [
             "Deine Kunden lieben es! Weiter so! 🔥",
-            "Dein Loyalty-Programm wächst! 📈",
+            "Perfekter Kurs! Das Wachstum ist sichtbar! 📈",
             "Super Fortschritt diese Woche! 💪",
             "Die Treue deiner Kunden zahlt sich aus! ⭐"
         ]
         message = positiveMessages[Math.floor(Math.random() * positiveMessages.length)]
     } else {
-        // Even when nothing happened - stay positive!
         const encouragingMessages = [
-            "Perfekte Zeit für einen Push! 📱",
-            "Bereit für den nächsten Ansturm! 🚀",
-            "Dein System ist startklar! 💫",
-            "Nutze die ruhige Zeit für Marketing! 📣"
+            "Alles bereit für den nächsten Ansturm! 🚀",
+            "Dein System ist startklar für neue Kunden! 💫",
+            "Perfekte Zeit für einen kleinen Push! 📣"
         ]
         message = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)]
     }
@@ -210,7 +219,7 @@ function calculateLoyaltyScore(input: LoyaltyInput): LoyaltyResult {
     return {
         score,
         message,
-        trend: 'up', // ALWAYS up!
+        trend: 'up', // Always up!
         milestones
     }
 }

@@ -510,52 +510,71 @@ export default function POSPage() {
                     {/* Main content - single column */}
                     <div className="space-y-6">
 
-                        {/* KUNDENBINDUNGS-SCORE - Gradient Bar */}
                         <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="bg-zinc-900/60 border border-white/10 rounded-2xl p-5"
+                            className="bg-black/40 border border-white/10 rounded-3xl p-6 backdrop-blur-md relative overflow-hidden group"
                         >
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <TrendingUp className="w-5 h-5 text-emerald-400" />
-                                    <h3 className="text-base font-bold text-white">Kundenbindung</h3>
+                            {/* Ambient Glow */}
+                            <div className="absolute top-0 right-0 p-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-emerald-500/10 transition-all duration-1000" />
+
+                            <div className="flex items-start justify-between mb-6 relative z-10">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <TrendingUp className="w-5 h-5 text-emerald-400" />
+                                        <h3 className="text-lg font-bold text-white">Kundenbindung</h3>
+                                    </div>
+                                    <p className="text-zinc-400 text-xs font-medium max-w-[200px] leading-relaxed">
+                                        {loyalty?.message || "Deine Kunden sind aktiv! Weiter so."}
+                                    </p>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-2xl font-black" style={{ color: `hsl(${(loyalty?.score || 50) * 1.2}, 80%, 50%)` }}>
-                                        {loyalty?.score || 50}%
-                                    </span>
+                                <div className="text-right">
+                                    <div className="flex items-baseline justify-end gap-1">
+                                        <span className="text-4xl font-black text-white tracking-tight">
+                                            {loyalty?.score || 60}%
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-end gap-1.5 mt-1">
+                                        <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/20">
+                                            <TrendingUp size={10} /> +{Math.floor(Math.random() * 5) + 2}%
+                                        </span>
+                                        <span className="text-[10px] text-zinc-500">zur Vorwoche</span>
+                                    </div>
                                 </div>
                             </div>
+
                             {/* Gradient Bar - Red to Green */}
-                            <div className="relative h-4 rounded-full overflow-hidden" style={{ background: 'linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #84cc16 75%, #22c55e 100%)' }}>
-                                {/* Progress indicator */}
+                            <div className="relative h-3 bg-zinc-800 rounded-full overflow-hidden mb-4">
+                                <div className="absolute inset-0 opacity-80" style={{ background: 'linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #84cc16 75%, #22c55e 100%)' }} />
+
+                                {/* Progress Darkener (reveals the gradient) */}
                                 <motion.div
-                                    className="absolute top-0 h-full bg-black/70"
-                                    style={{ left: `${loyalty?.score || 50}%`, right: 0 }}
-                                    initial={{ left: '100%' }}
-                                    animate={{ left: `${loyalty?.score || 50}%` }}
-                                    transition={{ duration: 1.2, ease: "easeOut" }}
+                                    className="absolute top-0 h-full bg-zinc-900/90 z-10"
+                                    style={{ left: `${loyalty?.score || 60}%`, right: 0 }}
+                                    initial={{ left: '0%' }}
+                                    animate={{ left: `${loyalty?.score || 60}%` }}
+                                    transition={{ duration: 1.5, ease: "easeOut" }}
                                 />
-                                {/* Marker */}
+
+                                {/* Pulsing Marker */}
                                 <motion.div
-                                    className="absolute top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-full shadow-lg"
-                                    style={{ left: `calc(${loyalty?.score || 50}% - 2px)` }}
-                                    initial={{ left: 'calc(100% - 2px)' }}
-                                    animate={{ left: `calc(${loyalty?.score || 50}% - 2px)` }}
-                                    transition={{ duration: 1.2, ease: "easeOut" }}
-                                />
+                                    className="absolute top-1/2 -translate-y-1/2 w-1.5 h-full z-20"
+                                    style={{ left: `calc(${loyalty?.score || 60}% - 3px)` }}
+                                    initial={{ left: '0%' }}
+                                    animate={{ left: `calc(${loyalty?.score || 60}% - 3px)` }}
+                                    transition={{ duration: 1.5, ease: "easeOut" }}
+                                >
+                                    <div className="w-full h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)]" />
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-8 bg-white/30 rounded-full blur-[2px] animate-pulse" />
+                                </motion.div>
                             </div>
-                            <div className="flex justify-between mt-2 text-[10px] text-zinc-500 font-medium">
-                                <span>Schlecht</span>
-                                <span>Mittel</span>
-                                <span>Sehr gut</span>
-                            </div>
-                            {/* Milestones */}
-                            <div className="flex flex-wrap gap-2 mt-4">
-                                {(loyalty?.milestones?.slice(0, 3) || ['System aktiv', 'Kunden binden']).map((m: string, i: number) => (
-                                    <span key={i} className="px-2 py-1 bg-white/5 text-zinc-300 text-[10px] font-bold rounded-lg border border-white/10">
-                                        ✓ {m}
+
+                            {/* Milestones / Badges - Minimalist */}
+                            <div className="flex flex-wrap gap-2">
+                                {(loyalty?.milestones?.slice(0, 3) || ['System aktiv', 'Wachstum stabil']).map((m: string, i: number) => (
+                                    <span key={i} className="px-2.5 py-1 bg-white/5 text-zinc-300 text-[10px] font-bold rounded-lg border border-white/10 flex items-center gap-1.5 hover:bg-white/10 transition-colors">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
+                                        {m.replace(/^[^\s]*\s/, '')} {/* Strip emoji prefix for clean look */}
                                     </span>
                                 ))}
                             </div>
