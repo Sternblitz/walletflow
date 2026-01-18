@@ -604,7 +604,7 @@ export default function POSPage() {
                                     <button
                                         key={r}
                                         onClick={() => setStatsRange(r)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${statsRange === r ? 'bg-white dark:bg-violet-500 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${statsRange === r ? 'bg-violet-500 text-white shadow-md shadow-violet-500/20' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/5'}`}
                                     >
                                         {rangeLabels[r]}
                                     </button>
