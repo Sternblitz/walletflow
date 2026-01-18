@@ -14,6 +14,7 @@ import { Toaster, toast } from 'sonner'
 import { ActivityChart } from '@/components/app/POSCharts'
 import { Background } from '@/components/app/Background'
 import { AutomationRulesManager } from '@/components/app/AutomationRulesManager'
+import { LiveActivityFeed } from '@/components/app/LiveActivityFeed'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { getReviewStats, ReviewStats } from "@/lib/reviews"
 import { ReviewWidget } from "@/components/analytics/ReviewWidget"
@@ -50,10 +51,19 @@ function formatLastScan(dateStr: string | null | undefined): string {
     }
 }
 
+// Helper: Detect mobile or tablet device
+const isMobileOrTablet = (): boolean => {
+    if (typeof window === 'undefined') return false
+    const ua = navigator.userAgent.toLowerCase()
+    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(ua) ||
+        (navigator.maxTouchPoints > 0 && window.innerWidth <= 1024)
+}
+
 export default function POSPage() {
     const params = useParams()
     const slug = params.slug as string
     const isProcessing = useRef(false)
+    const shouldAutoStartScanner = useRef(false)
 
     // Auth
     const [role, setRole] = useState<Role>('none')
@@ -123,6 +133,17 @@ export default function POSPage() {
             loadCustomers()
         }
     }, [role, view, campaignData])
+
+    // Auto-start scanner on mobile/tablet after PIN login
+    useEffect(() => {
+        if (role !== 'none' && view === 'scanner' && shouldAutoStartScanner.current) {
+            shouldAutoStartScanner.current = false
+            // Small delay to ensure DOM is ready
+            setTimeout(() => {
+                startCamera()
+            }, 300)
+        }
+    }, [role, view])
 
     const loadCampaignData = async () => {
         try {
@@ -245,6 +266,10 @@ export default function POSPage() {
                 setRole(data.role)
                 setLabel(data.label || (data.role === 'chef' ? 'Chef' : 'Mitarbeiter'))
                 setPin('')
+                // Auto-start scanner on mobile/tablet
+                if (isMobileOrTablet()) {
+                    shouldAutoStartScanner.current = true
+                }
             } else {
                 setAuthError(data.error || 'Falscher PIN')
             }
@@ -462,302 +487,344 @@ export default function POSPage() {
                     </div>
                 </header>
 
-                <main className="relative z-10 flex-1 p-6 overflow-y-auto w-full max-w-7xl mx-auto space-y-6 pb-32">
+                <main className="relative z-10 flex-1 p-6 overflow-y-auto w-full max-w-7xl mx-auto pb-32">
+                    {/* Main Grid: Content + Sidebar */}
+                    <div className="flex gap-6">
+                        {/* Main Content Area */}
+                        <div className="flex-1 space-y-6 min-w-0">
 
-                    {/* ERFOLGS-BEREICH - Dein QARD Level */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-600/20 via-orange-600/10 to-yellow-600/20 border border-amber-500/30 p-6"
-                    >
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
-                        <div className="relative z-10">
-                            {/* Header mit Level */}
-                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30 relative">
-                                        <Crown className="w-8 h-8 text-white" />
-                                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center text-xs font-black text-amber-600 shadow-lg">
-                                            {(() => {
-                                                const score = loyalty?.score || 50
-                                                if (score >= 90) return '💎'
-                                                if (score >= 75) return '🥇'
-                                                if (score >= 60) return '🥈'
-                                                return '🥉'
-                                            })()}
+                            {/* KUNDENBINDUNGS-SCORE - Heat Map Style */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-900/30 via-teal-900/20 to-cyan-900/30 border border-emerald-500/20 p-6"
+                            >
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-32 -mt-32" />
+                                <div className="relative z-10">
+                                    {/* Header */}
+                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                                                <TrendingUp className="w-7 h-7 text-white" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-black text-white">Kundenbindungs-Score</h3>
+                                                <p className="text-emerald-200/70 text-sm font-medium">
+                                                    {loyalty?.message || "Deine Kunden bleiben treu! 🌟"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            {/* Score Display - Always prominent */}
+                                            <div className="text-right">
+                                                <div className="text-4xl font-black text-white flex items-center gap-1">
+                                                    {loyalty?.score || 50}
+                                                    <span className="text-lg text-emerald-400">%</span>
+                                                </div>
+                                                <p className="text-xs text-emerald-300/60 font-medium">Bindungsrate</p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-2xl font-black text-white">
-                                                {(() => {
-                                                    const score = loyalty?.score || 50
-                                                    if (score >= 90) return 'Diamant-Status'
-                                                    if (score >= 75) return 'Gold-Status'
-                                                    if (score >= 60) return 'Silber-Status'
-                                                    return 'Bronze-Status'
-                                                })()}
-                                            </span>
-                                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full flex items-center gap-1">
-                                                <TrendingUp size={12} /> Steigend
+
+                                    {/* Heat Map - 7 Day Activity */}
+                                    <div className="mb-6">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-xs text-emerald-200/60 font-medium uppercase tracking-wider">Letzte 7 Tage Aktivität</span>
+                                            <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                                                <Zap size={12} /> {stats?.stats?.stamps || 0} Aktionen
                                             </span>
                                         </div>
-                                        <p className="text-amber-100/80 text-sm font-medium mt-1">
-                                            {loyalty?.message || "Dein Loyalty-Programm läuft! Weiter so! 🚀"}
-                                        </p>
+                                        <div className="grid grid-cols-7 gap-1.5">
+                                            {(stats?.chartData || Array(7).fill({ stamps: 0, redemptions: 0 })).slice(-7).map((day: any, i: number) => {
+                                                const activity = (day.stamps || 0) + (day.redemptions || 0)
+                                                const intensity = activity === 0 ? 0 : activity <= 2 ? 1 : activity <= 5 ? 2 : activity <= 10 ? 3 : 4
+                                                const colors = [
+                                                    'bg-zinc-800/50 border-zinc-700/50',
+                                                    'bg-emerald-900/40 border-emerald-700/50',
+                                                    'bg-emerald-700/50 border-emerald-600/50',
+                                                    'bg-emerald-500/60 border-emerald-400/50',
+                                                    'bg-emerald-400/80 border-emerald-300/50'
+                                                ]
+                                                const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+                                                const todayIndex = (new Date().getDay() + 6) % 7
+                                                const dayOffset = 6 - i
+                                                const dayIndex = (todayIndex - dayOffset + 7) % 7
+
+                                                return (
+                                                    <div key={i} className="flex flex-col items-center gap-1">
+                                                        <div
+                                                            className={`w-full aspect-square rounded-lg border transition-all ${colors[intensity]} ${i === 6 ? 'ring-2 ring-emerald-500/50' : ''}`}
+                                                            title={`${activity} Aktionen`}
+                                                        />
+                                                        <span className={`text-[10px] ${i === 6 ? 'text-emerald-400 font-bold' : 'text-zinc-500'}`}>
+                                                            {dayNames[dayIndex]}
+                                                        </span>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                        <div className="flex items-center justify-end gap-2 mt-2">
+                                            <span className="text-[10px] text-zinc-500">Weniger</span>
+                                            <div className="flex gap-0.5">
+                                                {['bg-zinc-800/50', 'bg-emerald-900/40', 'bg-emerald-700/50', 'bg-emerald-500/60', 'bg-emerald-400/80'].map((c, i) => (
+                                                    <div key={i} className={`w-3 h-3 rounded-sm ${c}`} />
+                                                ))}
+                                            </div>
+                                            <span className="text-[10px] text-zinc-500">Mehr</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Key Metrics Row */}
+                                    <div className="grid grid-cols-3 gap-3 mb-4">
+                                        <div className="bg-black/20 rounded-xl p-3 text-center backdrop-blur-sm border border-white/5">
+                                            <div className="text-xl font-bold text-white">{stats?.stats?.activeCustomers || 0}</div>
+                                            <div className="text-[10px] text-emerald-200/60 uppercase tracking-wider">Aktive Kunden</div>
+                                        </div>
+                                        <div className="bg-black/20 rounded-xl p-3 text-center backdrop-blur-sm border border-white/5">
+                                            <div className="text-xl font-bold text-white">{stats?.stats?.redemptions || 0}</div>
+                                            <div className="text-[10px] text-emerald-200/60 uppercase tracking-wider">Einlösungen</div>
+                                        </div>
+                                        <div className="bg-black/20 rounded-xl p-3 text-center backdrop-blur-sm border border-white/5">
+                                            <div className="text-xl font-bold text-emerald-400">+{stats?.stats?.newPasses || 0}</div>
+                                            <div className="text-[10px] text-emerald-200/60 uppercase tracking-wider">Neue Kunden</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Milestones/Achievements - Always show something positive */}
+                                    <div className="flex flex-wrap gap-2">
+                                        {loyalty?.milestones && loyalty.milestones.length > 0 ? (
+                                            loyalty.milestones.slice(0, 4).map((m: string, i: number) => (
+                                                <span key={i} className="px-3 py-1.5 bg-emerald-500/15 text-emerald-300 text-xs font-bold rounded-full border border-emerald-500/25 flex items-center gap-1.5">
+                                                    <Sparkles size={10} className="text-emerald-400" /> {m}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <span className="px-3 py-1.5 bg-emerald-500/15 text-emerald-300 text-xs font-bold rounded-full border border-emerald-500/25 flex items-center gap-1.5">
+                                                    <Sparkles size={10} /> System läuft stabil
+                                                </span>
+                                                <span className="px-3 py-1.5 bg-emerald-500/15 text-emerald-300 text-xs font-bold rounded-full border border-emerald-500/25 flex items-center gap-1.5">
+                                                    <Target size={10} /> Bereit für mehr Kunden
+                                                </span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-4xl font-black text-white">{loyalty?.score || 50}<span className="text-lg">%</span></div>
-                                    <p className="text-xs text-amber-200/60 font-medium">Erfolgs-Score</p>
+                            </motion.div>
+
+                            {/* KEY STATS */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <StatCard label="Stempel" value={stats?.stats?.stamps || 0} icon={<Zap size={18} />} color="emerald" />
+                                <StatCard label="Einlösungen" value={stats?.stats?.redemptions || 0} icon={<Gift size={18} />} color="purple" />
+                                <StatCard label="Neue Kunden" value={stats?.stats?.newPasses || 0} icon={<Users size={18} />} color="blue" />
+                                {/* Reviews Card - Prominent with count */}
+                                {reviewStats ? (
+                                    <button
+                                        onClick={() => setShowReviewsModal(true)}
+                                        className="bg-zinc-900/40 border border-yellow-500/20 rounded-2xl p-5 relative overflow-hidden group hover:bg-zinc-900/60 hover:border-yellow-500/40 transition-all backdrop-blur-sm text-left"
+                                    >
+                                        <div className="flex justify-between items-start mb-3">
+                                            <span className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Bewertungen</span>
+                                            <div className="p-2 rounded-lg text-yellow-500 bg-yellow-500/10 group-hover:scale-110 transition-transform">
+                                                <Star size={18} className="fill-yellow-500" />
+                                            </div>
+                                        </div>
+                                        <div className="flex items-end gap-2">
+                                            <span className="text-3xl font-bold text-white">{reviewStats.total}</span>
+                                            <span className="text-lg font-bold text-yellow-500 mb-0.5">{reviewStats.average}★</span>
+                                        </div>
+                                    </button>
+                                ) : (
+                                    <StatCard label="Aktive Pässe" value={stats?.stats?.totalPasses || 0} icon={<Check size={18} />} color="zinc" />
+                                )}
+                            </div>
+
+                            {/* CHART + ACTIONS */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Activity Chart */}
+                                <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-sm min-h-[300px]">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="font-bold text-lg text-white flex items-center gap-2"><BarChart3 size={20} className="text-emerald-500" /> Aktivität</h3>
+                                        <span className="text-xs font-mono text-zinc-500">{rangeLabels[statsRange]}</span>
+                                    </div>
+                                    <div className="flex-1 w-full">
+                                        {statsLoading ? (
+                                            <div className="h-full flex items-center justify-center">
+                                                <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+                                            </div>
+                                        ) : (
+                                            <ActivityChart data={stats?.chartData || []} />
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="lg:col-span-1 flex flex-col gap-4">
+                                    <button onClick={() => setShowPushModal(true)} className="flex-1 relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 hover:from-violet-500/30 hover:to-fuchsia-500/30 transition-all shadow-lg shadow-violet-900/20 group text-left p-6 flex flex-col justify-between min-h-[140px]">
+                                        <div className="absolute top-0 right-0 p-24 bg-violet-500/10 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:bg-violet-500/20 transition-all" />
+                                        <div className="p-3 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl w-fit relative z-10 group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/30">
+                                            <Send className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div className="relative z-10">
+                                            <h3 className="text-xl font-bold text-white">Push Senden</h3>
+                                            <div className="flex items-center gap-2 text-violet-200 text-xs font-medium opacity-80 mt-1">
+                                                <Users size={14} /> <span>Alle Kunden erreichen</span>
+                                            </div>
+                                        </div>
+                                    </button>
+
+                                    <div className="grid grid-cols-2 gap-4 h-[100px]">
+                                        <button onClick={() => setView('scanner')} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-emerald-500/30">
+                                            <Camera size={20} className="group-hover:text-emerald-500 transition-colors" />
+                                            <span className="text-xs font-bold">Scanner</span>
+                                        </button>
+                                        <button onClick={() => setView('customers')} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-blue-500/30">
+                                            <Users size={20} className="group-hover:text-blue-500 transition-colors" />
+                                            <span className="text-xs font-bold">Kunden</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Stats-Highlights */}
-                            <div className="grid grid-cols-3 gap-3 mb-4">
-                                <div className="bg-black/20 rounded-xl p-3 text-center backdrop-blur-sm border border-white/5">
-                                    <div className="text-xl font-bold text-white">{stats?.stats?.stamps || 0}</div>
-                                    <div className="text-xs text-amber-200/60">Stempel gesamt</div>
-                                </div>
-                                <div className="bg-black/20 rounded-xl p-3 text-center backdrop-blur-sm border border-white/5">
-                                    <div className="text-xl font-bold text-white">{stats?.stats?.redemptions || 0}</div>
-                                    <div className="text-xs text-amber-200/60">Einlösungen</div>
-                                </div>
-                                <div className="bg-black/20 rounded-xl p-3 text-center backdrop-blur-sm border border-white/5">
-                                    <div className="text-xl font-bold text-white">{stats?.stats?.newPasses || 0}</div>
-                                    <div className="text-xs text-amber-200/60">Neue Kunden</div>
-                                </div>
-                            </div>
-
-                            {/* Milestones/Achievements */}
-                            {loyalty?.milestones && loyalty.milestones.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {loyalty.milestones.slice(0, 4).map((m: string, i: number) => (
-                                        <span key={i} className="px-3 py-1.5 bg-amber-500/20 text-amber-200 text-xs font-bold rounded-full border border-amber-500/30 flex items-center gap-1">
-                                            <Star size={10} className="text-amber-400" /> {m}
-                                        </span>
-                                    ))}
+                            {/* SCHEDULED PUSHES - Only if exists */}
+                            {scheduledPushes.length > 0 && (
+                                <div className="pt-6 border-t border-white/5 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-bold flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-400" /> Geplante Nachrichten</h3>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {scheduledPushes.map((push) => (
+                                            <div key={push.id} className="flex gap-4 items-center bg-zinc-900/60 p-4 rounded-2xl border border-white/5">
+                                                <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 shrink-0"><Clock className="w-5 h-5" /></div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-white truncate">{push.message}</p>
+                                                    <p className="text-xs text-zinc-500 font-mono mt-1">{new Date(push.scheduled_at).toLocaleString('de-DE')}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
-                            {/* Progress Bar zum nächsten Level */}
-                            <div className="space-y-1">
-                                <div className="flex justify-between text-xs text-amber-200/60">
-                                    <span>Fortschritt zum nächsten Level</span>
-                                    <span>
+                            {/* AUTOMATIONS */}
+                            <AutomationRulesManager slug={slug} />
+
+                            {/* KALENDER - Push History, Scheduled, Automations */}
+                            <div className="pt-6 border-t border-white/5">
+                                <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><Calendar className="w-5 h-5 text-blue-400" /> Kalender-Übersicht</h3>
+
+                                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-6">
+                                    {/* Month Navigation */}
+                                    <div className="flex items-center justify-between mb-4">
+                                        <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1))} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white">
+                                            <ArrowRight className="rotate-180" size={16} />
+                                        </button>
+                                        <h4 className="font-bold text-white">
+                                            {calendarMonth.toLocaleString('de-DE', { month: 'long', year: 'numeric' })}
+                                        </h4>
+                                        <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1))} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white">
+                                            <ArrowRight size={16} />
+                                        </button>
+                                    </div>
+
+                                    {/* Weekday Headers */}
+                                    <div className="grid grid-cols-7 gap-1 mb-2">
+                                        {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => (
+                                            <div key={d} className="text-center text-xs text-zinc-500 font-medium py-2">{d}</div>
+                                        ))}
+                                    </div>
+
+                                    {/* Calendar Days */}
+                                    <div className="grid grid-cols-7 gap-1">
                                         {(() => {
-                                            const score = loyalty?.score || 50
-                                            if (score >= 90) return 'Max erreicht! 🏆'
-                                            if (score >= 75) return `${90 - score}% bis Diamant`
-                                            if (score >= 60) return `${75 - score}% bis Gold`
-                                            return `${60 - score}% bis Silber`
-                                        })()}
-                                    </span>
-                                </div>
-                                <div className="h-2.5 bg-black/30 rounded-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${loyalty?.score || 50}%` }}
-                                        transition={{ duration: 1, ease: "easeOut" }}
-                                        className="h-full bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-400 rounded-full"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
+                                            const year = calendarMonth.getFullYear()
+                                            const month = calendarMonth.getMonth()
+                                            const firstDay = new Date(year, month, 1)
+                                            const lastDay = new Date(year, month + 1, 0)
+                                            const startOffset = (firstDay.getDay() + 6) % 7
+                                            const days: React.ReactNode[] = []
 
-                    {/* KEY STATS */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <StatCard label="Stempel" value={stats?.stats?.stamps || 0} icon={<Zap size={18} />} color="emerald" />
-                        <StatCard label="Einlösungen" value={stats?.stats?.redemptions || 0} icon={<Gift size={18} />} color="purple" />
-                        <StatCard label="Neue Kunden" value={stats?.stats?.newPasses || 0} icon={<Users size={18} />} color="blue" />
-                        <StatCard label="Aktive Pässe" value={stats?.stats?.totalPasses || 0} icon={<Check size={18} />} color="zinc" />
-                    </div>
+                                            for (let i = 0; i < startOffset; i++) {
+                                                days.push(<div key={`empty-${i}`} className="p-2" />)
+                                            }
 
-                    {/* CHART + ACTIONS */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Activity Chart */}
-                        <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-sm min-h-[300px]">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-lg text-white flex items-center gap-2"><BarChart3 size={20} className="text-emerald-500" /> Aktivität</h3>
-                                <span className="text-xs font-mono text-zinc-500">{rangeLabels[statsRange]}</span>
-                            </div>
-                            <div className="flex-1 w-full">
-                                {statsLoading ? (
-                                    <div className="h-full flex items-center justify-center">
-                                        <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
-                                    </div>
-                                ) : (
-                                    <ActivityChart data={stats?.chartData || []} />
-                                )}
-                            </div>
-                        </div>
+                                            for (let d = 1; d <= lastDay.getDate(); d++) {
+                                                const date = new Date(year, month, d)
+                                                const dayOfWeek = date.getDay()
+                                                const isToday = new Date().toDateString() === date.toDateString()
+                                                const dateStr = date.toISOString().split('T')[0]
 
-                        {/* Actions */}
-                        <div className="lg:col-span-1 flex flex-col gap-4">
-                            <button onClick={() => setShowPushModal(true)} className="flex-1 relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 hover:from-violet-500/30 hover:to-fuchsia-500/30 transition-all shadow-lg shadow-violet-900/20 group text-left p-6 flex flex-col justify-between min-h-[140px]">
-                                <div className="absolute top-0 right-0 p-24 bg-violet-500/10 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:bg-violet-500/20 transition-all" />
-                                <div className="p-3 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl w-fit relative z-10 group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/30">
-                                    <Send className="w-6 h-6 text-white" />
-                                </div>
-                                <div className="relative z-10">
-                                    <h3 className="text-xl font-bold text-white">Push Senden</h3>
-                                    <div className="flex items-center gap-2 text-violet-200 text-xs font-medium opacity-80 mt-1">
-                                        <Users size={14} /> <span>Alle Kunden erreichen</span>
-                                    </div>
-                                </div>
-                            </button>
+                                                // Check for events on this day
+                                                const dayHistory = pushHistory.filter(p => p.sent_at?.startsWith(dateStr))
+                                                const dayScheduled = scheduledPushes.filter(p => p.scheduled_at?.startsWith(dateStr))
 
-                            <div className="grid grid-cols-3 gap-4 h-[100px]">
-                                <button onClick={() => setView('scanner')} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-emerald-500/30">
-                                    <Camera size={20} className="group-hover:text-emerald-500 transition-colors" />
-                                    <span className="text-xs font-bold">Scanner</span>
-                                </button>
-                                <button onClick={() => setView('customers')} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-blue-500/30">
-                                    <Users size={20} className="group-hover:text-blue-500 transition-colors" />
-                                    <span className="text-xs font-bold">Kunden</span>
-                                </button>
-                                {reviewStats && (
-                                    <button onClick={() => setShowReviewsModal(true)} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-yellow-500/30 relative">
-                                        <Star size={20} className="group-hover:text-yellow-500 transition-colors" />
-                                        <span className="text-xs font-bold">Bewertungen</span>
-                                        {reviewStats.total > 0 && (
-                                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 text-black text-[10px] font-bold rounded-full flex items-center justify-center">
-                                                {reviewStats.total > 99 ? '99+' : reviewStats.total}
-                                            </span>
-                                        )}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                                                // Check for automations
+                                                const hasWeekdayAutomation = automations.some(a => {
+                                                    if (a.rule_type !== 'weekday_schedule') return false
+                                                    const configDays = a.config?.days || []
+                                                    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+                                                    return configDays.includes(dayNames[dayOfWeek])
+                                                })
 
-                    {/* SCHEDULED PUSHES - Only if exists */}
-                    {scheduledPushes.length > 0 && (
-                        <div className="pt-6 border-t border-white/5 space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-400" /> Geplante Nachrichten</h3>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {scheduledPushes.map((push) => (
-                                    <div key={push.id} className="flex gap-4 items-center bg-zinc-900/60 p-4 rounded-2xl border border-white/5">
-                                        <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 shrink-0"><Clock className="w-5 h-5" /></div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-white truncate">{push.message}</p>
-                                            <p className="text-xs text-zinc-500 font-mono mt-1">{new Date(push.scheduled_at).toLocaleString('de-DE')}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                                                // For birthday/inactivity automations - show a general indicator if any are active
+                                                const hasOtherAutomations = automations.some(a =>
+                                                    a.rule_type === 'birthday' || a.rule_type === 'inactivity'
+                                                )
 
-                    {/* AUTOMATIONS */}
-                    <AutomationRulesManager slug={slug} />
+                                                const hasAutomation = hasWeekdayAutomation || (hasOtherAutomations && isToday)
 
-                    {/* KALENDER - Push History, Scheduled, Automations */}
-                    <div className="pt-6 border-t border-white/5">
-                        <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><Calendar className="w-5 h-5 text-blue-400" /> Kalender-Übersicht</h3>
-
-                        <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-6">
-                            {/* Month Navigation */}
-                            <div className="flex items-center justify-between mb-4">
-                                <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1))} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white">
-                                    <ArrowRight className="rotate-180" size={16} />
-                                </button>
-                                <h4 className="font-bold text-white">
-                                    {calendarMonth.toLocaleString('de-DE', { month: 'long', year: 'numeric' })}
-                                </h4>
-                                <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1))} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white">
-                                    <ArrowRight size={16} />
-                                </button>
-                            </div>
-
-                            {/* Weekday Headers */}
-                            <div className="grid grid-cols-7 gap-1 mb-2">
-                                {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => (
-                                    <div key={d} className="text-center text-xs text-zinc-500 font-medium py-2">{d}</div>
-                                ))}
-                            </div>
-
-                            {/* Calendar Days */}
-                            <div className="grid grid-cols-7 gap-1">
-                                {(() => {
-                                    const year = calendarMonth.getFullYear()
-                                    const month = calendarMonth.getMonth()
-                                    const firstDay = new Date(year, month, 1)
-                                    const lastDay = new Date(year, month + 1, 0)
-                                    const startOffset = (firstDay.getDay() + 6) % 7
-                                    const days: React.ReactNode[] = []
-
-                                    for (let i = 0; i < startOffset; i++) {
-                                        days.push(<div key={`empty-${i}`} className="p-2" />)
-                                    }
-
-                                    for (let d = 1; d <= lastDay.getDate(); d++) {
-                                        const date = new Date(year, month, d)
-                                        const dayOfWeek = date.getDay()
-                                        const isToday = new Date().toDateString() === date.toDateString()
-                                        const dateStr = date.toISOString().split('T')[0]
-
-                                        // Check for events on this day
-                                        const dayHistory = pushHistory.filter(p => p.sent_at?.startsWith(dateStr))
-                                        const dayScheduled = scheduledPushes.filter(p => p.scheduled_at?.startsWith(dateStr))
-
-                                        // Check for automations
-                                        const hasWeekdayAutomation = automations.some(a => {
-                                            if (a.rule_type !== 'weekday_schedule') return false
-                                            const configDays = a.config?.days || []
-                                            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-                                            return configDays.includes(dayNames[dayOfWeek])
-                                        })
-
-                                        // For birthday/inactivity automations - show a general indicator if any are active
-                                        const hasOtherAutomations = automations.some(a =>
-                                            a.rule_type === 'birthday' || a.rule_type === 'inactivity'
-                                        )
-
-                                        const hasAutomation = hasWeekdayAutomation || (hasOtherAutomations && isToday)
-
-                                        days.push(
-                                            <div
-                                                key={d}
-                                                className={`relative p-2 text-center rounded-lg text-sm transition-colors cursor-default
+                                                days.push(
+                                                    <div
+                                                        key={d}
+                                                        className={`relative p-2 text-center rounded-lg text-sm transition-colors cursor-default
                                                     ${isToday ? 'bg-emerald-500/20 text-emerald-400 font-bold' : 'hover:bg-white/5 text-zinc-400'}
                                                     ${dayHistory.length > 0 ? 'ring-1 ring-violet-500/50' : ''}
                                                     ${dayScheduled.length > 0 ? 'ring-1 ring-blue-500/50' : ''}
                                                 `}
-                                                title={[
-                                                    dayHistory.length > 0 ? `${dayHistory.length} gesendet` : '',
-                                                    dayScheduled.length > 0 ? `${dayScheduled.length} geplant` : '',
-                                                    hasAutomation ? 'Automatisierung aktiv' : ''
-                                                ].filter(Boolean).join(', ') || undefined}
-                                            >
-                                                {d}
-                                                {(dayHistory.length > 0 || dayScheduled.length > 0 || hasAutomation) && (
-                                                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
-                                                        {dayHistory.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
-                                                        {dayScheduled.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
-                                                        {hasAutomation && <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />}
+                                                        title={[
+                                                            dayHistory.length > 0 ? `${dayHistory.length} gesendet` : '',
+                                                            dayScheduled.length > 0 ? `${dayScheduled.length} geplant` : '',
+                                                            hasAutomation ? 'Automatisierung aktiv' : ''
+                                                        ].filter(Boolean).join(', ') || undefined}
+                                                    >
+                                                        {d}
+                                                        {(dayHistory.length > 0 || dayScheduled.length > 0 || hasAutomation) && (
+                                                            <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+                                                                {dayHistory.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
+                                                                {dayScheduled.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                                                                {hasAutomation && <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                        )
-                                    }
-                                    return days
-                                })()}
+                                                )
+                                            }
+                                            return days
+                                        })()}
+                                    </div>
+
+                                    {/* Legend */}
+                                    <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/5 text-xs text-zinc-500">
+                                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-violet-500" /> Gesendet</span>
+                                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" /> Geplant/Wartend</span>
+                                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Automatisierung</span>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Legend */}
-                            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/5 text-xs text-zinc-500">
-                                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-violet-500" /> Gesendet</span>
-                                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" /> Geplant/Wartend</span>
-                                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Automatisierung</span>
-                            </div>
+                            <button onClick={handleLogout} className="mx-auto block mt-8 text-xs text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Abmelden</button>
+                        </div>
+                        {/* End Main Content Area */}
+
+                        {/* Live Activity Feed Sidebar */}
+                        <div className="hidden lg:block w-72 shrink-0">
+                            {campaignData?.campaign?.id && (
+                                <div className="sticky top-6">
+                                    <LiveActivityFeed campaignId={campaignData.campaign.id} />
+                                </div>
+                            )}
                         </div>
                     </div>
-
-                    <button onClick={handleLogout} className="mx-auto block mt-8 text-xs text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Abmelden</button>
+                    {/* End Main Grid */}
                 </main>
 
                 {/* PUSH MODAL */}
@@ -852,15 +919,24 @@ export default function POSPage() {
                                             <div className="space-y-3 max-h-60 overflow-y-auto">
                                                 {reviewStats.recentActivity.slice(0, 10).map(activity => (
                                                     <div key={activity.id} className="bg-black/30 rounded-xl p-3 border border-white/5">
-                                                        <div className="flex items-center justify-between mb-1">
+                                                        <div className="flex items-center justify-between mb-2">
                                                             <div className="flex items-center gap-1">
                                                                 {[1, 2, 3, 4, 5].map(s => (
                                                                     <Star key={s} size={12} className={s <= activity.rating ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-700'} />
                                                                 ))}
                                                             </div>
-                                                            <span className="text-[10px] text-zinc-600">
-                                                                {new Date(activity.createdAt).toLocaleDateString('de-DE')}
-                                                            </span>
+                                                            <div className="flex items-center gap-2">
+                                                                {/* Badge: Google or Internal */}
+                                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activity.rating >= 4
+                                                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                                    : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                                                                    }`}>
+                                                                    {activity.rating >= 4 ? '🌐 Google' : '📝 Intern'}
+                                                                </span>
+                                                                <span className="text-[10px] text-zinc-600">
+                                                                    {new Date(activity.createdAt).toLocaleDateString('de-DE')}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                         {activity.comment && (
                                                             <p className="text-sm text-zinc-300 mt-1">„{activity.comment}"</p>
@@ -951,8 +1027,26 @@ export default function POSPage() {
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
+            {/* Header Navigation - Chef only */}
             <div className="absolute top-4 right-4 z-50 flex gap-2">
-                {role === 'chef' && <button onClick={() => setView('dashboard')} className="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 hover:bg-white/20 transition-all"><ArrowRight className="w-5 h-5" /></button>}
+                {role === 'chef' && (
+                    <>
+                        <button
+                            onClick={() => setView('customers')}
+                            className="px-4 py-2.5 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 hover:bg-white/20 transition-all flex items-center gap-2"
+                        >
+                            <Users className="w-4 h-4" />
+                            <span className="text-sm font-medium">Kunden</span>
+                        </button>
+                        <button
+                            onClick={() => setView('dashboard')}
+                            className="px-4 py-2.5 bg-gradient-to-r from-violet-600/80 to-fuchsia-600/80 backdrop-blur-md rounded-xl border border-white/10 hover:from-violet-500 hover:to-fuchsia-500 transition-all flex items-center gap-2"
+                        >
+                            <BarChart3 className="w-4 h-4" />
+                            <span className="text-sm font-medium">Dashboard</span>
+                        </button>
+                    </>
+                )}
             </div>
             <Background />
             <main className="flex-1 flex flex-col items-center justify-center p-6 relative z-10 w-full max-w-md mx-auto">

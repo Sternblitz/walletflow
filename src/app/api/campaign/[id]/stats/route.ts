@@ -56,23 +56,25 @@ export async function GET(
             return NextResponse.json({ error: 'Failed to fetch scan data' }, { status: 500 })
         }
 
-        // 2. Get new passes for the period
+        // 2. Get new passes for the period (excluding deleted)
         const { count: newPassesCount, error: passesError } = await supabase
             .from('passes')
             .select('id', { count: 'exact', head: true })
             .eq('campaign_id', campaignId)
             .gte('created_at', startDate.toISOString())
+            .is('deleted_at', null)
             .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
 
         if (passesError) {
             console.error('Error fetching passes:', passesError)
         }
 
-        // 3. Get total passes for loyalty calculation
+        // 3. Get total passes for loyalty calculation (excluding deleted)
         const { count: totalPasses } = await supabase
             .from('passes')
             .select('id', { count: 'exact', head: true })
             .eq('campaign_id', campaignId)
+            .is('deleted_at', null)
             .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
 
         // 4. Calculate stats from scans
