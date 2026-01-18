@@ -6,7 +6,7 @@ import {
     Zap, Camera, Users, ChevronRight, Send, X, Sparkles, Clock,
     Calendar, Trophy, Target, Bell, Check, RotateCcw, Cake, Mail,
     Phone, BarChart3, Star, TrendingUp, PieChart as PieChartIcon,
-    Settings, LogOut, ArrowRight, Crown, AlertTriangle, Layers, Gift,
+    LogOut, ArrowRight, Crown, AlertTriangle, Layers, Gift,
     MessageSquare, Trash2
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -101,7 +101,7 @@ export default function POSPage() {
 
     // Reviews
     const [showReviewsModal, setShowReviewsModal] = useState(false)
-    const [showSettingsModal, setShowSettingsModal] = useState(false)
+
 
     // Calendar
     const [calendarMonth, setCalendarMonth] = useState(new Date())
@@ -516,12 +516,7 @@ export default function POSPage() {
                         >
                             <span className="text-sm hidden sm:inline">Kunden</span>
                         </button>
-                        <button
-                            onClick={() => setShowSettingsModal(true)}
-                            className="p-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-zinc-900 dark:text-white"
-                        >
-                            <Settings size={20} />
-                        </button>
+
                     </div>
                 </header>
 
@@ -1022,39 +1017,7 @@ export default function POSPage() {
     // RENDER: SETTINGS MODAL
     // ===============================================
 
-    if (showSettingsModal) {
-        return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden relative p-8">
-                    <button onClick={() => setShowSettingsModal(false)} className="absolute top-4 right-4 p-2 bg-zinc-100 dark:bg-white/5 rounded-full hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors"><X size={18} className="text-zinc-400" /></button>
 
-                    <div className="flex items-center gap-3 mb-8">
-                        <div className="w-12 h-12 bg-zinc-100 dark:bg-white/5 rounded-2xl flex items-center justify-center">
-                            <Settings className="w-6 h-6 text-zinc-900 dark:text-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Einstellungen</h2>
-                            <p className="text-xs text-zinc-500">Passify POS v2.0</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-4">Erscheinungsbild</label>
-                            <ThemeToggle />
-                        </div>
-
-                        <div className="pt-6 border-t border-zinc-200 dark:border-white/5">
-                            <button onClick={handleLogout} className="w-full py-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center gap-2">
-                                <LogOut size={18} />
-                                Abmelden
-                            </button>
-                        </div>
-                    </div>
-                </motion.div>
-            </div>
-        )
-    }
 
     // ===============================================
     // RENDER: CUSTOMERS VIEW
@@ -1144,12 +1107,6 @@ export default function POSPage() {
                         >
                             <BarChart3 className="w-4 h-4" />
                             <span className="text-sm font-medium">Dashboard</span>
-                        </button>
-                        <button
-                            onClick={() => setShowSettingsModal(true)}
-                            className="p-2.5 bg-white/80 dark:bg-white/10 backdrop-blur-md rounded-xl border border-zinc-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/20 transition-all text-zinc-900 dark:text-white shadow-sm dark:shadow-none"
-                        >
-                            <Settings size={20} />
                         </button>
                     </>
                 )}
