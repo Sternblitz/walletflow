@@ -621,49 +621,49 @@ export default function POSPage() {
                         {/* KEY STATS GRID - 5 Cards with distinct colors */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                             {/* Stempel */}
-                            <div className="bg-emerald-900/10 border border-emerald-500/20 rounded-2xl p-4 hover:bg-emerald-900/20 transition-all shadow-lg shadow-emerald-900/10">
+                            <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl p-4 hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all shadow-lg shadow-emerald-900/5 dark:shadow-emerald-900/10">
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-emerald-200/70 text-[10px] font-bold uppercase tracking-wider">Stempel</span>
-                                    <div className="p-1.5 rounded-lg text-emerald-400 bg-emerald-500/10"><Zap size={14} /></div>
+                                    <span className="text-emerald-600/70 dark:text-emerald-200/70 text-[10px] font-bold uppercase tracking-wider">Stempel</span>
+                                    <div className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/10"><Zap size={14} /></div>
                                 </div>
-                                <div className="text-2xl font-black text-white">{stats?.stats?.stamps || 0}</div>
-                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold mt-2">
+                                <div className="text-2xl font-black text-emerald-900 dark:text-white">{stats?.stats?.stamps || 0}</div>
+                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold mt-2">
                                     im Zeitraum ({rangeLabels[statsRange]})
                                 </div>
                             </div>
 
                             {/* Einlösungen */}
-                            <div className="bg-purple-900/10 border border-purple-500/20 rounded-2xl p-4 hover:bg-purple-900/20 transition-all shadow-lg shadow-purple-900/10">
+                            <div className="bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-500/20 rounded-2xl p-4 hover:bg-purple-100 dark:hover:bg-purple-900/20 transition-all shadow-lg shadow-purple-900/5 dark:shadow-purple-900/10">
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-purple-200/70 text-[10px] font-bold uppercase tracking-wider">Einlösungen</span>
-                                    <div className="p-1.5 rounded-lg text-purple-400 bg-purple-500/10"><Gift size={14} /></div>
+                                    <span className="text-purple-600/70 dark:text-purple-200/70 text-[10px] font-bold uppercase tracking-wider">Einlösungen</span>
+                                    <div className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-500/10"><Gift size={14} /></div>
                                 </div>
-                                <div className="text-2xl font-black text-white">{stats?.stats?.redemptions || 0}</div>
-                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px] font-bold mt-2">
+                                <div className="text-2xl font-black text-purple-900 dark:text-white">{stats?.stats?.redemptions || 0}</div>
+                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 text-[10px] font-bold mt-2">
                                     im Zeitraum ({rangeLabels[statsRange]})
                                 </div>
                             </div>
 
                             {/* Neue Kunden */}
-                            <div className="bg-blue-900/10 border border-blue-500/20 rounded-2xl p-4 hover:bg-blue-900/20 transition-all shadow-lg shadow-blue-900/10">
+                            <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-500/20 rounded-2xl p-4 hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-all shadow-lg shadow-blue-900/5 dark:shadow-blue-900/10">
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-blue-200/70 text-[10px] font-bold uppercase tracking-wider">Neue Kunden</span>
-                                    <div className="p-1.5 rounded-lg text-blue-400 bg-blue-500/10"><Users size={14} /></div>
+                                    <span className="text-blue-600/70 dark:text-blue-200/70 text-[10px] font-bold uppercase tracking-wider">Neue Kunden</span>
+                                    <div className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/10"><Users size={14} /></div>
                                 </div>
-                                <div className="text-2xl font-black text-white">{stats?.stats?.newPasses || 0}</div>
-                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold mt-2">
+                                <div className="text-2xl font-black text-blue-900 dark:text-white">{stats?.stats?.newPasses || 0}</div>
+                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-[10px] font-bold mt-2">
                                     im Zeitraum ({rangeLabels[statsRange]})
                                 </div>
                             </div>
 
                             {/* Aktive Pässe */}
-                            <div className="bg-cyan-900/10 border border-cyan-500/20 rounded-2xl p-4 hover:bg-cyan-900/20 transition-all shadow-lg shadow-cyan-900/10">
+                            <div className="bg-cyan-50 dark:bg-cyan-900/10 border border-cyan-200 dark:border-cyan-500/20 rounded-2xl p-4 hover:bg-cyan-100 dark:hover:bg-cyan-900/20 transition-all shadow-lg shadow-cyan-900/5 dark:shadow-cyan-900/10">
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-cyan-200/70 text-[10px] font-bold uppercase tracking-wider">Aktive Pässe</span>
-                                    <div className="p-1.5 rounded-lg text-cyan-400 bg-cyan-500/10"><Check size={14} /></div>
+                                    <span className="text-cyan-600/70 dark:text-cyan-200/70 text-[10px] font-bold uppercase tracking-wider">Aktive Pässe</span>
+                                    <div className="p-1.5 rounded-lg text-cyan-600 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-500/10"><Check size={14} /></div>
                                 </div>
-                                <div className="text-2xl font-black text-white">{stats?.stats?.totalPasses || 0}</div>
-                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[10px] font-bold mt-2">
+                                <div className="text-2xl font-black text-cyan-900 dark:text-white">{stats?.stats?.totalPasses || 0}</div>
+                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 text-[10px] font-bold mt-2">
                                     Gesamt
                                 </div>
                             </div>
@@ -877,7 +877,10 @@ export default function POSPage() {
                             </div>
                         </div>
 
-                        <button onClick={handleLogout} className="mx-auto block mt-8 text-xs text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Abmelden</button>
+                        <div className="mt-12 flex flex-col items-center gap-6">
+                            <ThemeToggle />
+                            <button onClick={handleLogout} className="mx-auto block text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors uppercase tracking-widest font-bold">Abmelden</button>
+                        </div>
                     </div>
                 </main>
 

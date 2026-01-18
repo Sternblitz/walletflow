@@ -190,19 +190,19 @@ export function AutomationRulesManager({ slug, showCustomType = false }: Automat
     // =============================================
 
     return (
-        <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 h-full flex flex-col">
+        <div className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-white/10 rounded-3xl p-6 h-full flex flex-col shadow-sm dark:shadow-none">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-yellow-400" />
+                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-yellow-500" />
                         Automatisierungen
                     </h3>
-                    <p className="text-xs text-zinc-400">Geplante Push-Nachrichten</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">Geplante Push-Nachrichten</p>
                 </div>
                 <button
                     onClick={() => setShowCreate(true)}
-                    className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center hover:bg-yellow-500 hover:text-white transition-colors"
+                    className="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 flex items-center justify-center hover:bg-yellow-500 hover:text-white transition-colors"
                 >
                     <Plus size={18} />
                 </button>
@@ -215,12 +215,12 @@ export function AutomationRulesManager({ slug, showCustomType = false }: Automat
                         <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
                     </div>
                 ) : rules.length === 0 ? (
-                    <div className="text-center py-12 text-zinc-500 text-sm border border-dashed border-white/10 rounded-2xl">
+                    <div className="text-center py-12 text-zinc-500 text-sm border border-dashed border-zinc-200 dark:border-white/10 rounded-2xl">
                         <Zap className="w-8 h-8 mx-auto mb-2 opacity-50" />
                         <p>Keine Automatisierungen eingerichtet</p>
                         <button
                             onClick={() => setShowCreate(true)}
-                            className="mt-3 text-yellow-400 hover:text-yellow-300"
+                            className="mt-3 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
                         >
                             + Erste Automatisierung erstellen
                         </button>
@@ -309,8 +309,8 @@ function RuleCard({ rule, expanded, onToggle, onExpand, onEdit, onDelete }: Rule
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             className={`rounded-2xl border transition-all ${rule.is_enabled
-                ? 'bg-zinc-900/80 border-white/10'
-                : 'bg-zinc-900/30 border-white/5 opacity-60'
+                ? 'bg-zinc-50 dark:bg-zinc-900/80 border-zinc-200 dark:border-white/10'
+                : 'bg-zinc-50/50 dark:bg-zinc-900/30 border-zinc-100 dark:border-white/5 opacity-60'
                 }`}
         >
             {/* Main Row */}
@@ -318,13 +318,13 @@ function RuleCard({ rule, expanded, onToggle, onExpand, onEdit, onDelete }: Rule
                 className="p-4 flex items-center gap-3 cursor-pointer"
                 onClick={onExpand}
             >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-${typeConfig.color}-500/20`}>
-                    <Icon className={`w-5 h-5 text-${typeConfig.color}-400`} />
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-${typeConfig.color}-100 dark:bg-${typeConfig.color}-500/20`}>
+                    <Icon className={`w-5 h-5 text-${typeConfig.color}-600 dark:text-${typeConfig.color}-400`} />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-white truncate">{rule.name}</h4>
-                    <p className="text-xs text-zinc-400 truncate">{getScheduleDescription()}</p>
+                    <h4 className="font-medium text-zinc-900 dark:text-white truncate">{rule.name}</h4>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{getScheduleDescription()}</p>
                 </div>
 
                 <button
@@ -348,10 +348,10 @@ function RuleCard({ rule, expanded, onToggle, onExpand, onEdit, onDelete }: Rule
                         exit={{ height: 0, opacity: 0 }}
                         className="overflow-hidden"
                     >
-                        <div className="px-4 pb-4 border-t border-white/5 pt-3 space-y-3">
-                            <div className="bg-black/30 rounded-xl p-3">
+                        <div className="px-4 pb-4 border-t border-zinc-100 dark:border-white/5 pt-3 space-y-3">
+                            <div className="bg-white dark:bg-black/30 border border-zinc-100 dark:border-none rounded-xl p-3">
                                 <p className="text-xs text-zinc-500 mb-1">Nachricht</p>
-                                <p className="text-sm text-zinc-200">{rule.message_template}</p>
+                                <p className="text-sm text-zinc-700 dark:text-zinc-200">{rule.message_template}</p>
                             </div>
 
                             <div className="flex gap-2">
@@ -420,19 +420,19 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
     }
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-zinc-900 border border-white/10 w-full max-w-md rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto"
+                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 w-full max-w-md rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto"
             >
                 {/* Header */}
-                <div className="p-6 border-b border-white/5">
-                    <h4 className="text-lg font-bold text-white">
+                <div className="p-6 border-b border-zinc-100 dark:border-white/5">
+                    <h4 className="text-lg font-bold text-zinc-900 dark:text-white">
                         {isEditing ? 'Automatisierung bearbeiten' : 'Neue Automatisierung'}
                     </h4>
-                    <p className="text-xs text-zinc-400 mt-1">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                         Automatische Push-Nachrichten an deine Kunden
                     </p>
                 </div>
@@ -441,12 +441,12 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
                 <div className="p-6 space-y-5">
                     {/* Name */}
                     <div>
-                        <label className="text-xs text-zinc-400 mb-1.5 block">Name</label>
+                        <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 block">Name</label>
                         <input
                             value={name}
                             onChange={e => setName(e.target.value)}
                             placeholder="z.B. Geburtstagsnachricht"
-                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-yellow-500/50"
+                            className="w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none focus:border-yellow-500/50"
                         />
                     </div>
 
@@ -464,12 +464,12 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
                                                 key={type}
                                                 onClick={() => setRuleType(type)}
                                                 className={`p-3 rounded-xl border transition-all text-left ${ruleType === type
-                                                    ? `bg-${cfg.color}-500/20 border-${cfg.color}-500/50`
-                                                    : 'bg-black/30 border-white/5 hover:border-white/10'
+                                                    ? `bg-${cfg.color}-100 dark:bg-${cfg.color}-500/20 border-${cfg.color}-500/50`
+                                                    : 'bg-zinc-50 dark:bg-black/30 border-zinc-200 dark:border-white/5 hover:border-zinc-300 dark:hover:border-white/10'
                                                     }`}
                                             >
-                                                <Icon className={`w-5 h-5 mb-1 text-${cfg.color}-400`} />
-                                                <p className="text-sm font-medium text-white">{cfg.label}</p>
+                                                <Icon className={`w-5 h-5 mb-1 text-${cfg.color}-600 dark:text-${cfg.color}-400`} />
+                                                <p className="text-sm font-medium text-zinc-900 dark:text-white">{cfg.label}</p>
                                                 <p className="text-[10px] text-zinc-500">{cfg.description}</p>
                                             </button>
                                         )
@@ -483,11 +483,11 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
                         {ruleType === 'birthday' && (
                             <>
                                 <div>
-                                    <label className="text-xs text-zinc-400 mb-1.5 block">Tage vorher senden</label>
+                                    <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 block">Tage vorher senden</label>
                                     <select
                                         value={config.days_before ?? 0}
                                         onChange={e => updateConfig('days_before', parseInt(e.target.value))}
-                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none"
+                                        className="w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none"
                                     >
                                         <option value={0}>Am Geburtstag</option>
                                         <option value={1}>1 Tag vorher</option>
@@ -497,12 +497,12 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-xs text-zinc-400 mb-1.5 block">Uhrzeit</label>
+                                    <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 block">Uhrzeit</label>
                                     <input
                                         type="time"
                                         value={config.send_time || '09:00'}
                                         onChange={e => updateConfig('send_time', e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none"
+                                        className="w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none"
                                     />
                                 </div>
                             </>
@@ -511,7 +511,7 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
                         {ruleType === 'weekday_schedule' && (
                             <>
                                 <div>
-                                    <label className="text-xs text-zinc-400 mb-1.5 block">Wochentage</label>
+                                    <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 block">Wochentage</label>
                                     <div className="flex gap-1">
                                         {WEEKDAYS.map(day => {
                                             const selected = (config.weekdays || []).includes(day.value)
@@ -527,7 +527,7 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
                                                     }}
                                                     className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${selected
                                                         ? 'bg-blue-500 text-white'
-                                                        : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                                                        : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                                                         }`}
                                                 >
                                                     {day.label}
@@ -537,12 +537,12 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-xs text-zinc-400 mb-1.5 block">Uhrzeit</label>
+                                    <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 block">Uhrzeit</label>
                                     <input
                                         type="time"
                                         value={config.time || '12:00'}
                                         onChange={e => updateConfig('time', e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none"
+                                        className="w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none"
                                     />
                                 </div>
                             </>
@@ -550,11 +550,11 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
 
                         {ruleType === 'inactivity' && (
                             <div>
-                                <label className="text-xs text-zinc-400 mb-1.5 block">Tage ohne Scan</label>
+                                <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 block">Tage ohne Scan</label>
                                 <select
                                     value={config.days_inactive ?? 14}
                                     onChange={e => updateConfig('days_inactive', parseInt(e.target.value))}
-                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none"
+                                    className="w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none"
                                 >
                                     <option value={7}>7 Tage</option>
                                     <option value={14}>14 Tage</option>
@@ -577,9 +577,9 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
 
                     {/* Message */}
                     <div>
-                        <label className="text-xs text-zinc-400 mb-1.5 block">
+                        <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 block">
                             Nachricht
-                            <span className="text-zinc-600 ml-2">
+                            <span className="text-zinc-400 dark:text-zinc-600 ml-2">
                                 Platzhalter: {'{{name}}'}, {'{{stamps}}'}, {'{{points}}'}
                             </span>
                         </label>
@@ -587,7 +587,7 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
                             value={message}
                             onChange={e => setMessage(e.target.value)}
                             placeholder="z.B. 🎂 Alles Gute zum Geburtstag, {{name}}!"
-                            className="w-full h-24 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none resize-none focus:border-yellow-500/50"
+                            className="w-full h-24 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none resize-none focus:border-yellow-500/50"
                         />
                     </div>
                 </div>
@@ -596,7 +596,7 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
                 <div className="p-6 border-t border-white/5 flex gap-3">
                     <button
                         onClick={onClose}
-                        className="flex-1 py-3 bg-zinc-800 rounded-xl font-medium text-zinc-400 hover:text-white transition-colors"
+                        className="flex-1 py-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
                     >
                         Abbrechen
                     </button>
