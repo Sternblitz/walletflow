@@ -131,19 +131,19 @@ export function LiveActivityFeed({ campaignId }: LiveActivityFeedProps) {
     }
 
     return (
-        <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4 h-full flex flex-col">
+        <div className="bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/5 rounded-2xl p-4 h-full flex flex-col shadow-sm dark:shadow-none">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                <h3 className="font-bold text-zinc-900 dark:text-white text-sm flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
                     Live Feed
                 </h3>
-                <Clock size={12} className="text-zinc-500" />
+                <Clock size={12} className="text-zinc-400 dark:text-zinc-500" />
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-2 min-h-0 max-h-80">
+            <div className="flex-1 overflow-y-auto space-y-2 min-h-0 max-h-80 custom-scrollbar">
                 {loading ? (
                     <div className="flex items-center justify-center py-8">
                         <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
@@ -156,15 +156,15 @@ export function LiveActivityFeed({ campaignId }: LiveActivityFeedProps) {
                     activities.map(activity => (
                         <div
                             key={activity.id}
-                            className="flex items-center gap-2 p-2 bg-black/30 rounded-lg border border-white/5 hover:bg-black/40 transition-colors"
+                            className="flex items-center gap-2 p-2 bg-zinc-50 dark:bg-black/30 rounded-lg border border-zinc-100 dark:border-white/5 hover:bg-zinc-100 dark:hover:bg-black/40 transition-colors"
                         >
-                            <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
+                            <div className="w-6 h-6 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/5 flex items-center justify-center shrink-0 shadow-sm dark:shadow-none">
                                 {getActivityIcon(activity.type)}
                             </div>
-                            <span className="text-xs text-zinc-300 flex-1 truncate">
+                            <span className="text-xs text-zinc-600 dark:text-zinc-300 flex-1 truncate">
                                 {activity.message}
                             </span>
-                            <span className="text-[10px] text-zinc-600 shrink-0 font-mono">
+                            <span className="text-[10px] text-zinc-400 dark:text-zinc-600 shrink-0 font-mono">
                                 {formatTime(activity.timestamp)}
                             </span>
                         </div>

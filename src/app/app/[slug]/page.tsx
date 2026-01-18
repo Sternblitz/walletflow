@@ -884,33 +884,33 @@ export default function POSPage() {
                 {/* PUSH MODAL */}
                 <AnimatePresence>
                     {showPushModal && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-zinc-900 border border-white/10 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden relative">
-                                <button onClick={() => setShowPushModal(false)} className="absolute top-4 right-4 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors z-20"><X size={18} className="text-zinc-400" /></button>
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md">
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden relative">
+                                <button onClick={() => setShowPushModal(false)} className="absolute top-4 right-4 p-2 bg-zinc-100 dark:bg-white/5 rounded-full hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors z-20"><X size={18} className="text-zinc-500 dark:text-zinc-400" /></button>
 
                                 <div className="p-8 relative">
-                                    <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none" />
-                                    <h2 className="text-2xl font-bold text-white mb-2 relative z-10 flex items-center gap-3"><Send className="text-emerald-500" /> Nachricht senden</h2>
-                                    <p className="text-zinc-400 text-sm mb-8 relative z-10">Erreiche deine Kunden direkt auf dem Sperrbildschirm.</p>
+                                    <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
+                                    <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2 relative z-10 flex items-center gap-3"><Send className="text-emerald-500" /> Nachricht senden</h2>
+                                    <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-8 relative z-10">Erreiche deine Kunden direkt auf dem Sperrbildschirm.</p>
 
                                     <div className="grid grid-cols-2 gap-4 mb-6 relative z-10">
-                                        <button onClick={() => setPushMode('now')} className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${pushMode === 'now' ? 'bg-emerald-500/20 border-emerald-500 text-white' : 'bg-zinc-900/50 border-white/5 text-zinc-500 hover:bg-white/5'}`}>
-                                            <Zap className={pushMode === 'now' ? 'text-emerald-500' : 'text-zinc-600'} />
+                                        <button onClick={() => setPushMode('now')} className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${pushMode === 'now' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-white' : 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5'}`}>
+                                            <Zap className={pushMode === 'now' ? 'text-emerald-500' : 'text-zinc-400 dark:text-zinc-600'} />
                                             <span className="text-sm font-bold">⚡ Jetzt senden</span>
                                         </button>
-                                        <button onClick={() => setPushMode('schedule')} className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${pushMode === 'schedule' ? 'bg-blue-500/20 border-blue-500 text-white' : 'bg-zinc-900/50 border-white/5 text-zinc-500 hover:bg-white/5'}`}>
-                                            <Calendar className={pushMode === 'schedule' ? 'text-blue-500' : 'text-zinc-600'} />
+                                        <button onClick={() => setPushMode('schedule')} className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${pushMode === 'schedule' ? 'bg-blue-500/10 border-blue-500 text-blue-600 dark:text-white' : 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5'}`}>
+                                            <Calendar className={pushMode === 'schedule' ? 'text-blue-500' : 'text-zinc-400 dark:text-zinc-600'} />
                                             <span className="text-sm font-bold">📅 Später planen</span>
                                         </button>
                                     </div>
 
                                     <form onSubmit={handlePushRequest} className="space-y-4 relative z-10">
                                         <div className="relative">
-                                            <textarea value={pushMessage} onChange={(e) => setPushMessage(e.target.value)} placeholder="Deine Nachricht hier schreiben..." className="w-full h-32 bg-black/40 border border-white/10 rounded-2xl p-4 text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/50 resize-none transition-all" />
-                                            <div className="absolute bottom-3 right-3 text-xs text-zinc-600 font-mono">{pushMessage.length} Zeichen</div>
+                                            <textarea value={pushMessage} onChange={(e) => setPushMessage(e.target.value)} placeholder="Deine Nachricht hier schreiben..." className="w-full h-32 bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-4 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 outline-none focus:border-emerald-500/50 resize-none transition-all" />
+                                            <div className="absolute bottom-3 right-3 text-xs text-zinc-400 dark:text-zinc-600 font-mono">{pushMessage.length} Zeichen</div>
                                         </div>
-                                        {pushMode === 'schedule' && <input type="datetime-local" value={pushScheduleTime} onChange={(e) => setPushScheduleTime(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-blue-500/50 font-mono text-sm" />}
-                                        <button type="submit" disabled={pushLoading || !pushMessage.trim()} className="w-full py-4 bg-white text-black rounded-xl font-bold hover:bg-zinc-200 transition-colors disabled:opacity-50 shadow-lg shadow-white/5">{pushLoading ? 'Wird gesendet...' : (pushMode === 'now' ? '⚡ Jetzt absenden' : '📅 Einplanen')}</button>
+                                        {pushMode === 'schedule' && <input type="datetime-local" value={pushScheduleTime} onChange={(e) => setPushScheduleTime(e.target.value)} className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-4 text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 font-mono text-sm" />}
+                                        <button type="submit" disabled={pushLoading || !pushMessage.trim()} className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-xl font-bold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 shadow-lg shadow-black/5 dark:shadow-white/5">{pushLoading ? 'Wird gesendet...' : (pushMode === 'now' ? '⚡ Jetzt absenden' : '📅 Einplanen')}</button>
                                     </form>
                                 </div>
                             </motion.div>
@@ -923,33 +923,33 @@ export default function POSPage() {
                 <AnimatePresence>
                     {
                         showReviewsModal && reviewStats && (
-                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                                <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-zinc-900 border border-white/10 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative">
-                                    <button onClick={() => setShowReviewsModal(false)} className="absolute top-4 right-4 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors z-20"><X size={18} className="text-zinc-400" /></button>
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md">
+                                <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative">
+                                    <button onClick={() => setShowReviewsModal(false)} className="absolute top-4 right-4 p-2 bg-zinc-100 dark:bg-white/5 rounded-full hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors z-20"><X size={18} className="text-zinc-500 dark:text-zinc-400" /></button>
 
                                     <div className="p-8">
                                         <div className="flex items-center gap-4 mb-6">
-                                            <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+                                            <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/20">
                                                 <Star className="w-8 h-8 text-white" />
                                             </div>
                                             <div>
-                                                <h2 className="text-2xl font-bold text-white">Google Bewertungen</h2>
-                                                <p className="text-zinc-400 text-sm">Übersicht deiner Kundenmeinungen</p>
+                                                <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Google Bewertungen</h2>
+                                                <p className="text-zinc-500 dark:text-zinc-400 text-sm">Übersicht deiner Kundenmeinungen</p>
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4 mb-6">
-                                            <div className="bg-black/40 rounded-xl p-4 text-center border border-white/5">
+                                            <div className="bg-zinc-50 dark:bg-black/40 rounded-xl p-4 text-center border border-zinc-200 dark:border-white/5">
                                                 <div className="text-3xl font-bold text-yellow-500">{reviewStats.average?.toFixed(1) || '—'}</div>
                                                 <div className="text-xs text-zinc-500 mt-1">Durchschnitt</div>
                                                 <div className="flex justify-center gap-0.5 mt-2">
                                                     {[1, 2, 3, 4, 5].map(s => (
-                                                        <Star key={s} size={14} className={s <= Math.round(reviewStats.average || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-700'} />
+                                                        <Star key={s} size={14} className={s <= Math.round(reviewStats.average || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-300 dark:text-zinc-700'} />
                                                     ))}
                                                 </div>
                                             </div>
-                                            <div className="bg-black/40 rounded-xl p-4 text-center border border-white/5">
-                                                <div className="text-3xl font-bold text-white">{reviewStats.total || 0}</div>
+                                            <div className="bg-zinc-50 dark:bg-black/40 rounded-xl p-4 text-center border border-zinc-200 dark:border-white/5">
+                                                <div className="text-3xl font-bold text-zinc-900 dark:text-white">{reviewStats.total || 0}</div>
                                                 <div className="text-xs text-zinc-500 mt-1">Bewertungen gesamt</div>
                                             </div>
                                         </div>
@@ -958,7 +958,7 @@ export default function POSPage() {
                                             {reviewStats.breakdown?.map(item => (
                                                 <div key={item.rating} className="flex items-center gap-2">
                                                     <span className="text-xs text-zinc-500 w-6">{item.rating}★</span>
-                                                    <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                                    <div className="flex-1 h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                                                         <div className="h-full bg-yellow-500 rounded-full" style={{ width: `${item.percentage}%` }} />
                                                     </div>
                                                     <span className="text-xs text-zinc-500 w-8 text-right">{item.count}</span>
@@ -968,34 +968,34 @@ export default function POSPage() {
 
                                         {/* Activity Feed */}
                                         {reviewStats.recentActivity && reviewStats.recentActivity.length > 0 && (
-                                            <div className="mt-6 pt-4 border-t border-white/10">
-                                                <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                                            <div className="mt-6 pt-4 border-t border-zinc-200 dark:border-white/10">
+                                                <h4 className="text-sm font-bold text-zinc-900 dark:text-white mb-3 flex items-center gap-2">
                                                     <MessageSquare size={14} className="text-yellow-500" /> Letzte Bewertungen
                                                 </h4>
-                                                <div className="space-y-3 max-h-60 overflow-y-auto">
+                                                <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
                                                     {reviewStats.recentActivity.slice(0, 10).map(activity => (
-                                                        <div key={activity.id} className="bg-black/30 rounded-xl p-3 border border-white/5">
+                                                        <div key={activity.id} className="bg-zinc-50 dark:bg-black/30 rounded-xl p-3 border border-zinc-200 dark:border-white/5">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <div className="flex items-center gap-1">
                                                                     {[1, 2, 3, 4, 5].map(s => (
-                                                                        <Star key={s} size={12} className={s <= activity.rating ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-700'} />
+                                                                        <Star key={s} size={12} className={s <= activity.rating ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-300 dark:text-zinc-700'} />
                                                                     ))}
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
                                                                     {/* Badge: Google or Internal */}
                                                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activity.rating >= 4
-                                                                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                                                        : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                                                                        ? 'bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/30'
+                                                                        : 'bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/30'
                                                                         }`}>
                                                                         {activity.rating >= 4 ? '🌐 Google' : '📝 Intern'}
                                                                     </span>
-                                                                    <span className="text-[10px] text-zinc-600">
+                                                                    <span className="text-[10px] text-zinc-500 dark:text-zinc-600">
                                                                         {new Date(activity.createdAt).toLocaleDateString('de-DE')}
                                                                     </span>
                                                                 </div>
                                                             </div>
                                                             {activity.comment && (
-                                                                <p className="text-sm text-zinc-300 mt-1">„{activity.comment}"</p>
+                                                                <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-1">„{activity.comment}"</p>
                                                             )}
                                                             {!activity.comment && activity.rating >= 4 && (
                                                                 <p className="text-xs text-zinc-500 italic">→ An Google weitergeleitet</p>
