@@ -487,370 +487,394 @@ export default function POSPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        {/* Scanner Button */}
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2">
                         <button
                             onClick={() => setView('scanner')}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-black font-bold rounded-xl hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
                         >
                             <Camera size={16} />
-                            <span className="text-sm font-bold">Scanner</span>
+                            <span className="text-sm hidden sm:inline">Scanner</span>
                         </button>
-
-                        {/* Time Range Selector */}
-                        <div className="flex bg-zinc-900/80 border border-white/10 rounded-lg p-1">
-                            {(['24h', '7d', '30d'] as const).map(r => (
-                                <button key={r} onClick={() => setStatsRange(r)} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsRange === r ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/50' : 'text-zinc-500 hover:text-white'}`}>{rangeLabels[r]}</button>
-                            ))}
-                        </div>
+                        <button
+                            onClick={() => setView('customers')}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-blue-500/20 border border-blue-500/40 text-blue-400 font-bold rounded-xl hover:bg-blue-500/30 transition-colors"
+                        >
+                            <Users size={16} />
+                            <span className="text-sm hidden sm:inline">Kunden</span>
+                        </button>
                     </div>
                 </header>
 
-                <main className="relative z-10 flex-1 p-6 overflow-y-auto w-full max-w-7xl mx-auto pb-32">
-                    {/* Main Grid: Content + Sidebar */}
-                    <div className="flex gap-6">
-                        {/* Main Content Area */}
-                        <div className="flex-1 space-y-6 min-w-0">
+                <main className="relative z-10 flex-1 p-6 w-full max-w-6xl mx-auto pb-32">
+                    {/* Main content - single column */}
+                    <div className="space-y-6">
 
-                            {/* COMPACT KUNDENBINDUNGS-SCORE TIMELINE */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4"
-                            >
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
-                                            <TrendingUp className="w-4 h-4 text-white" />
-                                        </div>
-                                        <div>
-                                            <span className="text-sm font-bold text-white">Kundenbindung</span>
-                                            <span className="text-xs text-emerald-400 ml-2">{loyalty?.score || 50}%</span>
-                                        </div>
+                        {/* KUNDENBINDUNGS-SCORE - Animated Premium Display */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-900/40 via-teal-900/20 to-emerald-900/40 border border-emerald-500/20 p-6"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-teal-500/5" />
+                            <div className="relative z-10 flex items-center gap-6">
+                                {/* Animated Score Circle */}
+                                <div className="relative w-24 h-24 shrink-0">
+                                    <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                                        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
+                                        <motion.circle
+                                            cx="50" cy="50" r="42"
+                                            fill="none"
+                                            stroke="url(#scoreGradient)"
+                                            strokeWidth="8"
+                                            strokeLinecap="round"
+                                            strokeDasharray={264}
+                                            initial={{ strokeDashoffset: 264 }}
+                                            animate={{ strokeDashoffset: 264 - (264 * (loyalty?.score || 50) / 100) }}
+                                            transition={{ duration: 1.5, ease: "easeOut" }}
+                                        />
+                                        <defs>
+                                            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" stopColor="#10b981" />
+                                                <stop offset="100%" stopColor="#14b8a6" />
+                                            </linearGradient>
+                                        </defs>
+                                    </svg>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <motion.span
+                                            className="text-2xl font-black text-white"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{ delay: 0.5 }}
+                                        >
+                                            {loyalty?.score || 50}%
+                                        </motion.span>
                                     </div>
-                                    {/* Milestones as inline badges */}
-                                    <div className="flex gap-1.5">
-                                        {(loyalty?.milestones?.slice(0, 2) || []).map((m: string, i: number) => (
-                                            <span key={i} className="px-2 py-0.5 bg-emerald-500/15 text-emerald-300 text-[10px] font-bold rounded-full">
-                                                {m.slice(0, 25)}
+                                </div>
+
+                                {/* Score Info */}
+                                <div className="flex-1">
+                                    <h3 className="text-lg font-black text-white mb-1">Kundenbindung</h3>
+                                    <p className="text-sm text-emerald-200/70 mb-3">
+                                        {loyalty?.message || "Deine Kunden bleiben treu! 🌟"}
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(loyalty?.milestones?.slice(0, 3) || ['System läuft stabil', 'Bereit für mehr']).map((m: string, i: number) => (
+                                            <span key={i} className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-full border border-emerald-500/30">
+                                                {m}
                                             </span>
                                         ))}
                                     </div>
                                 </div>
-                                {/* Horizontal Heat Timeline */}
-                                <div className="flex gap-1">
-                                    {(stats?.chartData || Array(7).fill({ stamps: 0, redemptions: 0 })).slice(-7).map((day: any, i: number) => {
-                                        const activity = (day.stamps || 0) + (day.redemptions || 0)
-                                        const intensity = activity === 0 ? 0 : activity <= 2 ? 1 : activity <= 5 ? 2 : activity <= 10 ? 3 : 4
-                                        const colors = ['bg-zinc-800', 'bg-emerald-900', 'bg-emerald-700', 'bg-emerald-500', 'bg-emerald-400']
-                                        const dayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-                                        const todayIndex = (new Date().getDay() + 6) % 7
-                                        const dayOffset = 6 - i
-                                        const dayIndex = (todayIndex - dayOffset + 7) % 7
-                                        return (
-                                            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                                                <div className={`w-full h-6 rounded ${colors[intensity]} ${i === 6 ? 'ring-1 ring-emerald-400/50' : ''}`} title={`${activity} Aktionen`} />
-                                                <span className={`text-[9px] ${i === 6 ? 'text-emerald-400' : 'text-zinc-600'}`}>{dayLabels[dayIndex]}</span>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            </motion.div>
+                            </div>
+                        </motion.div>
 
-                            {/* KEY STATS GRID - 5 Cards with Period Label */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                                {/* Stempel */}
-                                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 hover:bg-zinc-900/60 transition-all">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-zinc-500 text-[10px] font-bold uppercase">Stempel</span>
-                                        <div className="p-1.5 rounded-lg text-emerald-500 bg-emerald-500/10"><Zap size={14} /></div>
-                                    </div>
-                                    <div className="text-2xl font-bold text-white">{stats?.stats?.stamps || 0}</div>
-                                    <div className="text-[10px] text-zinc-600">{rangeLabels[statsRange]}</div>
-                                </div>
-
-                                {/* Einlösungen */}
-                                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 hover:bg-zinc-900/60 transition-all">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-zinc-500 text-[10px] font-bold uppercase">Einlösungen</span>
-                                        <div className="p-1.5 rounded-lg text-purple-500 bg-purple-500/10"><Gift size={14} /></div>
-                                    </div>
-                                    <div className="text-2xl font-bold text-white">{stats?.stats?.redemptions || 0}</div>
-                                    <div className="text-[10px] text-zinc-600">{rangeLabels[statsRange]}</div>
-                                </div>
-
-                                {/* Neue Kunden */}
-                                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 hover:bg-zinc-900/60 transition-all">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-zinc-500 text-[10px] font-bold uppercase">Neue Kunden</span>
-                                        <div className="p-1.5 rounded-lg text-blue-500 bg-blue-500/10"><Users size={14} /></div>
-                                    </div>
-                                    <div className="text-2xl font-bold text-white">{stats?.stats?.newPasses || 0}</div>
-                                    <div className="text-[10px] text-zinc-600">{rangeLabels[statsRange]}</div>
-                                </div>
-
-                                {/* Aktive Pässe */}
-                                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 hover:bg-zinc-900/60 transition-all">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-zinc-500 text-[10px] font-bold uppercase">Aktive Pässe</span>
-                                        <div className="p-1.5 rounded-lg text-cyan-500 bg-cyan-500/10"><Check size={14} /></div>
-                                    </div>
-                                    <div className="text-2xl font-bold text-white">{stats?.stats?.totalPasses || 0}</div>
-                                    <div className="text-[10px] text-zinc-600">Gesamt</div>
-                                </div>
-
-                                {/* Bewertungen */}
-                                {reviewStats ? (
+                        {/* STATS HEADER with Time Range Selector */}
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-white">Statistiken</h3>
+                            <div className="flex bg-zinc-900/80 border border-white/10 rounded-lg p-1">
+                                {(['24h', '7d', '30d'] as const).map(r => (
                                     <button
-                                        onClick={() => setShowReviewsModal(true)}
-                                        className="bg-zinc-900/40 border border-yellow-500/20 rounded-2xl p-4 hover:bg-zinc-900/60 hover:border-yellow-500/40 transition-all text-left"
+                                        key={r}
+                                        onClick={() => setStatsRange(r)}
+                                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsRange === r ? 'bg-emerald-500 text-white' : 'text-zinc-500 hover:text-white'}`}
                                     >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="text-zinc-500 text-[10px] font-bold uppercase">Bewertungen</span>
-                                            <div className="p-1.5 rounded-lg text-yellow-500 bg-yellow-500/10"><Star size={14} className="fill-yellow-500" /></div>
-                                        </div>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="text-2xl font-bold text-white">{reviewStats.total}</span>
-                                            <span className="text-sm font-bold text-yellow-500">{reviewStats.average}★</span>
-                                        </div>
-                                        <div className="text-[10px] text-zinc-600">Gesamt</div>
+                                        {rangeLabels[r]}
                                     </button>
-                                ) : (
-                                    <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="text-zinc-500 text-[10px] font-bold uppercase">Bewertungen</span>
-                                            <div className="p-1.5 rounded-lg text-zinc-500 bg-zinc-800"><Star size={14} /></div>
-                                        </div>
-                                        <div className="text-2xl font-bold text-zinc-600">—</div>
-                                        <div className="text-[10px] text-zinc-600">Keine</div>
-                                    </div>
-                                )}
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* KEY STATS GRID - 5 Cards */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                            {/* Stempel */}
+                            <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 hover:bg-zinc-900/60 transition-all">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="text-zinc-500 text-[10px] font-bold uppercase">Stempel</span>
+                                    <div className="p-1.5 rounded-lg text-emerald-500 bg-emerald-500/10"><Zap size={14} /></div>
+                                </div>
+                                <div className="text-2xl font-bold text-white">{stats?.stats?.stamps || 0}</div>
+                                <div className="text-[10px] text-zinc-600">{rangeLabels[statsRange]}</div>
                             </div>
 
-                            {/* CHART + ACTIONS */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                {/* Activity Chart */}
-                                <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-sm min-h-[300px]">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h3 className="font-bold text-lg text-white flex items-center gap-2"><BarChart3 size={20} className="text-emerald-500" /> Aktivität</h3>
-                                        <span className="text-xs font-mono text-zinc-500">{rangeLabels[statsRange]}</span>
-                                    </div>
-                                    <div className="flex-1 w-full">
-                                        {statsLoading ? (
-                                            <div className="h-full flex items-center justify-center">
-                                                <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
-                                            </div>
-                                        ) : (
-                                            <ActivityChart data={stats?.chartData || []} />
-                                        )}
-                                    </div>
+                            {/* Einlösungen */}
+                            <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 hover:bg-zinc-900/60 transition-all">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="text-zinc-500 text-[10px] font-bold uppercase">Einlösungen</span>
+                                    <div className="p-1.5 rounded-lg text-purple-500 bg-purple-500/10"><Gift size={14} /></div>
                                 </div>
-
-                                {/* Actions */}
-                                <div className="lg:col-span-1 flex flex-col gap-4">
-                                    <button onClick={() => setShowPushModal(true)} className="flex-1 relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 hover:from-violet-500/30 hover:to-fuchsia-500/30 transition-all shadow-lg shadow-violet-900/20 group text-left p-6 flex flex-col justify-between min-h-[140px]">
-                                        <div className="absolute top-0 right-0 p-24 bg-violet-500/10 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:bg-violet-500/20 transition-all" />
-                                        <div className="p-3 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl w-fit relative z-10 group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/30">
-                                            <Send className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div className="relative z-10">
-                                            <h3 className="text-xl font-bold text-white">Push Senden</h3>
-                                            <div className="flex items-center gap-2 text-violet-200 text-xs font-medium opacity-80 mt-1">
-                                                <Users size={14} /> <span>Alle Kunden erreichen</span>
-                                            </div>
-                                        </div>
-                                    </button>
-
-                                    <div className="grid grid-cols-2 gap-4 h-[100px]">
-                                        <button onClick={() => setView('scanner')} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-emerald-500/30">
-                                            <Camera size={20} className="group-hover:text-emerald-500 transition-colors" />
-                                            <span className="text-xs font-bold">Scanner</span>
-                                        </button>
-                                        <button onClick={() => setView('customers')} className="bg-zinc-900/40 hover:bg-zinc-800 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-white transition-all group hover:border-blue-500/30">
-                                            <Users size={20} className="group-hover:text-blue-500 transition-colors" />
-                                            <span className="text-xs font-bold">Kunden</span>
-                                        </button>
-                                    </div>
-                                </div>
+                                <div className="text-2xl font-bold text-white">{stats?.stats?.redemptions || 0}</div>
+                                <div className="text-[10px] text-zinc-600">{rangeLabels[statsRange]}</div>
                             </div>
 
-                            {/* SCHEDULED PUSHES - Only if exists */}
-                            {scheduledPushes.length > 0 && (
-                                <div className="pt-6 border-t border-white/5 space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-lg font-bold flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-400" /> Geplante Nachrichten</h3>
+                            {/* Neue Kunden */}
+                            <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 hover:bg-zinc-900/60 transition-all">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="text-zinc-500 text-[10px] font-bold uppercase">Neue Kunden</span>
+                                    <div className="p-1.5 rounded-lg text-blue-500 bg-blue-500/10"><Users size={14} /></div>
+                                </div>
+                                <div className="text-2xl font-bold text-white">{stats?.stats?.newPasses || 0}</div>
+                                <div className="text-[10px] text-zinc-600">{rangeLabels[statsRange]}</div>
+                            </div>
+
+                            {/* Aktive Pässe */}
+                            <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 hover:bg-zinc-900/60 transition-all">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="text-zinc-500 text-[10px] font-bold uppercase">Aktive Pässe</span>
+                                    <div className="p-1.5 rounded-lg text-cyan-500 bg-cyan-500/10"><Check size={14} /></div>
+                                </div>
+                                <div className="text-2xl font-bold text-white">{stats?.stats?.totalPasses || 0}</div>
+                                <div className="text-[10px] text-zinc-600">Gesamt</div>
+                            </div>
+
+                            {/* Bewertungen */}
+                            {reviewStats ? (
+                                <button
+                                    onClick={() => setShowReviewsModal(true)}
+                                    className="bg-zinc-900/40 border border-yellow-500/20 rounded-2xl p-4 hover:bg-zinc-900/60 hover:border-yellow-500/40 transition-all text-left"
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className="text-zinc-500 text-[10px] font-bold uppercase">Bewertungen</span>
+                                        <div className="p-1.5 rounded-lg text-yellow-500 bg-yellow-500/10"><Star size={14} className="fill-yellow-500" /></div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {scheduledPushes.map((push) => (
-                                            <div key={push.id} className="flex gap-4 items-center bg-zinc-900/60 p-4 rounded-2xl border border-white/5">
-                                                <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 shrink-0"><Clock className="w-5 h-5" /></div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-white truncate">{push.message}</p>
-                                                    <p className="text-xs text-zinc-500 font-mono mt-1">{new Date(push.scheduled_at).toLocaleString('de-DE')}</p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-2xl font-bold text-white">{reviewStats.total}</span>
+                                        <span className="text-sm font-bold text-yellow-500">{reviewStats.average}★</span>
                                     </div>
+                                    <div className="text-[10px] text-zinc-600">Gesamt</div>
+                                </button>
+                            ) : (
+                                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className="text-zinc-500 text-[10px] font-bold uppercase">Bewertungen</span>
+                                        <div className="p-1.5 rounded-lg text-zinc-500 bg-zinc-800"><Star size={14} /></div>
+                                    </div>
+                                    <div className="text-2xl font-bold text-zinc-600">—</div>
+                                    <div className="text-[10px] text-zinc-600">Keine</div>
                                 </div>
                             )}
+                        </div>
 
-                            {/* AUTOMATIONS */}
-                            <AutomationRulesManager slug={slug} />
+                        {/* CHART + ACTIONS */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Activity Chart */}
+                            <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-sm min-h-[300px]">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-bold text-lg text-white flex items-center gap-2"><BarChart3 size={20} className="text-emerald-500" /> Aktivität</h3>
+                                    <span className="text-xs font-mono text-zinc-500">{rangeLabels[statsRange]}</span>
+                                </div>
+                                <div className="flex-1 w-full">
+                                    {statsLoading ? (
+                                        <div className="h-full flex items-center justify-center">
+                                            <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+                                        </div>
+                                    ) : (
+                                        <ActivityChart data={stats?.chartData || []} />
+                                    )}
+                                </div>
+                            </div>
 
-                            {/* KALENDER - Push History, Scheduled, Automations */}
-                            <div className="pt-6 border-t border-white/5">
-                                <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><Calendar className="w-5 h-5 text-blue-400" /> Kalender-Übersicht</h3>
-
-                                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-6">
-                                    {/* Month Navigation */}
-                                    <div className="flex items-center justify-between mb-4">
-                                        <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1))} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white">
-                                            <ArrowRight className="rotate-180" size={16} />
-                                        </button>
-                                        <h4 className="font-bold text-white">
-                                            {calendarMonth.toLocaleString('de-DE', { month: 'long', year: 'numeric' })}
-                                        </h4>
-                                        <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1))} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white">
-                                            <ArrowRight size={16} />
-                                        </button>
+                            {/* Actions */}
+                            <div className="lg:col-span-1 flex flex-col gap-4">
+                                <button onClick={() => setShowPushModal(true)} className="flex-1 relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 hover:from-violet-500/30 hover:to-fuchsia-500/30 transition-all shadow-lg shadow-violet-900/20 group text-left p-6 flex flex-col justify-between min-h-[140px]">
+                                    <div className="absolute top-0 right-0 p-24 bg-violet-500/10 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:bg-violet-500/20 transition-all" />
+                                    <div className="p-3 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl w-fit relative z-10 group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/30">
+                                        <Send className="w-6 h-6 text-white" />
                                     </div>
-
-                                    {/* Weekday Headers */}
-                                    <div className="grid grid-cols-7 gap-1 mb-2">
-                                        {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => (
-                                            <div key={d} className="text-center text-xs text-zinc-500 font-medium py-2">{d}</div>
-                                        ))}
+                                    <div className="relative z-10">
+                                        <h3 className="text-xl font-bold text-white">Push Senden</h3>
+                                        <div className="flex items-center gap-2 text-violet-200 text-xs font-medium opacity-80 mt-1">
+                                            <Users size={14} /> <span>Alle Kunden erreichen</span>
+                                        </div>
                                     </div>
+                                </button>
+                            </div>
+                        </div>
 
-                                    {/* Calendar Days */}
-                                    <div className="grid grid-cols-7 gap-1">
-                                        {(() => {
-                                            const year = calendarMonth.getFullYear()
-                                            const month = calendarMonth.getMonth()
-                                            const firstDay = new Date(year, month, 1)
-                                            const lastDay = new Date(year, month + 1, 0)
-                                            const startOffset = (firstDay.getDay() + 6) % 7
-                                            const days: React.ReactNode[] = []
+                        {/* SCHEDULED PUSHES - Only if exists */}
+                        {scheduledPushes.length > 0 && (
+                            <div className="pt-6 border-t border-white/5 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-400" /> Geplante Nachrichten</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {scheduledPushes.map((push) => (
+                                        <div key={push.id} className="flex gap-4 items-center bg-zinc-900/60 p-4 rounded-2xl border border-white/5">
+                                            <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 shrink-0"><Clock className="w-5 h-5" /></div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-white truncate">{push.message}</p>
+                                                <p className="text-xs text-zinc-500 font-mono mt-1">{new Date(push.scheduled_at).toLocaleString('de-DE')}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
-                                            for (let i = 0; i < startOffset; i++) {
-                                                days.push(<div key={`empty-${i}`} className="p-2" />)
-                                            }
+                        {/* AUTOMATIONS - Compact version */}
+                        <div className="pt-6 border-t border-white/5">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-sm font-bold flex items-center gap-2 text-zinc-400"><Sparkles className="w-4 h-4 text-yellow-400" /> Automatisierungen</h3>
+                                <span className="text-xs text-zinc-600">{automations.filter(a => a.is_active).length} aktiv</span>
+                            </div>
+                            {automations.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                    {automations.slice(0, 5).map((auto) => (
+                                        <div key={auto.id} className="px-3 py-1.5 bg-zinc-900/60 border border-white/5 rounded-lg text-xs text-zinc-300 flex items-center gap-2">
+                                            <span className={`w-1.5 h-1.5 rounded-full ${auto.is_active ? 'bg-emerald-500' : 'bg-zinc-600'}`} />
+                                            {auto.name}
+                                        </div>
+                                    ))}
+                                    {automations.length > 5 && (
+                                        <span className="px-3 py-1.5 text-xs text-zinc-500">+{automations.length - 5} weitere</span>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-zinc-600">Keine Automatisierungen</p>
+                            )}
+                        </div>
 
-                                            for (let d = 1; d <= lastDay.getDate(); d++) {
-                                                const date = new Date(year, month, d)
-                                                const dayOfWeek = date.getDay()
-                                                const isToday = new Date().toDateString() === date.toDateString()
-                                                const dateStr = date.toISOString().split('T')[0]
+                        {/* KALENDER - Push History, Scheduled, Automations */}
+                        <div className="pt-6 border-t border-white/5">
+                            <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><Calendar className="w-5 h-5 text-blue-400" /> Kalender-Übersicht</h3>
 
-                                                // Check for events on this day
-                                                const dayHistory = pushHistory.filter(p => p.sent_at?.startsWith(dateStr))
-                                                const dayScheduled = scheduledPushes.filter(p => p.scheduled_at?.startsWith(dateStr))
+                            <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-6">
+                                {/* Month Navigation */}
+                                <div className="flex items-center justify-between mb-4">
+                                    <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1))} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white">
+                                        <ArrowRight className="rotate-180" size={16} />
+                                    </button>
+                                    <h4 className="font-bold text-white">
+                                        {calendarMonth.toLocaleString('de-DE', { month: 'long', year: 'numeric' })}
+                                    </h4>
+                                    <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1))} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white">
+                                        <ArrowRight size={16} />
+                                    </button>
+                                </div>
 
-                                                // Check for automations
-                                                const hasWeekdayAutomation = automations.some(a => {
-                                                    if (a.rule_type !== 'weekday_schedule') return false
-                                                    const configDays = a.config?.days || []
-                                                    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-                                                    return configDays.includes(dayNames[dayOfWeek])
-                                                })
+                                {/* Weekday Headers */}
+                                <div className="grid grid-cols-7 gap-1 mb-2">
+                                    {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => (
+                                        <div key={d} className="text-center text-xs text-zinc-500 font-medium py-2">{d}</div>
+                                    ))}
+                                </div>
 
-                                                // For birthday/inactivity automations - show a general indicator if any are active
-                                                const hasOtherAutomations = automations.some(a =>
-                                                    a.rule_type === 'birthday' || a.rule_type === 'inactivity'
-                                                )
+                                {/* Calendar Days */}
+                                <div className="grid grid-cols-7 gap-1">
+                                    {(() => {
+                                        const year = calendarMonth.getFullYear()
+                                        const month = calendarMonth.getMonth()
+                                        const firstDay = new Date(year, month, 1)
+                                        const lastDay = new Date(year, month + 1, 0)
+                                        const startOffset = (firstDay.getDay() + 6) % 7
+                                        const days: React.ReactNode[] = []
 
-                                                const hasAutomation = hasWeekdayAutomation || (hasOtherAutomations && isToday)
+                                        for (let i = 0; i < startOffset; i++) {
+                                            days.push(<div key={`empty-${i}`} className="p-2" />)
+                                        }
 
-                                                days.push(
-                                                    <div
-                                                        key={d}
-                                                        className={`relative p-2 text-center rounded-lg text-sm transition-colors cursor-default
+                                        for (let d = 1; d <= lastDay.getDate(); d++) {
+                                            const date = new Date(year, month, d)
+                                            const dayOfWeek = date.getDay()
+                                            const isToday = new Date().toDateString() === date.toDateString()
+                                            const dateStr = date.toISOString().split('T')[0]
+
+                                            // Check for events on this day
+                                            const dayHistory = pushHistory.filter(p => p.sent_at?.startsWith(dateStr))
+                                            const dayScheduled = scheduledPushes.filter(p => p.scheduled_at?.startsWith(dateStr))
+
+                                            // Check for automations
+                                            const hasWeekdayAutomation = automations.some(a => {
+                                                if (a.rule_type !== 'weekday_schedule') return false
+                                                const configDays = a.config?.days || []
+                                                const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+                                                return configDays.includes(dayNames[dayOfWeek])
+                                            })
+
+                                            // For birthday/inactivity automations - show a general indicator if any are active
+                                            const hasOtherAutomations = automations.some(a =>
+                                                a.rule_type === 'birthday' || a.rule_type === 'inactivity'
+                                            )
+
+                                            const hasAutomation = hasWeekdayAutomation || (hasOtherAutomations && isToday)
+
+                                            days.push(
+                                                <div
+                                                    key={d}
+                                                    className={`relative p-2 text-center rounded-lg text-sm transition-colors cursor-default
                                                     ${isToday ? 'bg-emerald-500/20 text-emerald-400 font-bold' : 'hover:bg-white/5 text-zinc-400'}
                                                     ${dayHistory.length > 0 ? 'ring-1 ring-violet-500/50' : ''}
                                                     ${dayScheduled.length > 0 ? 'ring-1 ring-blue-500/50' : ''}
                                                 `}
-                                                        title={[
-                                                            dayHistory.length > 0 ? `${dayHistory.length} gesendet` : '',
-                                                            dayScheduled.length > 0 ? `${dayScheduled.length} geplant` : '',
-                                                            hasAutomation ? 'Automatisierung aktiv' : ''
-                                                        ].filter(Boolean).join(', ') || undefined}
-                                                    >
-                                                        {d}
-                                                        {(dayHistory.length > 0 || dayScheduled.length > 0 || hasAutomation) && (
-                                                            <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
-                                                                {dayHistory.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
-                                                                {dayScheduled.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
-                                                                {hasAutomation && <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )
-                                            }
-                                            return days
-                                        })()}
-                                    </div>
+                                                    title={[
+                                                        dayHistory.length > 0 ? `${dayHistory.length} gesendet` : '',
+                                                        dayScheduled.length > 0 ? `${dayScheduled.length} geplant` : '',
+                                                        hasAutomation ? 'Automatisierung aktiv' : ''
+                                                    ].filter(Boolean).join(', ') || undefined}
+                                                >
+                                                    {d}
+                                                    {(dayHistory.length > 0 || dayScheduled.length > 0 || hasAutomation) && (
+                                                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+                                                            {dayHistory.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
+                                                            {dayScheduled.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                                                            {hasAutomation && <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        }
+                                        return days
+                                    })()}
+                                </div>
 
-                                    {/* Legend */}
-                                    <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/5 text-xs text-zinc-500">
-                                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-violet-500" /> Gesendet</span>
-                                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" /> Geplant/Wartend</span>
-                                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Automatisierung</span>
-                                    </div>
+                                {/* Legend */}
+                                <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/5 text-xs text-zinc-500">
+                                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-violet-500" /> Gesendet</span>
+                                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" /> Geplant/Wartend</span>
+                                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Automatisierung</span>
                                 </div>
                             </div>
-
-                            <button onClick={handleLogout} className="mx-auto block mt-8 text-xs text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Abmelden</button>
                         </div>
-                        {/* End Main Content Area */}
 
-                        {/* Live Activity Feed Sidebar */}
-                        <div className="hidden lg:block w-72 shrink-0">
-                            {campaignData?.campaign?.id && (
-                                <div className="sticky top-6">
-                                    <LiveActivityFeed campaignId={campaignData.campaign.id} />
-                                </div>
-                            )}
-                        </div>
+                        <button onClick={handleLogout} className="mx-auto block mt-8 text-xs text-zinc-600 hover:text-white transition-colors uppercase tracking-widest font-bold">Abmelden</button>
                     </div>
-                    {/* End Main Grid */}
-                </main >
+                </main>
 
                 {/* PUSH MODAL */}
                 <AnimatePresence>
-                    {
-                        showPushModal && (
-                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                                <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-zinc-900 border border-white/10 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden relative">
-                                    <button onClick={() => setShowPushModal(false)} className="absolute top-4 right-4 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors z-20"><X size={18} className="text-zinc-400" /></button>
+                    {showPushModal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-zinc-900 border border-white/10 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden relative">
+                                <button onClick={() => setShowPushModal(false)} className="absolute top-4 right-4 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors z-20"><X size={18} className="text-zinc-400" /></button>
 
-                                    <div className="p-8 relative">
-                                        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none" />
-                                        <h2 className="text-2xl font-bold text-white mb-2 relative z-10 flex items-center gap-3"><Send className="text-emerald-500" /> Nachricht senden</h2>
-                                        <p className="text-zinc-400 text-sm mb-8 relative z-10">Erreiche deine Kunden direkt auf dem Sperrbildschirm.</p>
+                                <div className="p-8 relative">
+                                    <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none" />
+                                    <h2 className="text-2xl font-bold text-white mb-2 relative z-10 flex items-center gap-3"><Send className="text-emerald-500" /> Nachricht senden</h2>
+                                    <p className="text-zinc-400 text-sm mb-8 relative z-10">Erreiche deine Kunden direkt auf dem Sperrbildschirm.</p>
 
-                                        <div className="grid grid-cols-2 gap-4 mb-6 relative z-10">
-                                            <button onClick={() => setPushMode('now')} className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${pushMode === 'now' ? 'bg-emerald-500/20 border-emerald-500 text-white' : 'bg-zinc-900/50 border-white/5 text-zinc-500 hover:bg-white/5'}`}>
-                                                <Zap className={pushMode === 'now' ? 'text-emerald-500' : 'text-zinc-600'} />
-                                                <span className="text-sm font-bold">⚡ Jetzt senden</span>
-                                            </button>
-                                            <button onClick={() => setPushMode('schedule')} className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${pushMode === 'schedule' ? 'bg-blue-500/20 border-blue-500 text-white' : 'bg-zinc-900/50 border-white/5 text-zinc-500 hover:bg-white/5'}`}>
-                                                <Calendar className={pushMode === 'schedule' ? 'text-blue-500' : 'text-zinc-600'} />
-                                                <span className="text-sm font-bold">📅 Später planen</span>
-                                            </button>
-                                        </div>
-
-                                        <form onSubmit={handlePushRequest} className="space-y-4 relative z-10">
-                                            <div className="relative">
-                                                <textarea value={pushMessage} onChange={(e) => setPushMessage(e.target.value)} placeholder="Deine Nachricht hier schreiben..." className="w-full h-32 bg-black/40 border border-white/10 rounded-2xl p-4 text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/50 resize-none transition-all" />
-                                                <div className="absolute bottom-3 right-3 text-xs text-zinc-600 font-mono">{pushMessage.length} Zeichen</div>
-                                            </div>
-                                            {pushMode === 'schedule' && <input type="datetime-local" value={pushScheduleTime} onChange={(e) => setPushScheduleTime(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-blue-500/50 font-mono text-sm" />}
-                                            <button type="submit" disabled={pushLoading || !pushMessage.trim()} className="w-full py-4 bg-white text-black rounded-xl font-bold hover:bg-zinc-200 transition-colors disabled:opacity-50 shadow-lg shadow-white/5">{pushLoading ? 'Wird gesendet...' : (pushMode === 'now' ? '⚡ Jetzt absenden' : '📅 Einplanen')}</button>
-                                        </form>
+                                    <div className="grid grid-cols-2 gap-4 mb-6 relative z-10">
+                                        <button onClick={() => setPushMode('now')} className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${pushMode === 'now' ? 'bg-emerald-500/20 border-emerald-500 text-white' : 'bg-zinc-900/50 border-white/5 text-zinc-500 hover:bg-white/5'}`}>
+                                            <Zap className={pushMode === 'now' ? 'text-emerald-500' : 'text-zinc-600'} />
+                                            <span className="text-sm font-bold">⚡ Jetzt senden</span>
+                                        </button>
+                                        <button onClick={() => setPushMode('schedule')} className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${pushMode === 'schedule' ? 'bg-blue-500/20 border-blue-500 text-white' : 'bg-zinc-900/50 border-white/5 text-zinc-500 hover:bg-white/5'}`}>
+                                            <Calendar className={pushMode === 'schedule' ? 'text-blue-500' : 'text-zinc-600'} />
+                                            <span className="text-sm font-bold">📅 Später planen</span>
+                                        </button>
                                     </div>
-                                </motion.div>
-                            </div>
-                        )
+
+                                    <form onSubmit={handlePushRequest} className="space-y-4 relative z-10">
+                                        <div className="relative">
+                                            <textarea value={pushMessage} onChange={(e) => setPushMessage(e.target.value)} placeholder="Deine Nachricht hier schreiben..." className="w-full h-32 bg-black/40 border border-white/10 rounded-2xl p-4 text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/50 resize-none transition-all" />
+                                            <div className="absolute bottom-3 right-3 text-xs text-zinc-600 font-mono">{pushMessage.length} Zeichen</div>
+                                        </div>
+                                        {pushMode === 'schedule' && <input type="datetime-local" value={pushScheduleTime} onChange={(e) => setPushScheduleTime(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-blue-500/50 font-mono text-sm" />}
+                                        <button type="submit" disabled={pushLoading || !pushMessage.trim()} className="w-full py-4 bg-white text-black rounded-xl font-bold hover:bg-zinc-200 transition-colors disabled:opacity-50 shadow-lg shadow-white/5">{pushLoading ? 'Wird gesendet...' : (pushMode === 'now' ? '⚡ Jetzt absenden' : '📅 Einplanen')}</button>
+                                    </form>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )
                     }
                 </AnimatePresence >
 
