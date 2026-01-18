@@ -10,58 +10,121 @@ export function ActivityChart({ data }: { data: { date: string, stamps: number, 
     // Find max for scaling
     const maxVal = Math.max(...data.map(d => Math.max(d.stamps, d.redemptions, d.newPasses || 0)), 10)
 
+    // Calculate totals for legend
+    const totalStamps = data.reduce((sum, d) => sum + d.stamps, 0)
+    const totalRedemptions = data.reduce((sum, d) => sum + d.redemptions, 0)
+    const totalNewPasses = data.reduce((sum, d) => sum + (d.newPasses || 0), 0)
+
     return (
-        <div className="flex items-end gap-2 h-40 w-full pt-4">
-            {data.map((day, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-2 group relative">
-                    {/* Tooltip */}
-                    <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-zinc-900 border border-white/10 text-white text-xs px-3 py-2 rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 whitespace-nowrap shadow-xl">
-                        <div className="font-bold mb-1">{new Date(day.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}</div>
-                        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px]">
-                            <span className="text-emerald-500">Stempel:</span> <span>{day.stamps}</span>
-                            <span className="text-purple-500">Einlösung:</span> <span>{day.redemptions}</span>
-                            <span className="text-blue-500">Neue Karten:</span> <span>{day.newPasses || 0}</span>
-                        </div>
-                    </div>
-
-                    {/* Bars Container */}
-                    <div className="w-full flex gap-0.5 items-end justify-center h-full px-0.5">
-                        {/* Stamp Bar */}
-                        <motion.div
-                            initial={{ height: 0 }}
-                            animate={{ height: `${(day.stamps / maxVal) * 100}%` }}
-                            transition={{ duration: 0.5, delay: i * 0.1 }}
-                            className="w-2 bg-emerald-500 rounded-t-sm"
-                        />
-                        {/* Redeem Bar */}
-                        {day.redemptions > 0 && (
-                            <motion.div
-                                initial={{ height: 0 }}
-                                animate={{ height: `${(day.redemptions / maxVal) * 100}%` }}
-                                transition={{ duration: 0.5, delay: i * 0.1 + 0.05 }}
-                                className="w-2 bg-purple-500 rounded-t-sm opacity-90"
-                            />
-                        )}
-                        {/* New Passes Bar */}
-                        {(day.newPasses || 0) > 0 && (
-                            <motion.div
-                                initial={{ height: 0 }}
-                                animate={{ height: `${((day.newPasses || 0) / maxVal) * 100}%` }}
-                                transition={{ duration: 0.5, delay: i * 0.1 + 0.1 }}
-                                className="w-2 bg-blue-500 rounded-t-sm opacity-90"
-                            />
-                        )}
-                    </div>
-
-                    {/* Label */}
-                    <span className="text-[10px] text-zinc-500 font-medium">
-                        {new Date(day.date).toLocaleDateString('de-DE', { weekday: 'short' }).slice(0, 2)}
-                    </span>
+        <div className="flex flex-col h-full">
+            {/* Legend */}
+            <div className="flex items-center justify-center gap-4 sm:gap-6 mb-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-sm bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-sm shadow-emerald-500/30" />
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Stempel</span>
+                    <span className="text-xs font-bold text-emerald-500">{totalStamps}</span>
                 </div>
-            ))}
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-sm bg-gradient-to-t from-purple-600 to-purple-400 shadow-sm shadow-purple-500/30" />
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Einlösungen</span>
+                    <span className="text-xs font-bold text-purple-500">{totalRedemptions}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-sm bg-gradient-to-t from-blue-600 to-blue-400 shadow-sm shadow-blue-500/30" />
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Neue Kunden</span>
+                    <span className="text-xs font-bold text-blue-500">{totalNewPasses}</span>
+                </div>
+            </div>
+
+            {/* Chart Area */}
+            <div className="relative flex-1 min-h-[120px]">
+                {/* Grid Lines */}
+                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                    {[0, 1, 2, 3].map(i => (
+                        <div key={i} className="border-b border-zinc-200 dark:border-white/5" />
+                    ))}
+                </div>
+
+                {/* Bars */}
+                <div className="relative flex items-end gap-1 sm:gap-2 h-full w-full pt-2">
+                    {data.map((day, i) => (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative min-w-0">
+                            {/* Tooltip */}
+                            <div className="absolute -top-20 left-1/2 -translate-x-1/2 bg-zinc-800 dark:bg-zinc-900 border border-zinc-600 dark:border-white/10 text-white text-xs px-3 py-2 rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-20 whitespace-nowrap shadow-xl scale-95 group-hover:scale-100">
+                                <div className="font-bold mb-1.5 text-zinc-100">{new Date(day.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}</div>
+                                <div className="space-y-1 text-[11px]">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <span className="text-emerald-400 flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                            Stempel
+                                        </span>
+                                        <span className="font-bold">{day.stamps}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4">
+                                        <span className="text-purple-400 flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-purple-500" />
+                                            Einlösungen
+                                        </span>
+                                        <span className="font-bold">{day.redemptions}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4">
+                                        <span className="text-blue-400 flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-blue-500" />
+                                            Neue Kunden
+                                        </span>
+                                        <span className="font-bold">{day.newPasses || 0}</span>
+                                    </div>
+                                </div>
+                                {/* Tooltip Arrow */}
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-zinc-800 dark:bg-zinc-900 border-r border-b border-zinc-600 dark:border-white/10 rotate-45" />
+                            </div>
+
+                            {/* Bars Container */}
+                            <div className="w-full flex gap-[2px] items-end justify-center h-full px-[1px]">
+                                {/* Stamp Bar */}
+                                <motion.div
+                                    initial={{ height: 0 }}
+                                    animate={{ height: day.stamps > 0 ? `${Math.max((day.stamps / maxVal) * 100, 4)}%` : '2px' }}
+                                    transition={{ duration: 0.6, delay: i * 0.05, ease: "easeOut" }}
+                                    className={`flex-1 max-w-3 rounded-t-sm transition-shadow duration-200 ${day.stamps > 0
+                                            ? 'bg-gradient-to-t from-emerald-600 to-emerald-400 group-hover:shadow-lg group-hover:shadow-emerald-500/30'
+                                            : 'bg-zinc-300 dark:bg-zinc-700'
+                                        }`}
+                                />
+                                {/* Redeem Bar */}
+                                <motion.div
+                                    initial={{ height: 0 }}
+                                    animate={{ height: day.redemptions > 0 ? `${Math.max((day.redemptions / maxVal) * 100, 4)}%` : '2px' }}
+                                    transition={{ duration: 0.6, delay: i * 0.05 + 0.02, ease: "easeOut" }}
+                                    className={`flex-1 max-w-3 rounded-t-sm transition-shadow duration-200 ${day.redemptions > 0
+                                            ? 'bg-gradient-to-t from-purple-600 to-purple-400 group-hover:shadow-lg group-hover:shadow-purple-500/30'
+                                            : 'bg-zinc-300 dark:bg-zinc-700'
+                                        }`}
+                                />
+                                {/* New Passes Bar */}
+                                <motion.div
+                                    initial={{ height: 0 }}
+                                    animate={{ height: (day.newPasses || 0) > 0 ? `${Math.max(((day.newPasses || 0) / maxVal) * 100, 4)}%` : '2px' }}
+                                    transition={{ duration: 0.6, delay: i * 0.05 + 0.04, ease: "easeOut" }}
+                                    className={`flex-1 max-w-3 rounded-t-sm transition-shadow duration-200 ${(day.newPasses || 0) > 0
+                                            ? 'bg-gradient-to-t from-blue-600 to-blue-400 group-hover:shadow-lg group-hover:shadow-blue-500/30'
+                                            : 'bg-zinc-300 dark:bg-zinc-700'
+                                        }`}
+                                />
+                            </div>
+
+                            {/* Day Label */}
+                            <span className="text-[9px] sm:text-[10px] text-zinc-400 dark:text-zinc-500 font-medium mt-1">
+                                {new Date(day.date).toLocaleDateString('de-DE', { weekday: 'short' }).slice(0, 2)}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     )
 }
+
 
 // --- Wallet Distribution (Donut) ---
 export function WalletDonut({ apple, google }: { apple: number, google: number }) {

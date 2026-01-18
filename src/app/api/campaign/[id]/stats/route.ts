@@ -81,8 +81,11 @@ export async function GET(
             .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
 
         // 4. Calculate stats from scans
+        // Redemption types include all forms of reward redemption
+        const redemptionTypes = ['REDEEM', 'AUTO_REDEEM', 'REDEEM_REWARD', 'REDEEM_VOUCHER']
+
         const stamps = scans?.filter(s => s.action_type === 'ADD_STAMP').length || 0
-        const redemptions = scans?.filter(s => s.action_type === 'REDEEM').length || 0
+        const redemptions = scans?.filter(s => redemptionTypes.includes(s.action_type)).length || 0
 
         // 5. Get unique active customers (passes that were scanned)
         const uniquePassIds = new Set(scans?.map(s => s.pass_id) || [])
@@ -94,21 +97,37 @@ export async function GET(
         const days = period === '24h' ? 1 : period === '7d' ? 7 : 30
         const chartData: { date: string; stamps: number; redemptions: number; newPasses: number }[] = []
 
+        // Fetch all passes created in the chart period for accurate daily counts
+        const chartStartDate = new Date(now.getTime() - days * dayMs)
+        const { data: newPassesInPeriod } = await supabase
+            .from('passes')
+            .select('id, created_at')
+            .eq('campaign_id', campaignId)
+            .gte('created_at', chartStartDate.toISOString())
+            .is('deleted_at', null)
+
         for (let i = days - 1; i >= 0; i--) {
             const dayStart = new Date(now.getTime() - (i + 1) * dayMs)
             const dayEnd = new Date(now.getTime() - i * dayMs)
             const dateStr = dayStart.toISOString().split('T')[0]
 
+            // Filter scans for this day
             const dayScans = scans?.filter(s => {
                 const scanDate = new Date(s.created_at)
                 return scanDate >= dayStart && scanDate < dayEnd
             }) || []
 
+            // Count new passes created on this specific day
+            const dayNewPasses = newPassesInPeriod?.filter(p => {
+                const passDate = new Date(p.created_at)
+                return passDate >= dayStart && passDate < dayEnd
+            }).length || 0
+
             chartData.push({
                 date: dateStr,
                 stamps: dayScans.filter(s => s.action_type === 'ADD_STAMP').length,
-                redemptions: dayScans.filter(s => s.action_type === 'REDEEM').length,
-                newPasses: 0 // Would need separate query per day for accurate count
+                redemptions: dayScans.filter(s => redemptionTypes.includes(s.action_type)).length,
+                newPasses: dayNewPasses
             })
         }
 
