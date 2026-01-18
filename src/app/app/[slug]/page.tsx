@@ -7,7 +7,7 @@ import {
     Calendar, Trophy, Target, Bell, Check, RotateCcw, Cake, Mail,
     Phone, BarChart3, Star, TrendingUp, PieChart as PieChartIcon,
     Settings, LogOut, ArrowRight, Crown, AlertTriangle, Layers, Gift,
-    MessageSquare
+    MessageSquare, Trash2
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'sonner'
@@ -653,8 +653,11 @@ export default function POSPage() {
                             {reviewStats ? (
                                 <button
                                     onClick={() => setShowReviewsModal(true)}
-                                    className="bg-amber-900/10 border border-amber-500/20 rounded-2xl p-4 hover:bg-amber-900/20 transition-all shadow-lg shadow-amber-900/10 text-left w-full group"
+                                    className="bg-amber-900/10 border border-amber-500/20 rounded-2xl p-4 hover:bg-amber-900/20 transition-all shadow-lg shadow-amber-900/10 text-left w-full group relative"
                                 >
+                                    <div className="absolute top-4 right-4 text-amber-500/30 group-hover:text-amber-500/60 transition-colors">
+                                        <ArrowRight size={16} />
+                                    </div>
                                     <div className="flex justify-between items-start mb-2">
                                         <span className="text-amber-200/70 text-[10px] font-bold uppercase tracking-wider group-hover:text-amber-200 transition-colors">Bewertungen</span>
                                         <div className="p-1.5 rounded-lg text-amber-400 bg-amber-500/10"><Star size={14} className="fill-amber-500/50" /></div>
