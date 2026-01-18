@@ -101,6 +101,7 @@ export default function POSPage() {
 
     // Reviews
     const [showReviewsModal, setShowReviewsModal] = useState(false)
+    const [showSettingsModal, setShowSettingsModal] = useState(false)
 
     // Calendar
     const [calendarMonth, setCalendarMonth] = useState(new Date())
@@ -366,7 +367,13 @@ export default function POSPage() {
 
     const handleManualScan = async () => {
         if (!manualId.trim()) return
-        handleScan(manualId.trim())
+        // Clean up input: remove spaces, uppercase
+        const cleanId = manualId.trim().replace(/\s+/g, '').toUpperCase()
+        if (cleanId.length < 3) {
+            toast.error('ID zu kurz')
+            return
+        }
+        handleScan(cleanId)
     }
 
     const resetScanner = () => {
@@ -478,7 +485,7 @@ export default function POSPage() {
         const loyalty = stats?.loyalty
 
         return (
-            <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
+            <div className="min-h-screen bg-slate-50 dark:bg-black text-zinc-900 dark:text-white flex flex-col relative overflow-hidden">
                 <div className="fixed inset-0 z-0 bg-[url('/grid.svg')] opacity-[0.02] dark:opacity-[0.05] pointer-events-none" />
                 <div className="fixed top-0 left-0 w-full h-96 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none dark:from-emerald-500/10" />
 
@@ -507,8 +514,13 @@ export default function POSPage() {
                             onClick={() => setView('customers')}
                             className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 dark:bg-blue-500/20 border border-blue-200 dark:border-blue-500/40 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-100 dark:hover:bg-blue-500/30 transition-colors"
                         >
-                            <Users size={16} />
                             <span className="text-sm hidden sm:inline">Kunden</span>
+                        </button>
+                        <button
+                            onClick={() => setShowSettingsModal(true)}
+                            className="p-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-zinc-900 dark:text-white"
+                        >
+                            <Settings size={20} />
                         </button>
                     </div>
                 </header>
@@ -692,9 +704,9 @@ export default function POSPage() {
                         {/* CHART + ACTIONS */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             {/* Activity Chart */}
-                            <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-sm min-h-[300px]">
+                            <div className="lg:col-span-2 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-white/5 rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-sm min-h-[300px] shadow-sm dark:shadow-none">
                                 <div className="flex justify-between items-center mb-6">
-                                    <h3 className="font-bold text-lg text-white flex items-center gap-2"><BarChart3 size={20} className="text-emerald-500" /> Aktivität</h3>
+                                    <h3 className="font-bold text-lg text-zinc-900 dark:text-white flex items-center gap-2"><BarChart3 size={20} className="text-emerald-500" /> Aktivität</h3>
                                     <span className="text-xs font-mono text-zinc-500">{rangeLabels[statsRange]}</span>
                                 </div>
                                 <div className="flex-1 w-full">
@@ -710,30 +722,30 @@ export default function POSPage() {
 
                             {/* Actions */}
                             <div className="lg:col-span-1 flex flex-col gap-4">
-                                <button onClick={() => setShowPushModal(true)} className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 hover:from-violet-500/30 hover:to-fuchsia-500/30 transition-all shadow-lg shadow-violet-900/20 group text-left p-6 flex flex-col justify-between min-h-[140px] flex-1">
-                                    <div className="absolute top-0 right-0 p-24 bg-violet-500/10 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:bg-violet-500/20 transition-all" />
+                                <button onClick={() => setShowPushModal(true)} className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-50 to-fuchsia-50 dark:from-violet-600/20 dark:to-fuchsia-600/20 border border-violet-200 dark:border-violet-500/30 hover:from-violet-100 hover:to-fuchsia-100 dark:hover:from-violet-500/30 dark:hover:to-fuchsia-500/30 transition-all shadow-lg shadow-violet-500/10 dark:shadow-violet-900/20 group text-left p-6 flex flex-col justify-between min-h-[140px] flex-1">
+                                    <div className="absolute top-0 right-0 p-24 bg-violet-500/5 dark:bg-violet-500/10 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:bg-violet-500/10 dark:group-hover:bg-violet-500/20 transition-all" />
                                     <div className="p-3 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl w-fit relative z-10 group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/30">
                                         <Send className="w-6 h-6 text-white" />
                                     </div>
                                     <div className="relative z-10 mt-6">
-                                        <h3 className="text-xl font-bold text-white">Push Senden</h3>
-                                        <div className="flex items-center gap-2 text-violet-200 text-xs font-medium opacity-80 mt-1">
+                                        <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Push Senden</h3>
+                                        <div className="flex items-center gap-2 text-violet-600 dark:text-violet-200 text-xs font-medium opacity-80 mt-1">
                                             <Users size={14} /> <span>Alle Kunden erreichen</span>
                                         </div>
                                     </div>
                                 </button>
 
-                                <button onClick={() => setView('customers')} className="bg-zinc-900/60 border border-blue-500/20 hover:border-blue-500/40 rounded-2xl p-4 flex items-center justify-between group transition-all hover:bg-blue-900/10">
+                                <button onClick={() => setView('customers')} className="bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-blue-500/20 hover:border-blue-300 dark:hover:border-blue-500/40 rounded-2xl p-4 flex items-center justify-between group transition-all hover:bg-blue-50 dark:hover:bg-blue-900/10 shadow-sm dark:shadow-none">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400 group-hover:bg-blue-500/20 transition-colors">
                                             <Users size={18} />
                                         </div>
                                         <div className="text-left">
-                                            <div className="font-bold text-white text-sm">Alle Kunden</div>
-                                            <div className="text-xs text-blue-400/70">Liste & Details ansehen</div>
+                                            <div className="font-bold text-zinc-900 dark:text-white text-sm">Alle Kunden</div>
+                                            <div className="text-xs text-blue-600 dark:text-blue-400 opacity-70">Liste & Details ansehen</div>
                                         </div>
                                     </div>
-                                    <ArrowRight size={16} className="text-zinc-600 group-hover:text-blue-400 transition-colors" />
+                                    <ArrowRight size={16} className="text-zinc-400 dark:text-zinc-600 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors" />
                                 </button>
                             </div>
                         </div>
@@ -742,14 +754,14 @@ export default function POSPage() {
                         {scheduledPushes.length > 0 && (
                             <div className="pt-6 border-t border-white/5 space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-bold flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-400" /> Geplante Nachrichten</h3>
+                                    <h3 className="text-lg font-bold flex items-center gap-2 text-zinc-900 dark:text-white"><Calendar className="w-5 h-5 text-blue-500 dark:text-blue-400" /> Geplante Nachrichten</h3>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {scheduledPushes.map((push) => (
-                                        <div key={push.id} className="flex gap-4 items-center bg-zinc-900/60 p-4 rounded-2xl border border-white/5">
-                                            <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 shrink-0"><Clock className="w-5 h-5" /></div>
+                                        <div key={push.id} className="flex gap-4 items-center bg-white dark:bg-zinc-900/60 p-4 rounded-2xl border border-zinc-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0"><Clock className="w-5 h-5" /></div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-white truncate">{push.message}</p>
+                                                <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">{push.message}</p>
                                                 <p className="text-xs text-zinc-500 font-mono mt-1">{new Date(push.scheduled_at).toLocaleString('de-DE')}</p>
                                             </div>
                                         </div>
@@ -759,7 +771,7 @@ export default function POSPage() {
                         )}
 
                         {/* AUTOMATIONS - Full Manager */}
-                        <div className="pt-6 border-t border-white/5">
+                        <div className="pt-6 border-t border-zinc-200 dark:border-white/5">
                             <AutomationRulesManager slug={slug} />
                         </div>
 
@@ -999,7 +1011,45 @@ export default function POSPage() {
                         )
                     }
                 </AnimatePresence >
-            </div >
+            </div>
+        )
+    }
+
+    // ===============================================
+    // RENDER: SETTINGS MODAL
+    // ===============================================
+
+    if (showSettingsModal) {
+        return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden relative p-8">
+                    <button onClick={() => setShowSettingsModal(false)} className="absolute top-4 right-4 p-2 bg-zinc-100 dark:bg-white/5 rounded-full hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors"><X size={18} className="text-zinc-400" /></button>
+
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="w-12 h-12 bg-zinc-100 dark:bg-white/5 rounded-2xl flex items-center justify-center">
+                            <Settings className="w-6 h-6 text-zinc-900 dark:text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Einstellungen</h2>
+                            <p className="text-xs text-zinc-500">Passify POS v2.0</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-4">Erscheinungsbild</label>
+                            <ThemeToggle />
+                        </div>
+
+                        <div className="pt-6 border-t border-zinc-200 dark:border-white/5">
+                            <button onClick={handleLogout} className="w-full py-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center gap-2">
+                                <LogOut size={18} />
+                                Abmelden
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
         )
     }
 
@@ -1092,6 +1142,12 @@ export default function POSPage() {
                             <BarChart3 className="w-4 h-4" />
                             <span className="text-sm font-medium">Dashboard</span>
                         </button>
+                        <button
+                            onClick={() => setShowSettingsModal(true)}
+                            className="p-2.5 bg-white/80 dark:bg-white/10 backdrop-blur-md rounded-xl border border-zinc-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/20 transition-all text-zinc-900 dark:text-white shadow-sm dark:shadow-none"
+                        >
+                            <Settings size={20} />
+                        </button>
                     </>
                 )}
             </div>
@@ -1103,10 +1159,22 @@ export default function POSPage() {
                         <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-emerald-500/20"><Zap className="w-12 h-12 text-white" /></div>
                         <h1 className="text-3xl font-bold">QARD POS</h1>
                         <div className="grid grid-cols-1 gap-4">
-                            <button onClick={startCamera} className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-black rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"><Camera className="w-6 h-6" /> Code Scannen</button>
-                            <div className="flex gap-2">
-                                <input value={manualId} onChange={e => setManualId(e.target.value)} placeholder="Manuelle ID" className="flex-1 px-4 py-4 bg-white/5 border border-white/10 rounded-xl text-center outline-none focus:border-emerald-500 transition-colors" />
-                                <button onClick={handleManualScan} disabled={!manualId} className="px-6 bg-zinc-800 rounded-xl font-bold disabled:opacity-50 hover:bg-zinc-700 transition-colors">OK</button>
+                            <button onClick={startCamera} className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-white dark:text-black rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"><Camera className="w-6 h-6" /> Code Scannen</button>
+
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <span className="text-zinc-400 font-mono text-sm">ID:</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <input
+                                        value={manualId}
+                                        onChange={e => setManualId(e.target.value.toUpperCase())}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
+                                        placeholder="MANUELLE EINGABE"
+                                        className="flex-1 pl-12 pr-4 py-4 bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl text-center outline-none focus:border-emerald-500 transition-colors font-mono text-lg uppercase tracking-wider text-zinc-900 dark:text-white"
+                                    />
+                                    <button onClick={handleManualScan} disabled={!manualId} className="px-6 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-xl font-bold disabled:opacity-50 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shadow-lg">OK</button>
+                                </div>
                             </div>
                         </div>
                         <button onClick={handleLogout} className="text-sm text-zinc-500 hover:text-white mt-8 transition-colors">Abmelden</button>
@@ -1115,19 +1183,20 @@ export default function POSPage() {
                 {mode === 'camera' && (
                     <div className="w-full flex flex-col items-center justify-center">
                         {/* Square camera container with brighter styling */}
-                        <div className="relative w-full max-w-[320px]">
-                            <div className="aspect-square w-full rounded-3xl overflow-hidden bg-zinc-800 border-4 border-emerald-400 shadow-2xl shadow-emerald-500/30">
-                                <div id="qr-reader" className="w-full h-full" />
+                        <div className="relative w-full max-w-[320px] mx-auto">
+                            <div className="aspect-square w-full rounded-3xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-4 border-emerald-500/50 dark:border-emerald-400 shadow-2xl shadow-emerald-500/20 relative z-10">
+                                <div id="qr-reader" className="w-full h-full object-cover" />
                             </div>
-                            {/* Scanning indicator */}
-                            <div className="absolute -inset-1 rounded-3xl bg-emerald-400/20 animate-pulse pointer-events-none" />
+                            {/* Scanning indicator details */}
+                            <div className="absolute inset-0 border-2 border-emerald-500/30 rounded-3xl animate-pulse pointer-events-none z-20" />
+                            <div className="absolute top-0 right-0 p-32 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
                         </div>
 
                         <p className="text-zinc-400 text-sm mt-6 mb-4">QR-Code in das Feld halten</p>
 
                         {cameraError && <p className="text-red-500 mb-4 text-center">{cameraError}</p>}
 
-                        <button onClick={stopCamera} className="px-8 py-3 bg-zinc-800 rounded-full font-medium hover:bg-zinc-700 transition-colors border border-white/10">
+                        <button onClick={stopCamera} className="px-8 py-3 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-full font-medium hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors border border-zinc-200 dark:border-white/10 shadow-lg">
                             Abbrechen
                         </button>
                     </div>
@@ -1177,10 +1246,7 @@ export default function POSPage() {
                     </div>
                 )}
 
-                {/* Theme Toggle */}
-                <div className="mt-8 mb-4">
-                    <ThemeToggle />
-                </div>
+                <div className="h-8" />
             </main>
         </div>
     )
@@ -1193,21 +1259,13 @@ function StatCard({ label, value, icon, color }: { label: string; value: number;
         blue: 'text-blue-600 dark:text-blue-500 bg-blue-100 dark:bg-blue-500/10',
         zinc: 'text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800'
     }
-    function StatCard({ label, value, icon, color }: { label: string; value: number; icon: React.ReactNode; color: string }) {
-        const colors: Record<string, string> = {
-            emerald: 'text-emerald-600 dark:text-emerald-500 bg-emerald-100 dark:bg-emerald-500/10',
-            purple: 'text-purple-600 dark:text-purple-500 bg-purple-100 dark:bg-purple-500/10',
-            blue: 'text-blue-600 dark:text-blue-500 bg-blue-100 dark:bg-blue-500/10',
-            zinc: 'text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800'
-        }
-        return (
-            <div className="bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-white/5 rounded-2xl p-5 relative overflow-hidden group hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-all backdrop-blur-sm shadow-sm dark:shadow-none">
-                <div className="flex justify-between items-start mb-3">
-                    <span className="text-zinc-500 dark:text-zinc-500 text-xs font-bold uppercase tracking-wider">{label}</span>
-                    <div className={`p-2 rounded-lg ${colors[color]} group-hover:scale-110 transition-transform`}>{icon}</div>
-                </div>
-                <div className="text-3xl font-bold text-zinc-900 dark:text-white">{value}</div>
+    return (
+        <div className="bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-white/5 rounded-2xl p-5 relative overflow-hidden group hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-all backdrop-blur-sm shadow-sm dark:shadow-none">
+            <div className="flex justify-between items-start mb-3">
+                <span className="text-zinc-500 dark:text-zinc-500 text-xs font-bold uppercase tracking-wider">{label}</span>
+                <div className={`p-2 rounded-lg ${colors[color]} group-hover:scale-110 transition-transform`}>{icon}</div>
             </div>
-        )
-    }
+            <div className="text-3xl font-bold text-zinc-900 dark:text-white">{value}</div>
+        </div>
+    )
 }
