@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import {
     Cake, Calendar, Clock, Bell, Plus, Trash2, Play, Pause,
     Settings, ChevronDown, ChevronUp, Loader2, CheckCircle2,
-    AlertCircle, Zap, UserX
+    AlertCircle, Zap, UserX, X
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
@@ -428,13 +428,18 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
                 className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 w-full max-w-md rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto"
             >
                 {/* Header */}
-                <div className="p-6 border-b border-zinc-100 dark:border-white/5">
-                    <h4 className="text-lg font-bold text-zinc-900 dark:text-white">
-                        {isEditing ? 'Automatisierung bearbeiten' : 'Neue Automatisierung'}
-                    </h4>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                        Automatische Push-Nachrichten an deine Kunden
-                    </p>
+                <div className="p-6 border-b border-zinc-100 dark:border-white/5 flex justify-between items-start">
+                    <div>
+                        <h4 className="text-lg font-bold text-zinc-900 dark:text-white">
+                            {isEditing ? 'Automatisierung bearbeiten' : 'Neue Automatisierung'}
+                        </h4>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                            Automatische Push-Nachrichten an deine Kunden
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="p-2 -mr-2 -mt-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-white transition-colors">
+                        <X size={20} />
+                    </button>
                 </div>
 
                 {/* Content */}

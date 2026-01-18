@@ -586,12 +586,10 @@ export default function POSPage() {
 
                             {/* Milestones / Badges - Minimalist */}
                             <div className="flex flex-wrap gap-2">
-                                {(loyalty?.milestones?.slice(0, 3) || ['System aktiv', 'Wachstum stabil']).map((m: string, i: number) => (
-                                    <span key={i} className="px-2.5 py-1 bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-300 text-[10px] font-bold rounded-lg border border-zinc-200 dark:border-white/10 flex items-center gap-1.5 hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
-                                        {m.replace(/^[^\s]*\s/, '')} {/* Strip emoji prefix for clean look */}
-                                    </span>
-                                ))}
+                                <span className="px-2.5 py-1 bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-300 text-[10px] font-bold rounded-lg border border-zinc-200 dark:border-white/10 flex items-center gap-1.5 hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors uppercase tracking-wider">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
+                                    SYSTEME BEREIT
+                                </span>
                             </div>
                         </motion.div>
 
@@ -1121,22 +1119,9 @@ export default function POSPage() {
                         <h1 className="text-3xl font-bold">QARD POS</h1>
                         <div className="grid grid-cols-1 gap-4">
                             <button onClick={startCamera} className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-white dark:text-black rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"><Camera className="w-6 h-6" /> Code Scannen</button>
-
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <span className="text-zinc-400 font-mono text-sm">ID:</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <input
-                                        value={manualId}
-                                        onChange={e => setManualId(e.target.value.toUpperCase())}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
-                                        placeholder="MANUELLE EINGABE"
-                                        className="flex-1 pl-12 pr-4 py-4 bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl text-center outline-none focus:border-emerald-500 transition-colors font-mono text-lg uppercase tracking-wider text-zinc-900 dark:text-white"
-                                    />
-                                    <button onClick={handleManualScan} disabled={!manualId} className="px-6 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-xl font-bold disabled:opacity-50 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shadow-lg">OK</button>
-                                </div>
-                            </div>
+                        </div>
+                        <div className="mt-8 flex justify-center">
+                            <ThemeToggle />
                         </div>
                         <button onClick={handleLogout} className="text-sm text-zinc-500 hover:text-white mt-8 transition-colors">Abmelden</button>
                     </div>
