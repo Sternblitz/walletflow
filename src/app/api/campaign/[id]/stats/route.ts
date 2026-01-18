@@ -37,6 +37,9 @@ export async function GET(
         case '30d':
             startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
             break
+        case 'all':
+            startDate = new Date(0) // Epoch 0 for all-time
+            break
         case '7d':
         default:
             startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -87,6 +90,7 @@ export async function GET(
 
         // 6. Build chart data (daily breakdown)
         const dayMs = 24 * 60 * 60 * 1000
+        // If 'all', show last 30 days in chart, otherwise match period
         const days = period === '24h' ? 1 : period === '7d' ? 7 : 30
         const chartData: { date: string; stamps: number; redemptions: number; newPasses: number }[] = []
 

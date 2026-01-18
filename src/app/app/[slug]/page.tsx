@@ -83,7 +83,7 @@ export default function POSPage() {
     // Dashboard
     const [stats, setStats] = useState<any>(null)
     const [statsLoading, setStatsLoading] = useState(false)
-    const [statsRange, setStatsRange] = useState<'24h' | '7d' | '30d'>('7d')
+    const [statsRange, setStatsRange] = useState<'24h' | '7d' | '30d' | 'all'>('all')
     const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null)
     const [customers, setCustomers] = useState<any[]>([])
     const [customersLoading, setCustomersLoading] = useState(false)
@@ -481,7 +481,7 @@ export default function POSPage() {
 
 
     if (role === 'chef' && view === 'dashboard') {
-        const rangeLabels: Record<string, string> = { '24h': '24h', '7d': '7 Tage', '30d': '30 Tage' }
+        const rangeLabels: Record<string, string> = { '24h': '24h', '7d': '7 Tage', '30d': '30 Tage', 'all': 'GESAMT' }
         const loyalty = stats?.loyalty
 
         return (
@@ -599,16 +599,25 @@ export default function POSPage() {
                                 <BarChart3 className="w-4 h-4 text-violet-500 dark:text-violet-400" />
                                 Statistiken
                             </h3>
-                            <div className="flex bg-zinc-200 dark:bg-zinc-800/80 border border-zinc-200 dark:border-white/10 rounded-xl p-1">
-                                {(['24h', '7d', '30d'] as const).map(r => (
-                                    <button
-                                        key={r}
-                                        onClick={() => setStatsRange(r)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${statsRange === r ? 'bg-violet-500 text-white shadow-md shadow-violet-500/20' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/5'}`}
-                                    >
-                                        {rangeLabels[r]}
-                                    </button>
-                                ))}
+                            <div className="flex bg-zinc-200 dark:bg-zinc-800/80 border border-zinc-200 dark:border-white/10 rounded-xl p-1 gap-1">
+                                {(['all', '24h', '7d', '30d'] as const).map(r => {
+                                    const isAll = r === 'all'
+                                    const active = statsRange === r
+                                    return (
+                                        <button
+                                            key={r}
+                                            onClick={() => setStatsRange(r)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${active
+                                                ? isAll
+                                                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20 ring-2 ring-emerald-500 ring-offset-1 dark:ring-offset-zinc-900'
+                                                    : 'bg-violet-500 text-white shadow-md shadow-violet-500/20'
+                                                : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/5'
+                                                }`}
+                                        >
+                                            {rangeLabels[r]}
+                                        </button>
+                                    )
+                                })}
                             </div>
                         </div>
 
