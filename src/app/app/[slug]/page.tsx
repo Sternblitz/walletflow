@@ -510,74 +510,69 @@ export default function POSPage() {
                     {/* Main content - single column */}
                     <div className="space-y-6">
 
-                        {/* KUNDENBINDUNGS-SCORE - Animated Premium Display */}
+                        {/* KUNDENBINDUNGS-SCORE - Gradient Bar */}
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-900/40 via-teal-900/20 to-emerald-900/40 border border-emerald-500/20 p-6"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-zinc-900/60 border border-white/10 rounded-2xl p-5"
                         >
-                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-teal-500/5" />
-                            <div className="relative z-10 flex items-center gap-6">
-                                {/* Animated Score Circle */}
-                                <div className="relative w-24 h-24 shrink-0">
-                                    <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                                        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
-                                        <motion.circle
-                                            cx="50" cy="50" r="42"
-                                            fill="none"
-                                            stroke="url(#scoreGradient)"
-                                            strokeWidth="8"
-                                            strokeLinecap="round"
-                                            strokeDasharray={264}
-                                            initial={{ strokeDashoffset: 264 }}
-                                            animate={{ strokeDashoffset: 264 - (264 * (loyalty?.score || 50) / 100) }}
-                                            transition={{ duration: 1.5, ease: "easeOut" }}
-                                        />
-                                        <defs>
-                                            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                <stop offset="0%" stopColor="#10b981" />
-                                                <stop offset="100%" stopColor="#14b8a6" />
-                                            </linearGradient>
-                                        </defs>
-                                    </svg>
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <motion.span
-                                            className="text-2xl font-black text-white"
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            transition={{ delay: 0.5 }}
-                                        >
-                                            {loyalty?.score || 50}%
-                                        </motion.span>
-                                    </div>
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <TrendingUp className="w-5 h-5 text-emerald-400" />
+                                    <h3 className="text-base font-bold text-white">Kundenbindung</h3>
                                 </div>
-
-                                {/* Score Info */}
-                                <div className="flex-1">
-                                    <h3 className="text-lg font-black text-white mb-1">Kundenbindung</h3>
-                                    <p className="text-sm text-emerald-200/70 mb-3">
-                                        {loyalty?.message || "Deine Kunden bleiben treu! 🌟"}
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(loyalty?.milestones?.slice(0, 3) || ['System läuft stabil', 'Bereit für mehr']).map((m: string, i: number) => (
-                                            <span key={i} className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-full border border-emerald-500/30">
-                                                {m}
-                                            </span>
-                                        ))}
-                                    </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-2xl font-black" style={{ color: `hsl(${(loyalty?.score || 50) * 1.2}, 80%, 50%)` }}>
+                                        {loyalty?.score || 50}%
+                                    </span>
                                 </div>
+                            </div>
+                            {/* Gradient Bar - Red to Green */}
+                            <div className="relative h-4 rounded-full overflow-hidden" style={{ background: 'linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #84cc16 75%, #22c55e 100%)' }}>
+                                {/* Progress indicator */}
+                                <motion.div
+                                    className="absolute top-0 h-full bg-black/70"
+                                    style={{ left: `${loyalty?.score || 50}%`, right: 0 }}
+                                    initial={{ left: '100%' }}
+                                    animate={{ left: `${loyalty?.score || 50}%` }}
+                                    transition={{ duration: 1.2, ease: "easeOut" }}
+                                />
+                                {/* Marker */}
+                                <motion.div
+                                    className="absolute top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-full shadow-lg"
+                                    style={{ left: `calc(${loyalty?.score || 50}% - 2px)` }}
+                                    initial={{ left: 'calc(100% - 2px)' }}
+                                    animate={{ left: `calc(${loyalty?.score || 50}% - 2px)` }}
+                                    transition={{ duration: 1.2, ease: "easeOut" }}
+                                />
+                            </div>
+                            <div className="flex justify-between mt-2 text-[10px] text-zinc-500 font-medium">
+                                <span>Schlecht</span>
+                                <span>Mittel</span>
+                                <span>Sehr gut</span>
+                            </div>
+                            {/* Milestones */}
+                            <div className="flex flex-wrap gap-2 mt-4">
+                                {(loyalty?.milestones?.slice(0, 3) || ['System aktiv', 'Kunden binden']).map((m: string, i: number) => (
+                                    <span key={i} className="px-2 py-1 bg-white/5 text-zinc-300 text-[10px] font-bold rounded-lg border border-white/10">
+                                        ✓ {m}
+                                    </span>
+                                ))}
                             </div>
                         </motion.div>
 
                         {/* STATS HEADER with Time Range Selector */}
                         <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-white">Statistiken</h3>
-                            <div className="flex bg-zinc-900/80 border border-white/10 rounded-lg p-1">
+                            <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                <BarChart3 className="w-4 h-4 text-violet-400" />
+                                Statistiken
+                            </h3>
+                            <div className="flex bg-zinc-800/80 border border-white/10 rounded-xl p-1">
                                 {(['24h', '7d', '30d'] as const).map(r => (
                                     <button
                                         key={r}
                                         onClick={() => setStatsRange(r)}
-                                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsRange === r ? 'bg-emerald-500 text-white' : 'text-zinc-500 hover:text-white'}`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${statsRange === r ? 'bg-violet-500 text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}
                                     >
                                         {rangeLabels[r]}
                                     </button>
@@ -585,63 +580,63 @@ export default function POSPage() {
                             </div>
                         </div>
 
-                        {/* KEY STATS GRID - 5 Cards */}
+                        {/* KEY STATS GRID - 5 Cards with distinct colors */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                             {/* Stempel */}
-                            <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 hover:bg-zinc-900/60 transition-all">
+                            <div className="bg-emerald-900/10 border border-emerald-500/20 rounded-2xl p-4 hover:bg-emerald-900/20 transition-all shadow-lg shadow-emerald-900/10">
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-zinc-500 text-[10px] font-bold uppercase">Stempel</span>
-                                    <div className="p-1.5 rounded-lg text-emerald-500 bg-emerald-500/10"><Zap size={14} /></div>
+                                    <span className="text-emerald-200/70 text-[10px] font-bold uppercase tracking-wider">Stempel</span>
+                                    <div className="p-1.5 rounded-lg text-emerald-400 bg-emerald-500/10"><Zap size={14} /></div>
                                 </div>
-                                <div className="text-2xl font-bold text-white">{stats?.stats?.stamps || 0}</div>
-                                <div className="text-[10px] text-zinc-600">{rangeLabels[statsRange]}</div>
+                                <div className="text-2xl font-black text-white">{stats?.stats?.stamps || 0}</div>
+                                <div className="text-[10px] text-emerald-500/60 font-medium mt-1">{rangeLabels[statsRange]}</div>
                             </div>
 
                             {/* Einlösungen */}
-                            <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 hover:bg-zinc-900/60 transition-all">
+                            <div className="bg-purple-900/10 border border-purple-500/20 rounded-2xl p-4 hover:bg-purple-900/20 transition-all shadow-lg shadow-purple-900/10">
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-zinc-500 text-[10px] font-bold uppercase">Einlösungen</span>
-                                    <div className="p-1.5 rounded-lg text-purple-500 bg-purple-500/10"><Gift size={14} /></div>
+                                    <span className="text-purple-200/70 text-[10px] font-bold uppercase tracking-wider">Einlösungen</span>
+                                    <div className="p-1.5 rounded-lg text-purple-400 bg-purple-500/10"><Gift size={14} /></div>
                                 </div>
-                                <div className="text-2xl font-bold text-white">{stats?.stats?.redemptions || 0}</div>
-                                <div className="text-[10px] text-zinc-600">{rangeLabels[statsRange]}</div>
+                                <div className="text-2xl font-black text-white">{stats?.stats?.redemptions || 0}</div>
+                                <div className="text-[10px] text-purple-500/60 font-medium mt-1">{rangeLabels[statsRange]}</div>
                             </div>
 
                             {/* Neue Kunden */}
-                            <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 hover:bg-zinc-900/60 transition-all">
+                            <div className="bg-blue-900/10 border border-blue-500/20 rounded-2xl p-4 hover:bg-blue-900/20 transition-all shadow-lg shadow-blue-900/10">
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-zinc-500 text-[10px] font-bold uppercase">Neue Kunden</span>
-                                    <div className="p-1.5 rounded-lg text-blue-500 bg-blue-500/10"><Users size={14} /></div>
+                                    <span className="text-blue-200/70 text-[10px] font-bold uppercase tracking-wider">Neue Kunden</span>
+                                    <div className="p-1.5 rounded-lg text-blue-400 bg-blue-500/10"><Users size={14} /></div>
                                 </div>
-                                <div className="text-2xl font-bold text-white">{stats?.stats?.newPasses || 0}</div>
-                                <div className="text-[10px] text-zinc-600">{rangeLabels[statsRange]}</div>
+                                <div className="text-2xl font-black text-white">{stats?.stats?.newPasses || 0}</div>
+                                <div className="text-[10px] text-blue-500/60 font-medium mt-1">{rangeLabels[statsRange]}</div>
                             </div>
 
                             {/* Aktive Pässe */}
-                            <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 hover:bg-zinc-900/60 transition-all">
+                            <div className="bg-cyan-900/10 border border-cyan-500/20 rounded-2xl p-4 hover:bg-cyan-900/20 transition-all shadow-lg shadow-cyan-900/10">
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-zinc-500 text-[10px] font-bold uppercase">Aktive Pässe</span>
-                                    <div className="p-1.5 rounded-lg text-cyan-500 bg-cyan-500/10"><Check size={14} /></div>
+                                    <span className="text-cyan-200/70 text-[10px] font-bold uppercase tracking-wider">Aktive Pässe</span>
+                                    <div className="p-1.5 rounded-lg text-cyan-400 bg-cyan-500/10"><Check size={14} /></div>
                                 </div>
-                                <div className="text-2xl font-bold text-white">{stats?.stats?.totalPasses || 0}</div>
-                                <div className="text-[10px] text-zinc-600">Gesamt</div>
+                                <div className="text-2xl font-black text-white">{stats?.stats?.totalPasses || 0}</div>
+                                <div className="text-[10px] text-cyan-500/60 font-medium mt-1">Gesamt</div>
                             </div>
 
                             {/* Bewertungen */}
                             {reviewStats ? (
                                 <button
                                     onClick={() => setShowReviewsModal(true)}
-                                    className="bg-zinc-900/40 border border-yellow-500/20 rounded-2xl p-4 hover:bg-zinc-900/60 hover:border-yellow-500/40 transition-all text-left"
+                                    className="bg-amber-900/10 border border-amber-500/20 rounded-2xl p-4 hover:bg-amber-900/20 transition-all shadow-lg shadow-amber-900/10 text-left w-full group"
                                 >
                                     <div className="flex justify-between items-start mb-2">
-                                        <span className="text-zinc-500 text-[10px] font-bold uppercase">Bewertungen</span>
-                                        <div className="p-1.5 rounded-lg text-yellow-500 bg-yellow-500/10"><Star size={14} className="fill-yellow-500" /></div>
+                                        <span className="text-amber-200/70 text-[10px] font-bold uppercase tracking-wider group-hover:text-amber-200 transition-colors">Bewertungen</span>
+                                        <div className="p-1.5 rounded-lg text-amber-400 bg-amber-500/10"><Star size={14} className="fill-amber-500/50" /></div>
                                     </div>
                                     <div className="flex items-baseline gap-1">
-                                        <span className="text-2xl font-bold text-white">{reviewStats.total}</span>
-                                        <span className="text-sm font-bold text-yellow-500">{reviewStats.average}★</span>
+                                        <span className="text-2xl font-black text-white">{reviewStats.total}</span>
+                                        <span className="text-sm font-bold text-amber-400">{reviewStats.average}★</span>
                                     </div>
-                                    <div className="text-[10px] text-zinc-600">Gesamt</div>
+                                    <div className="text-[10px] text-amber-500/60 font-medium mt-1">Gesamt</div>
                                 </button>
                             ) : (
                                 <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4">
@@ -676,17 +671,30 @@ export default function POSPage() {
 
                             {/* Actions */}
                             <div className="lg:col-span-1 flex flex-col gap-4">
-                                <button onClick={() => setShowPushModal(true)} className="flex-1 relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 hover:from-violet-500/30 hover:to-fuchsia-500/30 transition-all shadow-lg shadow-violet-900/20 group text-left p-6 flex flex-col justify-between min-h-[140px]">
+                                <button onClick={() => setShowPushModal(true)} className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 hover:from-violet-500/30 hover:to-fuchsia-500/30 transition-all shadow-lg shadow-violet-900/20 group text-left p-6 flex flex-col justify-between min-h-[140px] flex-1">
                                     <div className="absolute top-0 right-0 p-24 bg-violet-500/10 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:bg-violet-500/20 transition-all" />
                                     <div className="p-3 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl w-fit relative z-10 group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/30">
                                         <Send className="w-6 h-6 text-white" />
                                     </div>
-                                    <div className="relative z-10">
+                                    <div className="relative z-10 mt-6">
                                         <h3 className="text-xl font-bold text-white">Push Senden</h3>
                                         <div className="flex items-center gap-2 text-violet-200 text-xs font-medium opacity-80 mt-1">
                                             <Users size={14} /> <span>Alle Kunden erreichen</span>
                                         </div>
                                     </div>
+                                </button>
+
+                                <button onClick={() => setView('customers')} className="bg-zinc-900/60 border border-blue-500/20 hover:border-blue-500/40 rounded-2xl p-4 flex items-center justify-between group transition-all hover:bg-blue-900/10">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400 group-hover:bg-blue-500/20 transition-colors">
+                                            <Users size={18} />
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="font-bold text-white text-sm">Alle Kunden</div>
+                                            <div className="text-xs text-blue-400/70">Liste & Details ansehen</div>
+                                        </div>
+                                    </div>
+                                    <ArrowRight size={16} className="text-zinc-600 group-hover:text-blue-400 transition-colors" />
                                 </button>
                             </div>
                         </div>
@@ -711,27 +719,9 @@ export default function POSPage() {
                             </div>
                         )}
 
-                        {/* AUTOMATIONS - Compact version */}
+                        {/* AUTOMATIONS - Full Manager */}
                         <div className="pt-6 border-t border-white/5">
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-sm font-bold flex items-center gap-2 text-zinc-400"><Sparkles className="w-4 h-4 text-yellow-400" /> Automatisierungen</h3>
-                                <span className="text-xs text-zinc-600">{automations.filter(a => a.is_active).length} aktiv</span>
-                            </div>
-                            {automations.length > 0 ? (
-                                <div className="flex flex-wrap gap-2">
-                                    {automations.slice(0, 5).map((auto) => (
-                                        <div key={auto.id} className="px-3 py-1.5 bg-zinc-900/60 border border-white/5 rounded-lg text-xs text-zinc-300 flex items-center gap-2">
-                                            <span className={`w-1.5 h-1.5 rounded-full ${auto.is_active ? 'bg-emerald-500' : 'bg-zinc-600'}`} />
-                                            {auto.name}
-                                        </div>
-                                    ))}
-                                    {automations.length > 5 && (
-                                        <span className="px-3 py-1.5 text-xs text-zinc-500">+{automations.length - 5} weitere</span>
-                                    )}
-                                </div>
-                            ) : (
-                                <p className="text-xs text-zinc-600">Keine Automatisierungen</p>
-                            )}
+                            <AutomationRulesManager slug={slug} />
                         </div>
 
                         {/* KALENDER - Push History, Scheduled, Automations */}
