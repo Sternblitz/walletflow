@@ -1,33 +1,44 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { Moon, Sun } from "lucide-react"
-import { useTheme } from "next-themes"
+import * as React from 'react'
+import { Moon, Sun, Laptop } from 'lucide-react'
+import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 
 export function ThemeToggle() {
-    const { theme, setTheme } = useTheme()
-    const [mounted, setMounted] = React.useState(false)
+    const { setTheme, theme } = useTheme()
+    const [mounted, setMounted] = useState(false)
 
-    React.useEffect(() => {
+    // Avoid hydration mismatch
+    useEffect(() => {
         setMounted(true)
     }, [])
 
-    if (!mounted) {
-        return <div className="w-10 h-10" />
-    }
-
-    const toggleTheme = () => {
-        setTheme(theme === "dark" ? "light" : "dark")
-    }
+    if (!mounted) return null
 
     return (
-        <button
-            onClick={toggleTheme}
-            className="relative w-12 h-12 rounded-full border border-white/10 flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors"
-        >
-            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 text-amber-500" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 text-purple-400" />
-            <span className="sr-only">Toggle theme</span>
-        </button>
+        <div className="flex items-center justify-center p-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-full border border-zinc-200 dark:border-white/10 w-fit mx-auto">
+            <button
+                onClick={() => setTheme('light')}
+                className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                title="Light Mode"
+            >
+                <Sun size={16} />
+            </button>
+            <button
+                onClick={() => setTheme('system')}
+                className={`p-2 rounded-full transition-all ${theme === 'system' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                title="System"
+            >
+                <Laptop size={16} />
+            </button>
+            <button
+                onClick={() => setTheme('dark')}
+                className={`p-2 rounded-full transition-all ${theme === 'dark' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                title="Dark Mode"
+            >
+                <Moon size={16} />
+            </button>
+        </div>
     )
 }
