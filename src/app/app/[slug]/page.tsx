@@ -608,7 +608,9 @@ export default function POSPage() {
                                     <div className="p-1.5 rounded-lg text-emerald-400 bg-emerald-500/10"><Zap size={14} /></div>
                                 </div>
                                 <div className="text-2xl font-black text-white">{stats?.stats?.stamps || 0}</div>
-                                <div className="text-[10px] text-emerald-500/60 font-medium mt-1">{rangeLabels[statsRange]}</div>
+                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold mt-2">
+                                    im Zeitraum ({rangeLabels[statsRange]})
+                                </div>
                             </div>
 
                             {/* Einlösungen */}
@@ -618,7 +620,9 @@ export default function POSPage() {
                                     <div className="p-1.5 rounded-lg text-purple-400 bg-purple-500/10"><Gift size={14} /></div>
                                 </div>
                                 <div className="text-2xl font-black text-white">{stats?.stats?.redemptions || 0}</div>
-                                <div className="text-[10px] text-purple-500/60 font-medium mt-1">{rangeLabels[statsRange]}</div>
+                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px] font-bold mt-2">
+                                    im Zeitraum ({rangeLabels[statsRange]})
+                                </div>
                             </div>
 
                             {/* Neue Kunden */}
@@ -628,7 +632,9 @@ export default function POSPage() {
                                     <div className="p-1.5 rounded-lg text-blue-400 bg-blue-500/10"><Users size={14} /></div>
                                 </div>
                                 <div className="text-2xl font-black text-white">{stats?.stats?.newPasses || 0}</div>
-                                <div className="text-[10px] text-blue-500/60 font-medium mt-1">{rangeLabels[statsRange]}</div>
+                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold mt-2">
+                                    im Zeitraum ({rangeLabels[statsRange]})
+                                </div>
                             </div>
 
                             {/* Aktive Pässe */}
@@ -638,7 +644,9 @@ export default function POSPage() {
                                     <div className="p-1.5 rounded-lg text-cyan-400 bg-cyan-500/10"><Check size={14} /></div>
                                 </div>
                                 <div className="text-2xl font-black text-white">{stats?.stats?.totalPasses || 0}</div>
-                                <div className="text-[10px] text-cyan-500/60 font-medium mt-1">Gesamt</div>
+                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[10px] font-bold mt-2">
+                                    Gesamt
+                                </div>
                             </div>
 
                             {/* Bewertungen */}
@@ -655,7 +663,9 @@ export default function POSPage() {
                                         <span className="text-2xl font-black text-white">{reviewStats.total}</span>
                                         <span className="text-sm font-bold text-amber-400">{reviewStats.average}★</span>
                                     </div>
-                                    <div className="text-[10px] text-amber-500/60 font-medium mt-1">Gesamt</div>
+                                    <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 text-[10px] font-bold mt-2">
+                                        Gesamt
+                                    </div>
                                 </button>
                             ) : (
                                 <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4">
