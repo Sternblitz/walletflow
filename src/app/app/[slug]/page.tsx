@@ -514,6 +514,7 @@ export default function POSPage() {
                             onClick={() => setView('customers')}
                             className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 dark:bg-blue-500/20 border border-blue-200 dark:border-blue-500/40 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-100 dark:hover:bg-blue-500/30 transition-colors"
                         >
+                            <Users size={16} />
                             <span className="text-sm hidden sm:inline">Kunden</span>
                         </button>
 
