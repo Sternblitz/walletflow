@@ -161,10 +161,22 @@ export async function GET(
         pass.serial_number?.slice(-6).toUpperCase() ||
         pass.id.slice(-6).toUpperCase()
 
-    // Calculate average visit frequency
-    const scanCount = scans?.filter(s => s.action_type === 'ADD_STAMP' || s.action_type === 'STAMP_COMPLETE').length || 0
+    // Calculate average visit frequency (avg time between visits)
+    const scanEvents = scans?.filter(s => s.action_type === 'ADD_STAMP' || s.action_type === 'STAMP_COMPLETE' || s.action_type === 'ADD_POINTS').sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) || []
+
+    let avgFrequency = null
+    if (scanEvents.length >= 2) {
+        // Calculate average distinct days between visits using first and last scan
+        const firstScan = new Date(scanEvents[0].created_at)
+        const lastScan = new Date(scanEvents[scanEvents.length - 1].created_at)
+        const totalDaysDiff = (lastScan.getTime() - firstScan.getTime()) / (1000 * 60 * 60 * 24)
+
+        // Use (count - 1) because N visits produce N-1 intervals
+        avgFrequency = Math.round(totalDaysDiff / (scanEvents.length - 1))
+    }
+
+    const scanCount = scanEvents.length
     const daysSinceCreation = Math.max(1, Math.floor((now.getTime() - new Date(pass.created_at).getTime()) / (1000 * 60 * 60 * 24)))
-    const avgFrequency = scanCount > 1 ? Math.round(daysSinceCreation / scanCount) : null
 
     return NextResponse.json({
         customer: {
