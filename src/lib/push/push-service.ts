@@ -56,32 +56,42 @@ export class PushService {
 
         console.log(`[PushService] Starting push for campaign ${campaignId}${inactiveDays ? ` (inactive ${inactiveDays} days)` : ''}`)
 
-        // Build query for active passes
-        let query = this.supabase
+        // Build query for active passes (verified OR installed)
+        const { data: allPasses, error: passError } = await this.supabase
             .from('passes')
             .select('id, wallet_type, current_state, last_scanned_at')
             .eq('campaign_id', campaignId)
             .is('deleted_at', null)
             .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
 
-        // Filter by inactivity if specified
-        if (inactiveDays && inactiveDays > 0) {
-            const cutoffDate = new Date()
-            cutoffDate.setDate(cutoffDate.getDate() - inactiveDays)
-            query = query.or(`last_scanned_at.lt.${cutoffDate.toISOString()},last_scanned_at.is.null`)
-            console.log(`[PushService] Filtering for customers inactive since ${cutoffDate.toISOString()}`)
-        }
-
-        const { data: passes, error: passError } = await query
-
         if (passError) {
             console.error('[PushService] Failed to fetch passes:', passError)
             return { sentCount: 0, failCount: 0, totalCount: 0, errors: [passError.message] }
         }
 
-        if (!passes || passes.length === 0) {
+        if (!allPasses || allPasses.length === 0) {
             console.log('[PushService] No passes found for campaign')
             return { sentCount: 0, failCount: 0, totalCount: 0, errors: ['No passes found'] }
+        }
+
+        // Apply inactivity filter in JavaScript for correct logic
+        let passes = allPasses
+        if (inactiveDays && inactiveDays > 0) {
+            const cutoffDate = new Date()
+            cutoffDate.setDate(cutoffDate.getDate() - inactiveDays)
+            const cutoffTime = cutoffDate.getTime()
+
+            passes = allPasses.filter((p: any) => {
+                // Include if never scanned OR last scan before cutoff
+                if (!p.last_scanned_at) return true
+                return new Date(p.last_scanned_at).getTime() < cutoffTime
+            })
+            console.log(`[PushService] Filtered ${allPasses.length} → ${passes.length} inactive customers (${inactiveDays} days)`)
+        }
+
+        if (passes.length === 0) {
+            console.log('[PushService] No inactive customers found matching criteria')
+            return { sentCount: 0, failCount: 0, totalCount: 0, errors: ['No inactive customers found'] }
         }
 
         // Separate by platform

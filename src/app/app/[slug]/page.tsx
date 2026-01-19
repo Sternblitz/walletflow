@@ -495,7 +495,7 @@ export default function POSPage() {
                             <Zap className="w-12 h-12 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">QARD POS</h1>
+                            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">QARD APP</h1>
                             <p className="text-emerald-600 dark:text-emerald-500 font-medium mt-1 uppercase tracking-widest text-xs">{slug}</p>
                         </div>
                     </div>
@@ -1367,7 +1367,7 @@ export default function POSPage() {
                 {mode === 'idle' && (
                     <div className="space-y-8 w-full text-center animate-in zoom-in duration-500">
                         <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-emerald-500/20"><Zap className="w-12 h-12 text-white" /></div>
-                        <h1 className="text-3xl font-bold">QARD POS</h1>
+                        <h1 className="text-3xl font-bold">QARD APP</h1>
                         <div className="grid grid-cols-1 gap-4">
                             <button onClick={startCamera} className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-white dark:text-black rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"><Camera className="w-6 h-6" /> Code Scannen</button>
                         </div>
