@@ -1,5 +1,9 @@
+'use client'
+
 // Auth routes layout - NO authentication check
 // This allows /login and /signup to be accessible without being logged in
+
+import { DarkModeEnforcer } from "@/components/admin/DarkModeEnforcer"
 
 export default function AuthLayout({
     children,
@@ -8,6 +12,8 @@ export default function AuthLayout({
 }) {
     return (
         <div className="min-h-screen">
+            {/* Force Dark Mode for Admin Auth Pages */}
+            <DarkModeEnforcer />
             {children}
         </div>
     )

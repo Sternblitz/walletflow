@@ -3,6 +3,7 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { DarkModeEnforcer } from "@/components/admin/DarkModeEnforcer"
 
 
 export default async function AdminLayout({
@@ -23,6 +24,9 @@ export default async function AdminLayout({
 
     return (
         <SidebarProvider>
+            {/* Force Dark Mode for Admin */}
+            <DarkModeEnforcer />
+
             {/* Ambient Background */}
             <div className="fixed inset-0 z-[-1] overflow-hidden bg-background pointer-events-none">
                 <div className="dark:block hidden">
