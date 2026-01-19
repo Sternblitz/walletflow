@@ -110,6 +110,8 @@ export default function POSPage() {
     const [pushLoading, setPushLoading] = useState(false)
     const [scheduledPushes, setScheduledPushes] = useState<any[]>([])
     const [pushHistory, setPushHistory] = useState<any[]>([])
+    const [pushToDelete, setPushToDelete] = useState<string | null>(null) // ID of push to confirm delete
+    const [deletingPush, setDeletingPush] = useState(false)
 
     // Reviews
     const [showReviewsModal, setShowReviewsModal] = useState(false)
@@ -437,6 +439,31 @@ export default function POSPage() {
             toast.error('Ein Fehler ist aufgetreten')
         } finally {
             setPushLoading(false)
+        }
+    }
+
+    const handleDeleteScheduledPush = async () => {
+        if (!pushToDelete) return
+        setDeletingPush(true)
+        try {
+            const supabase = getSupabaseClient()
+            const { error } = await supabase
+                .from('push_requests')
+                .delete()
+                .eq('id', pushToDelete)
+
+            if (error) {
+                toast.error('Fehler beim Löschen')
+                console.error('Delete error:', error)
+            } else {
+                toast.success('Geplante Nachricht gelöscht!')
+                loadScheduledPushes()
+            }
+        } catch (e) {
+            toast.error('Ein Fehler ist aufgetreten')
+        } finally {
+            setDeletingPush(false)
+            setPushToDelete(null)
         }
     }
 
@@ -771,12 +798,19 @@ export default function POSPage() {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {scheduledPushes.map((push) => (
-                                        <div key={push.id} className="flex gap-4 items-center bg-white dark:bg-zinc-900/60 p-4 rounded-2xl border border-zinc-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                        <div key={push.id} className="flex gap-4 items-center bg-white dark:bg-zinc-900/60 p-4 rounded-2xl border border-zinc-200 dark:border-white/5 shadow-sm dark:shadow-none group">
                                             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0"><Clock className="w-5 h-5" /></div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">{push.message}</p>
                                                 <p className="text-xs text-zinc-500 font-mono mt-1">{new Date(push.scheduled_at).toLocaleString('de-DE')}</p>
                                             </div>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setPushToDelete(push.id) }}
+                                                className="p-2 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                                title="Löschen"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
                                     ))}
                                 </div>
@@ -1091,6 +1125,68 @@ export default function POSPage() {
                         )
                     }
                 </AnimatePresence >
+
+                {/* DELETE CONFIRMATION MODAL */}
+                <AnimatePresence>
+                    {pushToDelete && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                            onClick={() => setPushToDelete(null)}
+                        >
+                            <motion.div
+                                initial={{ scale: 0.95, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.95, opacity: 0 }}
+                                className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-12 h-12 bg-red-100 dark:bg-red-500/20 rounded-xl flex items-center justify-center text-red-600 dark:text-red-400">
+                                        <Trash2 size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Nachricht löschen?</h3>
+                                        <p className="text-sm text-zinc-500">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+                                    </div>
+                                </div>
+
+                                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
+                                    Die geplante Nachricht wird <span className="font-bold text-red-600 dark:text-red-400">endgültig gelöscht</span> und nicht mehr gesendet – auch wenn sie bereits genehmigt wurde.
+                                </p>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setPushToDelete(null)}
+                                        disabled={deletingPush}
+                                        className="flex-1 py-3 px-4 rounded-xl border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
+                                    >
+                                        Abbrechen
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteScheduledPush}
+                                        disabled={deletingPush}
+                                        className="flex-1 py-3 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        {deletingPush ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                Löschen...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Trash2 size={16} />
+                                                Löschen
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         )
     }
