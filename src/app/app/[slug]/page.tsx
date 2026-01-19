@@ -154,7 +154,8 @@ export default function POSPage() {
     }, [role, view, campaignData, statsRange])
 
     useEffect(() => {
-        if (role === 'chef' && view === 'customers' && campaignData?.campaign?.id) {
+        // Load customers for both dashboard (calendar) and customers view
+        if (role === 'chef' && (view === 'customers' || view === 'dashboard') && campaignData?.campaign?.id) {
             loadCustomers()
         }
     }, [role, view, campaignData])
@@ -927,8 +928,17 @@ export default function POSPage() {
 
                                                             {/* Stats */}
                                                             {(() => {
-                                                                // Get stats for this day from chartData
+                                                                // Get stats for this day from chartData (for stamps and redemptions)
                                                                 const dayStats = stats?.chartData?.find((cd: any) => cd.date === dateStr) || { stamps: 0, redemptions: 0, newPasses: 0 }
+
+                                                                // Calculate new customers from actual customer registrations
+                                                                const newCustomersCount = customers?.filter((c: any) => {
+                                                                    if (!c.created_at) return false
+                                                                    const createdDate = new Date(c.created_at)
+                                                                    const createdDateStr = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}-${String(createdDate.getDate()).padStart(2, '0')}`
+                                                                    return createdDateStr === dateStr
+                                                                }).length || 0
+
                                                                 return (
                                                                     <div className="space-y-2">
                                                                         <div className="flex items-center justify-between">
@@ -950,7 +960,7 @@ export default function POSPage() {
                                                                                 <span className="w-2 h-2 rounded-full bg-blue-500" />
                                                                                 Neue Kunden
                                                                             </span>
-                                                                            <span className="font-bold text-sm text-blue-600 dark:text-blue-400">{dayStats.newPasses || 0}</span>
+                                                                            <span className="font-bold text-sm text-blue-600 dark:text-blue-400">{newCustomersCount}</span>
                                                                         </div>
                                                                     </div>
                                                                 )
