@@ -228,10 +228,10 @@ export default function POSPage() {
     }
 
     const loadCustomers = async () => {
-        if (!campaignData?.campaign?.id) return
+        if (!slug) return
         setCustomersLoading(true)
         try {
-            const res = await fetch(`/api/campaign/${campaignData.campaign.id}/customers`)
+            const res = await fetch(`/api/app/customers?slug=${slug}&activity=true`)
             if (res.ok) {
                 const data = await res.json()
                 setCustomers(data.customers || [])
@@ -1300,15 +1300,8 @@ export default function POSPage() {
                         {selectedCustomer && (
                             <CustomerDetailModal
                                 customer={selectedCustomer}
+                                slug={slug || ''}
                                 onClose={() => setSelectedCustomer(null)}
-                                onSendPush={(c) => {
-                                    // Pre-fill push modal with this customer targeted?
-                                    // For now just console log or simple alert, or we can open the main push modal
-                                    setSelectedCustomer(null)
-                                    setPushTarget('inactive') // or specific logic to target one user if backend supported it
-                                    setPushMessage(`Hallo ${c.customer_name || 'Kunde'}, `)
-                                    setShowPushModal(true)
-                                }}
                             />
                         )}
                     </AnimatePresence>
