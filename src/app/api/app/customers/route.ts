@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     const campaignId = activeCampaign.id
     const campaignConfig = activeCampaign.config || {}
 
-    // 2. Fetch all passes with customer data
+    // 2. Fetch only REGISTERED passes (verified or installed on device)
     const { data: passes, error: passesError } = await supabase
         .from('passes')
         .select(`
@@ -49,9 +49,13 @@ export async function GET(req: NextRequest) {
             last_scanned_at,
             is_installed_on_ios,
             is_installed_on_android,
+            verification_status,
             deleted_at
         `)
         .eq('campaign_id', campaignId)
+        // Only show customers who actually have the pass installed or verified
+        .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true,deleted_at.not.is.null')
+        .order('deleted_at', { ascending: true, nullsFirst: true })
         .order('created_at', { ascending: false })
 
     if (passesError) {

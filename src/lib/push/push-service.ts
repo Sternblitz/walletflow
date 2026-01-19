@@ -139,7 +139,22 @@ export class PushService {
                         .eq('id', pass.id)
 
                     // Send APNS Push using the working function
-                    await sendPassUpdatePush(pass.id)
+                    const pushResult = await sendPassUpdatePush(pass.id)
+                    const status = pushResult.sent > 0 ? 'sent' : 'failed'
+
+                    // Log to push_logs (Activity Timeline)
+                    try {
+                        await this.supabase.from('push_logs').insert({
+                            pass_id: pass.id,
+                            message: message,
+                            status: status,
+                            error_message: status === 'failed' ? pushResult.errors.join(', ') : null
+                        })
+                    } catch (e) {
+                        // Ignore logging errors
+                    }
+
+                    if (status === 'failed') throw new Error(pushResult.errors.join(', '))
                     return true
                 } catch (e: any) {
                     console.error(`[PushService] Apple send failed for ${pass.id}:`, e.message)
@@ -170,9 +185,35 @@ export class PushService {
                             message,
                             true // notify
                         )
+
+                        // Log to push_logs (Activity Timeline)
+                        try {
+                            await this.supabase.from('push_logs').insert({
+                                pass_id: pass.id,
+                                message: message,
+                                status: 'sent',
+                                error_message: null
+                            })
+                        } catch (e) {
+                            // Ignore logging errors
+                        }
+
                         return true
                     } catch (e: any) {
                         console.error(`[PushService] Google push failed for ${pass.id}:`, e.message)
+
+                        // Log failure to push_logs
+                        try {
+                            await this.supabase.from('push_logs').insert({
+                                pass_id: pass.id,
+                                message: message,
+                                status: 'failed',
+                                error_message: e.message
+                            })
+                        } catch {
+                            // Ignore
+                        }
+
                         return false
                     }
                 })
