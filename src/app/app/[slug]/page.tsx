@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import {
     Zap, Camera, Users, ChevronRight, Send, X, Sparkles, Clock,
@@ -426,10 +426,6 @@ export default function POSPage() {
             setPushLoading(false)
         }
     }
-
-    // ===============================================
-    // RENDER: LOGIN
-    // ===============================================
 
     // ===============================================
     // RENDER: LOGIN
