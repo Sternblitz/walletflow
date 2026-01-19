@@ -916,6 +916,26 @@ export default function POSPage() {
                                                                     </div>
                                                                 )
                                                             })()}
+
+                                                            {/* Push Messages sent on this day */}
+                                                            {dayHistory.length > 0 && (
+                                                                <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-white/10">
+                                                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-2">
+                                                                        <Send size={10} />
+                                                                        Gesendete Nachrichten
+                                                                    </div>
+                                                                    <div className="space-y-2 max-h-24 overflow-y-auto">
+                                                                        {dayHistory.map((msg: any, idx: number) => (
+                                                                            <div key={idx} className="bg-violet-50 dark:bg-violet-500/10 rounded-lg p-2 text-xs">
+                                                                                <p className="text-zinc-700 dark:text-zinc-300 line-clamp-2">{msg.message}</p>
+                                                                                <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">
+                                                                                    {msg.sent_at && new Date(msg.sent_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
+                                                                                </p>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
