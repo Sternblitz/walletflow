@@ -118,6 +118,7 @@ export default function POSPage() {
     // Calendar
     const [calendarMonth, setCalendarMonth] = useState(new Date())
     const [automations, setAutomations] = useState<any[]>([])
+    const [selectedCalendarDay, setSelectedCalendarDay] = useState<string | null>(null) // YYYY-MM-DD format
 
     // ===============================================
     // LOADERS & EFFECTS
@@ -854,16 +855,13 @@ export default function POSPage() {
                                             days.push(
                                                 <div
                                                     key={d}
-                                                    className={`relative p-2 text-center rounded-lg text-sm transition-colors cursor-default
+                                                    onClick={() => setSelectedCalendarDay(selectedCalendarDay === dateStr ? null : dateStr)}
+                                                    className={`relative p-2 text-center rounded-lg text-sm transition-all cursor-pointer select-none
                                                     ${isToday ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold' : 'hover:bg-zinc-100 dark:hover:bg-white/5 text-zinc-600 dark:text-zinc-400'}
                                                     ${dayHistory.length > 0 ? 'ring-1 ring-violet-200 dark:ring-violet-500/50' : ''}
                                                     ${dayScheduled.length > 0 ? 'ring-1 ring-blue-200 dark:ring-blue-500/50' : ''}
+                                                    ${selectedCalendarDay === dateStr ? 'ring-2 ring-emerald-500 dark:ring-emerald-400 bg-emerald-50 dark:bg-emerald-500/10' : ''}
                                                 `}
-                                                    title={[
-                                                        dayHistory.length > 0 ? `${dayHistory.length} gesendet` : '',
-                                                        dayScheduled.length > 0 ? `${dayScheduled.length} geplant` : '',
-                                                        hasAutomation ? 'Automatisierung aktiv' : ''
-                                                    ].filter(Boolean).join(', ') || undefined}
                                                 >
                                                     {d}
                                                     {(dayHistory.length > 0 || dayScheduled.length > 0 || hasAutomation) && (
@@ -871,6 +869,53 @@ export default function POSPage() {
                                                             {dayHistory.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-violet-500 dark:bg-violet-400" />}
                                                             {dayScheduled.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />}
                                                             {hasAutomation && <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 dark:bg-yellow-400" />}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Day Stats Popup */}
+                                                    {selectedCalendarDay === dateStr && (
+                                                        <div
+                                                            className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 rounded-xl shadow-xl p-3 text-left animate-in fade-in zoom-in-95 duration-200"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            {/* Arrow */}
+                                                            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white dark:bg-zinc-800 border-r border-b border-zinc-200 dark:border-white/10 rotate-45" />
+
+                                                            {/* Date Header */}
+                                                            <div className="font-bold text-xs text-zinc-900 dark:text-white mb-2 pb-2 border-b border-zinc-100 dark:border-white/10">
+                                                                {new Date(dateStr).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                                            </div>
+
+                                                            {/* Stats */}
+                                                            {(() => {
+                                                                // Get stats for this day from chartData
+                                                                const dayStats = stats?.chartData?.find((cd: any) => cd.date === dateStr) || { stamps: 0, redemptions: 0, newPasses: 0 }
+                                                                return (
+                                                                    <div className="space-y-2">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                                                                                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                                                Stempel
+                                                                            </span>
+                                                                            <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400">{dayStats.stamps}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                                                                                <span className="w-2 h-2 rounded-full bg-purple-500" />
+                                                                                Einlösungen
+                                                                            </span>
+                                                                            <span className="font-bold text-sm text-purple-600 dark:text-purple-400">{dayStats.redemptions}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                                                                                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                                                                                Neue Kunden
+                                                                            </span>
+                                                                            <span className="font-bold text-sm text-blue-600 dark:text-blue-400">{dayStats.newPasses || 0}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })()}
                                                         </div>
                                                     )}
                                                 </div>
