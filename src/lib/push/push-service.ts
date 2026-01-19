@@ -19,6 +19,7 @@ export interface PushResult {
 export interface PushOptions {
     batchSize?: number
     notifyGoogle?: boolean
+    inactiveDays?: number // Only send to customers inactive for X days (based on last_scanned_at)
 }
 
 /**
@@ -50,18 +51,28 @@ export class PushService {
         message: string,
         options: PushOptions = {}
     ): Promise<PushResult> {
-        const { batchSize = 20, notifyGoogle = true } = options
+        const { batchSize = 20, notifyGoogle = true, inactiveDays } = options
         const errors: string[] = []
 
-        console.log(`[PushService] Starting push for campaign ${campaignId}`)
+        console.log(`[PushService] Starting push for campaign ${campaignId}${inactiveDays ? ` (inactive ${inactiveDays} days)` : ''}`)
 
-        // Fetch all active passes
-        const { data: passes, error: passError } = await this.supabase
+        // Build query for active passes
+        let query = this.supabase
             .from('passes')
-            .select('id, wallet_type, current_state')
+            .select('id, wallet_type, current_state, last_scanned_at')
             .eq('campaign_id', campaignId)
             .is('deleted_at', null)
             .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
+
+        // Filter by inactivity if specified
+        if (inactiveDays && inactiveDays > 0) {
+            const cutoffDate = new Date()
+            cutoffDate.setDate(cutoffDate.getDate() - inactiveDays)
+            query = query.or(`last_scanned_at.lt.${cutoffDate.toISOString()},last_scanned_at.is.null`)
+            console.log(`[PushService] Filtering for customers inactive since ${cutoffDate.toISOString()}`)
+        }
+
+        const { data: passes, error: passError } = await query
 
         if (passError) {
             console.error('[PushService] Failed to fetch passes:', passError)
@@ -179,7 +190,7 @@ export class PushService {
      * Process a push request (called from approval or cron)
      */
     async processPushRequest(requestId: string): Promise<PushResult> {
-        // Get request with campaign info
+        // Get request with campaign info including targeting
         const { data: request, error: reqError } = await this.supabase
             .from('push_requests')
             .select('*, campaign:campaigns(id, name)')
@@ -192,14 +203,20 @@ export class PushService {
         }
 
         // Use edited message if available, otherwise original
-        // Note: edited_message column may not exist yet if migration hasn't run
         const message = request.edited_message || request.message
+
+        // Build options based on targeting
+        const options: PushOptions = {}
+        if (request.target_type === 'inactive' && request.inactive_days) {
+            options.inactiveDays = request.inactive_days
+            console.log(`[PushService] Request ${requestId} targets inactive customers (${request.inactive_days} days)`)
+        }
 
         console.log(`[PushService] Processing request ${requestId} for campaign ${request.campaign?.id}`)
 
         try {
-            // Send to all passes
-            const result = await this.sendToAllPasses(request.campaign.id, message)
+            // Send to passes (filtered if targeting inactive)
+            const result = await this.sendToAllPasses(request.campaign.id, message, options)
 
             // Update final status (using only existing columns)
             await this.supabase
