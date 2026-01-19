@@ -112,6 +112,10 @@ export default function POSPage() {
     const [pushHistory, setPushHistory] = useState<any[]>([])
     const [pushToDelete, setPushToDelete] = useState<string | null>(null) // ID of push to confirm delete
     const [deletingPush, setDeletingPush] = useState(false)
+    // Inactivity targeting
+    const [pushTarget, setPushTarget] = useState<'all' | 'inactive'>('all')
+    const [inactivityDays, setInactivityDays] = useState<14 | 30 | 60 | 'custom'>(14)
+    const [customInactivityDays, setCustomInactivityDays] = useState(30)
 
     // Reviews
     const [showReviewsModal, setShowReviewsModal] = useState(false)
@@ -418,6 +422,11 @@ export default function POSPage() {
                     // Convert local datetime-local to proper ISO string
                     scheduleTime: pushMode === 'schedule' && pushScheduleTime
                         ? new Date(pushScheduleTime).toISOString()
+                        : null,
+                    // Inactivity targeting
+                    targetType: pushTarget,
+                    inactiveDays: pushTarget === 'inactive'
+                        ? (inactivityDays === 'custom' ? customInactivityDays : inactivityDays)
                         : null
                 })
             })
@@ -1038,6 +1047,54 @@ export default function POSPage() {
                                             <textarea value={pushMessage} onChange={(e) => setPushMessage(e.target.value)} placeholder="Deine Nachricht hier schreiben..." className="w-full h-32 bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-4 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 outline-none focus:border-emerald-500/50 resize-none transition-all" />
                                             <div className="absolute bottom-3 right-3 text-xs text-zinc-400 dark:text-zinc-600 font-mono">{pushMessage.length} Zeichen</div>
                                         </div>
+
+                                        {/* Target Audience Selector */}
+                                        <div className="bg-zinc-50 dark:bg-black/30 border border-zinc-200 dark:border-white/5 rounded-2xl p-4">
+                                            <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                <Users size={14} />
+                                                Zielgruppe
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                                <button type="button" onClick={() => setPushTarget('all')} className={`p-3 rounded-xl text-sm font-medium transition-all ${pushTarget === 'all' ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700'}`}>
+                                                    Alle Kunden
+                                                </button>
+                                                <button type="button" onClick={() => setPushTarget('inactive')} className={`p-3 rounded-xl text-sm font-medium transition-all ${pushTarget === 'inactive' ? 'bg-orange-500 text-white' : 'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700'}`}>
+                                                    Inaktive Kunden
+                                                </button>
+                                            </div>
+
+                                            {pushTarget === 'inactive' && (
+                                                <div className="space-y-3 pt-3 border-t border-zinc-200 dark:border-white/10">
+                                                    <div className="text-xs text-zinc-500 dark:text-zinc-400">Letzter Scan vor:</div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {([14, 30, 60, 'custom'] as const).map(opt => (
+                                                            <button
+                                                                type="button"
+                                                                key={opt}
+                                                                onClick={() => setInactivityDays(opt)}
+                                                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${inactivityDays === opt ? 'bg-orange-500 text-white' : 'bg-white dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300'}`}
+                                                            >
+                                                                {opt === 'custom' ? '✏️ Eigene' : `${opt} Tage`}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    {inactivityDays === 'custom' && (
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="number"
+                                                                min={1}
+                                                                max={365}
+                                                                value={customInactivityDays}
+                                                                onChange={(e) => setCustomInactivityDays(Math.max(1, parseInt(e.target.value) || 1))}
+                                                                className="w-24 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-900 dark:text-white text-sm font-mono"
+                                                            />
+                                                            <span className="text-sm text-zinc-500">Tage</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
                                         {pushMode === 'schedule' && <input type="datetime-local" value={pushScheduleTime} onChange={(e) => setPushScheduleTime(e.target.value)} className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-4 text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 font-mono text-sm" />}
                                         <button type="submit" disabled={pushLoading || !pushMessage.trim()} className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-xl font-bold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 shadow-lg shadow-black/5 dark:shadow-white/5">{pushLoading ? 'Wird gesendet...' : (pushMode === 'now' ? '⚡ Jetzt absenden' : '📅 Einplanen')}</button>
                                     </form>

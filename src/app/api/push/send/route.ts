@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     try {
         const supabase = await createClient()
         const body = await request.json()
-        const { message, slug, scheduleTime } = body
+        const { message, slug, scheduleTime, targetType, inactiveDays } = body
 
         if (!message || !slug) {
             return NextResponse.json({ error: 'Message and slug are required' }, { status: 400 })
@@ -43,7 +43,9 @@ export async function POST(request: Request) {
                 campaign_id: campaignId,
                 message: message,
                 status: 'pending', // Always pending - admin must approve!
-                scheduled_at: scheduleTime || null
+                scheduled_at: scheduleTime || null,
+                target_type: targetType || 'all',
+                inactive_days: targetType === 'inactive' ? inactiveDays : null
             })
             .select()
             .single()
