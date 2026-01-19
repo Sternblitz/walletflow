@@ -414,7 +414,10 @@ export default function POSPage() {
                 body: JSON.stringify({
                     slug,
                     message: pushMessage,
-                    scheduleTime: pushMode === 'schedule' ? pushScheduleTime : null
+                    // Convert local datetime-local to proper ISO string
+                    scheduleTime: pushMode === 'schedule' && pushScheduleTime
+                        ? new Date(pushScheduleTime).toISOString()
+                        : null
                 })
             })
             if (res.ok) {
