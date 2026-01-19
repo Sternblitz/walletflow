@@ -18,6 +18,8 @@ import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/
 import { getReviewStats, ReviewStats } from "@/lib/reviews"
 import { ReviewWidget } from "@/components/analytics/ReviewWidget"
 import { ThemeToggle } from '@/components/app/ThemeToggle'
+import { CustomerList } from '@/components/app/CustomerList'
+import { CustomerDetailModal } from '@/components/app/CustomerDetailModal'
 
 // Singleton Supabase client to avoid multiple GoTrueClient instances
 let supabaseInstance: SupabaseClient | null = null
@@ -125,6 +127,9 @@ export default function POSPage() {
     const [calendarMonth, setCalendarMonth] = useState(new Date())
     const [automations, setAutomations] = useState<any[]>([])
     const [selectedCalendarDay, setSelectedCalendarDay] = useState<string | null>(null) // YYYY-MM-DD format
+
+    // Customer Details
+    const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
 
     // ===============================================
     // LOADERS & EFFECTS
@@ -1283,52 +1288,30 @@ export default function POSPage() {
                     <h1 className="text-xl font-bold flex items-center gap-2 text-zinc-900 dark:text-white"><Users className="text-cyan-600 dark:text-cyan-500" /> Kundenliste</h1>
                     <button onClick={() => setView('dashboard')} className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-zinc-900 dark:text-white"><X size={16} /></button>
                 </header>
-                <main className="relative z-10 flex-1 p-6 overflow-y-auto max-w-4xl mx-auto w-full">
-                    {customersLoading ? (
-                        <div className="text-center py-20"><div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto" /></div>
-                    ) : customers.length === 0 ? (
-                        <div className="text-center py-20 text-zinc-500">Keine Kunden gefunden</div>
-                    ) : (
-                        <div className="space-y-3">
-                            {customers.map((c: any) => (
-                                <div key={c.id} className={`p-4 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-white/5 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900/80 transition-colors shadow-sm dark:shadow-none ${c.deleted_at ? 'opacity-50' : ''}`}>
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex-1 min-w-0">
-                                            {/* Name or Customer Number */}
-                                            <h3 className={`font-semibold ${c.deleted_at ? 'text-zinc-500 line-through' : 'text-zinc-900 dark:text-white'}`}>
-                                                {c.customer_name || `Kunde #${c.current_state?.customer_number || c.serial_number?.slice(0, 6)}`}
-                                            </h3>
+                <main className="relative z-10 flex-1 p-6 overflow-y-auto max-w-4xl mx-auto w-full pb-20 no-scrollbar">
+                    <CustomerList
+                        customers={customers}
+                        loading={customersLoading}
+                        onSelectCustomer={(c) => setSelectedCustomer(c)}
+                    />
 
-                                            {/* Contact Info - Only show what exists */}
-                                            <div className="flex flex-wrap gap-3 mt-2 text-xs text-zinc-500">
-                                                {c.customer_email && (
-                                                    <span className="flex items-center gap-1"><Mail size={12} /> {c.customer_email}</span>
-                                                )}
-                                                {c.customer_phone && (
-                                                    <span className="flex items-center gap-1"><Phone size={12} /> {c.customer_phone}</span>
-                                                )}
-                                                {c.customer_birthday && (
-                                                    <span className="flex items-center gap-1"><Cake size={12} /> {formatBirthday(c.customer_birthday)}</span>
-                                                )}
-                                            </div>
-
-                                            {/* Last Scan & Platform */}
-                                            <div className="flex items-center gap-3 mt-2 text-xs text-zinc-500 dark:text-zinc-600">
-                                                <span>{c.wallet_type === 'google' || c.is_installed_on_android ? '🤖 Android' : '🍎 iOS'}</span>
-                                                <span>• Letzter Scan: {formatLastScan(c.last_scan_at)}</span>
-                                                {c.deleted_at && <span className="text-red-500 dark:text-red-400">• Gelöscht</span>}
-                                            </div>
-                                        </div>
-
-                                        {/* Stamps/Points */}
-                                        <div className="text-lg font-bold text-emerald-600 dark:text-emerald-500 flex items-center gap-1 shrink-0">
-                                            <Zap size={14} /> {c.current_state?.stamps || 0}/{c.current_state?.max_stamps || 10}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    {/* Customer Detail Modal */}
+                    <AnimatePresence>
+                        {selectedCustomer && (
+                            <CustomerDetailModal
+                                customer={selectedCustomer}
+                                onClose={() => setSelectedCustomer(null)}
+                                onSendPush={(c) => {
+                                    // Pre-fill push modal with this customer targeted?
+                                    // For now just console log or simple alert, or we can open the main push modal
+                                    setSelectedCustomer(null)
+                                    setPushTarget('inactive') // or specific logic to target one user if backend supported it
+                                    setPushMessage(`Hallo ${c.customer_name || 'Kunde'}, `)
+                                    setShowPushModal(true)
+                                }}
+                            />
+                        )}
+                    </AnimatePresence>
                 </main>
             </div>
         )
