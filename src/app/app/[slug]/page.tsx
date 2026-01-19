@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import {
     Zap, Camera, Users, ChevronRight, Send, X, Sparkles, Clock,
@@ -14,10 +14,22 @@ import { Toaster, toast } from 'sonner'
 import { ActivityChart } from '@/components/app/POSCharts'
 import { AutomationRulesManager } from '@/components/app/AutomationRulesManager'
 import { LiveActivityFeed } from '@/components/app/LiveActivityFeed'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js'
 import { getReviewStats, ReviewStats } from "@/lib/reviews"
 import { ReviewWidget } from "@/components/analytics/ReviewWidget"
 import { ThemeToggle } from '@/components/app/ThemeToggle'
+
+// Singleton Supabase client to avoid multiple GoTrueClient instances
+let supabaseInstance: SupabaseClient | null = null
+function getSupabaseClient() {
+    if (!supabaseInstance) {
+        supabaseInstance = createSupabaseClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+    }
+    return supabaseInstance
+}
 
 type Role = 'none' | 'staff' | 'chef'
 type Mode = 'idle' | 'camera' | 'result'
@@ -146,12 +158,13 @@ export default function POSPage() {
             }, 300)
         }
         // Cleanup scanner when switching to dashboard or customers
-        if (view !== 'scanner' && scannerRef.current) {
+        // Only try to stop if we're in camera mode (scanner is actually running)
+        if (view !== 'scanner' && scannerRef.current && mode === 'camera') {
             scannerRef.current.stop().catch(() => { })
             scannerRef.current = null
             setMode('idle')
         }
-    }, [role, view])
+    }, [role, view, mode])
 
     const loadCampaignData = async () => {
         try {
@@ -181,10 +194,7 @@ export default function POSPage() {
     const loadReviews = async () => {
         if (!campaignData?.campaign?.id) return
         try {
-            const supabase = createSupabaseClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            )
+            const supabase = getSupabaseClient()
             const stats = await getReviewStats(supabase, campaignData.campaign.id)
             setReviewStats(stats)
         } catch (e) {
@@ -210,10 +220,7 @@ export default function POSPage() {
 
     const loadScheduledPushes = async () => {
         if (!campaignData?.campaign?.id) return
-        const supabase = createSupabaseClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
+        const supabase = getSupabaseClient()
         const { data } = await supabase
             .from('push_requests')
             .select('*')
@@ -226,10 +233,7 @@ export default function POSPage() {
 
     const loadPushHistory = async () => {
         if (!campaignData?.campaign?.id) return
-        const supabase = createSupabaseClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
+        const supabase = getSupabaseClient()
         const { data } = await supabase
             .from('push_requests')
             .select('*')
@@ -243,10 +247,7 @@ export default function POSPage() {
 
     const loadAutomations = async () => {
         if (!campaignData?.campaign?.id) return
-        const supabase = createSupabaseClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
+        const supabase = getSupabaseClient()
         const { data } = await supabase
             .from('automation_rules')
             .select('*')
