@@ -34,7 +34,7 @@ function getSupabaseClient() {
 }
 
 type Role = 'none' | 'staff' | 'chef'
-type Mode = 'idle' | 'camera' | 'result'
+type Mode = 'idle' | 'camera' | 'result' | 'cooldown'
 
 // Helper: Format birthday as "15. März" (day first, never year)
 function formatBirthday(dateStr: string | null | undefined): string {
@@ -391,8 +391,8 @@ export default function POSPage() {
                     minutes: data.remainingMinutes,
                     passId: decodedText
                 })
-                setShowCooldownModal(true)
-                stopCamera() // Stop camera while modal is open
+                setMode('cooldown')
+                stopCamera()
             } else {
                 setError(data.error || 'Scan failed')
                 setMode('idle')
@@ -1471,64 +1471,59 @@ export default function POSPage() {
                     </div>
                 )}
 
+                {mode === 'cooldown' && cooldownData && (
+                    <div className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-3xl p-8 text-center animate-in zoom-in shadow-xl dark:shadow-none mb-8">
+                        <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-500 flex items-center justify-center mx-auto mb-6">
+                            <Clock className="w-10 h-10" />
+                        </div>
 
-                {/* COOLDOWN MODAL */}
-                <AnimatePresence>
-                    {showCooldownModal && cooldownData && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-zinc-900 border border-white/10 w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-                                <div className="flex flex-col items-center text-center space-y-4">
-                                    <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-2">
-                                        <Clock className="w-8 h-8" />
-                                    </div>
+                        <h2 className="text-2xl font-bold mb-2 text-zinc-900 dark:text-white">
+                            Scan nicht möglich
+                        </h2>
 
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white">Scan Cooldown Aktiv</h3>
-                                        <p className="text-zinc-400 text-sm mt-1">Dieser Kunde hat vor Kurzem bereits gescannt.</p>
-                                    </div>
+                        <p className="text-zinc-500 dark:text-zinc-400 mb-8 leading-relaxed">
+                            Cooldown aktiv. Nächster Scan in <span className="font-mono font-bold text-zinc-900 dark:text-white">{cooldownData.minutes} Minuten</span>.
+                        </p>
 
-                                    <div className="bg-white/5 rounded-xl p-3 w-full border border-white/5">
-                                        <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Wartezeit</p>
-                                        <p className="text-lg font-mono text-white">noch {cooldownData.minutes} Min</p>
-                                    </div>
 
-                                    <div className="w-full pt-4 border-t border-white/10 space-y-3">
-                                        <div className="text-xs text-zinc-500 text-left w-full pl-1">Chef Override (PIN):</div>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="password"
-                                                inputMode="numeric"
-                                                placeholder="PIN"
-                                                value={overridePin}
-                                                onChange={(e) => setOverridePin(e.target.value)}
-                                                className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 text-center text-white outline-none focus:border-blue-500 transition-colors"
-                                            />
-                                            <button
-                                                onClick={handleOverrideScan}
-                                                disabled={!overridePin || overrideLoading}
-                                                className="px-4 py-3 bg-blue-600 rounded-xl font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {overrideLoading ? '...' : <Check size={20} />}
-                                            </button>
-                                        </div>
-                                    </div>
+                        {/* Chef Override Section */}
+                        {role === 'chef' && (
+                            <div className="mb-8 p-4 bg-zinc-50 dark:bg-black/20 rounded-2xl border border-zinc-100 dark:border-white/5">
+                                <p className="text-xs text-zinc-400 uppercase tracking-widest font-bold mb-3">Chef Override</p>
 
+                                <div className="flex gap-2">
+                                    <input
+                                        type="password"
+                                        inputMode="numeric"
+                                        placeholder="Chef PIN"
+                                        value={overridePin}
+                                        onChange={(e) => setOverridePin(e.target.value)}
+                                        className="flex-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-center text-lg font-mono outline-none focus:border-blue-500 transition-colors"
+                                    />
                                     <button
-                                        onClick={() => {
-                                            setShowCooldownModal(false)
-                                            setCooldownData(null)
-                                            setOverridePin('')
-                                            setMode('idle')
-                                        }}
-                                        className="w-full py-3 bg-white/5 hover:bg-white/10 text-zinc-400 rounded-xl font-medium transition-colors"
+                                        onClick={handleOverrideScan}
+                                        disabled={!overridePin || overrideLoading}
+                                        className="px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
-                                        Abbrechen
+                                        {overrideLoading ? '...' : <Check className="w-6 h-6" />}
                                     </button>
                                 </div>
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>
+                                <p className="text-[10px] text-zinc-400 mt-2">PIN erforderlich um Cooldown zu umgehen.</p>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => {
+                                setMode('idle')
+                                setCooldownData(null)
+                                setOverridePin('')
+                            }}
+                            className="w-full py-4 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white rounded-2xl font-bold transition-colors"
+                        >
+                            Abbrechen
+                        </button>
+                    </div>
+                )}
 
                 <div className="h-8" />
             </main>
