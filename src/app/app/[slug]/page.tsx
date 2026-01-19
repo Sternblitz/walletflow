@@ -868,7 +868,8 @@ export default function POSPage() {
                                             const date = new Date(year, month, d)
                                             const dayOfWeek = date.getDay()
                                             const isToday = new Date().toDateString() === date.toDateString()
-                                            const dateStr = date.toISOString().split('T')[0]
+                                            // Format date as YYYY-MM-DD using LOCAL timezone (not UTC!)
+                                            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 
                                             // Check for events on this day
                                             const dayHistory = pushHistory.filter(p => p.sent_at?.startsWith(dateStr))
@@ -882,12 +883,13 @@ export default function POSPage() {
                                                 return configDays.includes(dayNames[dayOfWeek])
                                             })
 
-                                            // For birthday/inactivity automations - show a general indicator if any are active
-                                            const hasOtherAutomations = automations.some(a =>
-                                                a.rule_type === 'birthday' || a.rule_type === 'inactivity'
-                                            )
+                                            // Birthday automations: could trigger any day (show on all days as indicator)
+                                            // Inactivity automations: show on today only (triggers based on user activity)
+                                            const hasBirthdayAutomation = automations.some(a => a.rule_type === 'birthday')
+                                            const hasInactivityAutomation = automations.some(a => a.rule_type === 'inactivity') && isToday
 
-                                            const hasAutomation = hasWeekdayAutomation || (hasOtherAutomations && isToday)
+                                            // Show yellow dot for weekday matches, or on all future days if birthday automation exists
+                                            const hasAutomation = hasWeekdayAutomation || hasInactivityAutomation || (hasBirthdayAutomation && date >= new Date(new Date().setHours(0, 0, 0, 0)))
 
                                             days.push(
                                                 <div
