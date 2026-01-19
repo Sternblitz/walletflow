@@ -109,7 +109,8 @@ export async function GET(
         for (let i = days - 1; i >= 0; i--) {
             const dayStart = new Date(now.getTime() - (i + 1) * dayMs)
             const dayEnd = new Date(now.getTime() - i * dayMs)
-            const dateStr = dayStart.toISOString().split('T')[0]
+            // Use local date formatting to avoid UTC timezone shift
+            const dateStr = `${dayStart.getFullYear()}-${String(dayStart.getMonth() + 1).padStart(2, '0')}-${String(dayStart.getDate()).padStart(2, '0')}`
 
             // Filter scans for this day
             const dayScans = scans?.filter(s => {

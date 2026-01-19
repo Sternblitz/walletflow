@@ -4,8 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 /**
  * GET /api/campaign/[id]/customers
  * 
- * Returns customers (passes) with last scan information
- * Same data as shown in admin/campaign/[id] but enhanced with last_scan
+ * Returns customers (passes) with last scan information from passes.last_scanned_at
  */
 export async function GET(
     req: NextRequest,
@@ -15,7 +14,7 @@ export async function GET(
     const supabase = await createClient()
 
     try {
-        // 1. Get all passes for this campaign (same query as admin/campaign/[id])
+        // Get all passes for this campaign with last_scanned_at included
         const { data: passes, error: passesError } = await supabase
             .from('passes')
             .select(`
@@ -24,6 +23,7 @@ export async function GET(
                 current_state,
                 created_at,
                 last_updated_at,
+                last_scanned_at,
                 wallet_type,
                 is_installed_on_ios,
                 is_installed_on_android,
@@ -44,33 +44,10 @@ export async function GET(
             return NextResponse.json({ error: 'Failed to fetch customers' }, { status: 500 })
         }
 
-        // 2. Get last scan for each pass
-        const passIds = passes?.map(p => p.id) || []
-
-        let lastScansMap: Record<string, string> = {}
-
-        if (passIds.length > 0) {
-            // Get all scans for these passes, ordered by created_at desc
-            const { data: scans } = await supabase
-                .from('scans')
-                .select('pass_id, created_at')
-                .in('pass_id', passIds)
-                .order('created_at', { ascending: false })
-
-            // Build a map of pass_id -> most recent scan time
-            if (scans) {
-                for (const scan of scans) {
-                    if (!lastScansMap[scan.pass_id]) {
-                        lastScansMap[scan.pass_id] = scan.created_at
-                    }
-                }
-            }
-        }
-
-        // 3. Enhance passes with last_scan_at
+        // Map passes to customers with last_scan_at for compatibility
         const customers = passes?.map(pass => ({
             ...pass,
-            last_scan_at: lastScansMap[pass.id] || null
+            last_scan_at: pass.last_scanned_at || null
         })) || []
 
         // 4. Sort by last_scan_at (most recent first), then by created_at

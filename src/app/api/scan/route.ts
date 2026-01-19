@@ -134,9 +134,11 @@ export async function POST(req: NextRequest) {
 
         // 3. Update pass state
         // Also mark passes as "verified" on first scan (real customer interaction)
+        const now = new Date().toISOString()
         const updateData: any = {
             current_state: newState,
-            last_updated_at: new Date().toISOString()
+            last_updated_at: now,
+            last_scanned_at: now // Track last scan time for customer list
         }
 
         // For Google passes: mark as installed on first interaction
