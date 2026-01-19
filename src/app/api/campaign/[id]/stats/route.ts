@@ -97,7 +97,8 @@ export async function GET(
         const days = period === '24h' ? 1 : period === '7d' ? 7 : 30
         const chartData: { date: string; stamps: number; redemptions: number; newPasses: number }[] = []
 
-        // Fetch all passes created in the chart period for accurate daily counts
+        // Fetch all VERIFIED/INSTALLED passes created in the chart period for accurate daily counts
+        // Only count passes that are verified OR installed (same criteria as customer list)
         const chartStartDate = new Date(now.getTime() - days * dayMs)
         const { data: newPassesInPeriod } = await supabase
             .from('passes')
@@ -105,23 +106,26 @@ export async function GET(
             .eq('campaign_id', campaignId)
             .gte('created_at', chartStartDate.toISOString())
             .is('deleted_at', null)
+            .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
+
+        // Helper to format date as YYYY-MM-DD in local timezone
+        const formatLocalDate = (d: Date) =>
+            `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
         for (let i = days - 1; i >= 0; i--) {
-            const dayStart = new Date(now.getTime() - (i + 1) * dayMs)
-            const dayEnd = new Date(now.getTime() - i * dayMs)
-            // Use local date formatting to avoid UTC timezone shift
-            const dateStr = `${dayStart.getFullYear()}-${String(dayStart.getMonth() + 1).padStart(2, '0')}-${String(dayStart.getDate()).padStart(2, '0')}`
+            const targetDate = new Date(now.getTime() - i * dayMs)
+            const dateStr = formatLocalDate(targetDate)
 
-            // Filter scans for this day
+            // Filter scans for this day by comparing LOCAL dates
             const dayScans = scans?.filter(s => {
                 const scanDate = new Date(s.scanned_at)
-                return scanDate >= dayStart && scanDate < dayEnd
+                return formatLocalDate(scanDate) === dateStr
             }) || []
 
-            // Count new passes created on this specific day
+            // Count new passes created on this specific day by LOCAL date
             const dayNewPasses = newPassesInPeriod?.filter(p => {
                 const passDate = new Date(p.created_at)
-                return passDate >= dayStart && passDate < dayEnd
+                return formatLocalDate(passDate) === dateStr
             }).length || 0
 
             chartData.push({
