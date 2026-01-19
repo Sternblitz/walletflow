@@ -132,12 +132,21 @@ export default function POSPage() {
     }, [slug])
 
     useEffect(() => {
+        // Create abort controller to cancel in-flight requests on cleanup
+        const abortController = new AbortController()
+
         if (role === 'chef' && view === 'dashboard' && campaignData?.campaign?.id) {
-            loadStats()
+            // Pass abort signal to functions that support it
+            loadStats(abortController.signal)
             loadReviews()
             loadScheduledPushes()
             loadPushHistory()
             loadAutomations()
+        }
+
+        // Cleanup: abort pending requests when dependencies change
+        return () => {
+            abortController.abort()
         }
     }, [role, view, campaignData, statsRange])
 
@@ -175,17 +184,20 @@ export default function POSPage() {
         }
     }
 
-    const loadStats = async () => {
+    const loadStats = async (signal?: AbortSignal) => {
         if (!campaignData?.campaign?.id) return
         setStatsLoading(true)
         try {
-            const res = await fetch(`/api/campaign/${campaignData.campaign.id}/stats?period=${statsRange}`)
+            const res = await fetch(`/api/campaign/${campaignData.campaign.id}/stats?period=${statsRange}`, { signal })
             if (res.ok) {
                 const data = await res.json()
                 setStats(data)
             }
-        } catch (e) {
-            console.error('Failed to load stats:', e)
+        } catch (e: any) {
+            // Ignore abort errors (expected when switching views/ranges quickly)
+            if (e?.name !== 'AbortError') {
+                console.error('Failed to load stats:', e)
+            }
         } finally {
             setStatsLoading(false)
         }
