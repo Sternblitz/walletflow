@@ -38,6 +38,52 @@ export async function POST(req: NextRequest) {
         let deltaValue = 0
         let actionType = action || 'ADD_STAMP'
 
+        // --- SCAN COOLDOWN CHECK ---
+        const scanCooldown = Number(pass.campaign?.config?.scanCooldown || 0)
+
+        console.log(`[COOLDOWN CHECK] Pass: ${passId}, Cooldown: ${scanCooldown} min, Last Scan: ${pass.last_scanned_at}`)
+
+        if (scanCooldown > 0 && pass.last_scanned_at) {
+            const lastScanTime = new Date(pass.last_scanned_at).getTime()
+            const nowTime = new Date().getTime()
+            const diffMinutes = (nowTime - lastScanTime) / 1000 / 60
+
+            console.log(`[COOLDOWN] Diff: ${diffMinutes.toFixed(2)} min vs Logic: ${diffMinutes < scanCooldown}`)
+
+            if (diffMinutes < scanCooldown) {
+                // Cooldown active! Check for override.
+                const { force, chefPin } = body
+                let isOverrideValid = false
+
+                if (force && chefPin) {
+                    console.log(`[COOLDOWN] Validating override PIN: ${chefPin}`)
+                    // Start verify PIN
+                    const { data: chefCred } = await supabase
+                        .from('pos_credentials')
+                        .select('id')
+                        .eq('campaign_id', pass.campaign?.id) // Ensure we use campaign from pass
+                        .eq('role', 'chef')
+                        .eq('pin_code', chefPin)
+                        .maybeSingle() // Use maybeSingle to avoid error on 0 rows
+
+                    if (chefCred) {
+                        isOverrideValid = true
+                        console.log(`[SCAN] Cooldown override valid by Chef PIN`)
+                    }
+                }
+
+                if (!isOverrideValid) {
+                    return NextResponse.json({
+                        error: 'SCAN_COOLDOWN',
+                        message: 'Scan Limit erreicht',
+                        remainingMinutes: Math.ceil(scanCooldown - diffMinutes),
+                        requiresOverride: true
+                    }, { status: 429 })
+                }
+            }
+        }
+        // --- END COOLDOWN CHECK ---
+
         // 2. Process action based on campaign type
         const concept = pass.campaign?.concept
 

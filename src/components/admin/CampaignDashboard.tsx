@@ -80,6 +80,10 @@ export interface Campaign {
         slug: string
     }
     passes: Pass[]
+    config?: {
+        scanCooldown?: number
+        [key: string]: any
+    }
 }
 
 export interface AutomationRule {
@@ -868,6 +872,112 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                         })}
                     </div>
                 )}
+            </div>
+
+            {/* Scan Settings Section */}
+            <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-6 space-y-6">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h2 className="font-semibold text-white">Scan Einstellungen</h2>
+                        <p className="text-xs text-zinc-400">Sicherheits- und Cooldown-Einstellungen</p>
+                    </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8">
+                    <div className="bg-zinc-900/50 rounded-xl p-4 border border-white/5 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-sm font-medium text-white">Scan Cooldown</h3>
+                                <p className="text-xs text-zinc-400 mt-1">Verhindert doppeltes Scannen innerhalb kurzer Zeit.</p>
+                            </div>
+                            <div className="px-3 py-1 rounded-lg bg-black/50 border border-white/10 text-xs text-zinc-300 font-mono">
+                                {campaign.config?.scanCooldown ? `${campaign.config.scanCooldown} Min` : 'Inaktiv'}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 pt-2">
+                            <label className="text-xs text-zinc-500 uppercase tracking-wider">Cooldown Dauer</label>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { label: 'Deaktiviert', value: 0 },
+                                    { label: '1 Std', value: 60 },
+                                    { label: '6 Std', value: 360 },
+                                    { label: '12 Std', value: 720 },
+                                ].map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={async () => {
+                                            if (!campaignId) return;
+                                            // Optimistic update
+                                            setCampaign(prev => prev ? { ...prev, config: { ...prev.config, scanCooldown: opt.value } } : null);
+
+                                            // API Call to save
+                                            try {
+                                                const res = await fetch(`/api/campaign/${campaignId}/update`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        config: { ...campaign.config, scanCooldown: opt.value }
+                                                    })
+                                                });
+                                                if (!res.ok) alert('Fehler beim Speichern');
+                                            } catch (e) { console.error(e); }
+                                        }}
+                                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${(campaign.config?.scanCooldown || 0) === opt.value
+                                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                                            : 'bg-white/5 text-zinc-400 hover:bg-white/10'
+                                            }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Custom Input */}
+                            <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                                <span className="text-xs text-zinc-500">Oder manuell:</span>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        placeholder="Minuten"
+                                        value={campaign.config?.scanCooldown || ''}
+                                        onChange={async (e) => {
+                                            if (!campaignId) return;
+                                            const val = parseInt(e.target.value) || 0;
+                                            // Optimistic
+                                            setCampaign(prev => prev ? { ...prev, config: { ...prev.config, scanCooldown: val } } : null);
+                                        }}
+                                        onBlur={async (e) => {
+                                            // Save on blur
+                                            if (!campaignId) return;
+                                            const val = parseInt(e.target.value) || 0;
+                                            try {
+                                                await fetch(`/api/campaign/${campaignId}/update`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        config: { ...campaign.config, scanCooldown: val }
+                                                    })
+                                                });
+                                            } catch (e) { console.error(e); }
+                                        }}
+                                        className="w-24 h-8 bg-black/30 border-white/10 text-xs"
+                                    />
+                                    <span className="text-xs text-zinc-500">Minuten</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-xs text-yellow-200/80 leading-relaxed">
+                            <strong className="text-yellow-400 block mb-1">Achtung:</strong>
+                            Während des Cooldowns können Kunden keine Punkte sammeln. Der Chef kann den Cooldown mit seinem PIN überspringen.
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Delete Confirmation Modal */}

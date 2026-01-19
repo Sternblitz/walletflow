@@ -94,6 +94,13 @@ export default function POSPage() {
     const [cameraError, setCameraError] = useState<string | null>(null)
     const scannerRef = useRef<any>(null)
 
+    // Cooldown State
+    const [cooldownData, setCooldownData] = useState<{ minutes: number, passId: string } | null>(null)
+    const [showCooldownModal, setShowCooldownModal] = useState(false)
+    const [overridePin, setOverridePin] = useState('')
+    const [overrideLoading, setOverrideLoading] = useState(false)
+
+
     // Dashboard
     const [stats, setStats] = useState<any>(null)
     const [statsLoading, setStatsLoading] = useState(false)
@@ -378,6 +385,14 @@ export default function POSPage() {
                 setResult(data)
                 setMode('result')
                 toast.success('Stempel erfolgreich!')
+            } else if (res.status === 429 && data.error === 'SCAN_COOLDOWN') {
+                // Handle Cooldown
+                setCooldownData({
+                    minutes: data.remainingMinutes,
+                    passId: decodedText
+                })
+                setShowCooldownModal(true)
+                stopCamera() // Stop camera while modal is open
             } else {
                 setError(data.error || 'Scan failed')
                 setMode('idle')
@@ -388,6 +403,43 @@ export default function POSPage() {
             setMode('idle')
         } finally {
             setTimeout(() => { isProcessing.current = false }, 2000)
+        }
+    }
+
+    const handleOverrideScan = async () => {
+        if (!overridePin || !cooldownData) return
+        setOverrideLoading(true)
+
+        try {
+            const res = await fetch('/api/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    passId: cooldownData.passId,
+                    action: 'ADD_STAMP',
+                    force: true,
+                    chefPin: overridePin
+                })
+            })
+            const data = await res.json()
+
+            if (res.ok) {
+                setShowCooldownModal(false)
+                setResult(data)
+                setMode('result')
+                toast.success('Stempel erfolgreich (Override)!')
+                setOverridePin('')
+                setCooldownData(null)
+            } else {
+                toast.error(data.error || 'Override gescheitert')
+                if (data.requiresOverride) {
+                    toast.error('Falscher PIN')
+                }
+            }
+        } catch (e) {
+            toast.error('Netzwerkfehler')
+        } finally {
+            setOverrideLoading(false)
         }
     }
 
@@ -1418,6 +1470,65 @@ export default function POSPage() {
                         </button>
                     </div>
                 )}
+
+
+                {/* COOLDOWN MODAL */}
+                <AnimatePresence>
+                    {showCooldownModal && cooldownData && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-zinc-900 border border-white/10 w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+                                <div className="flex flex-col items-center text-center space-y-4">
+                                    <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-2">
+                                        <Clock className="w-8 h-8" />
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white">Scan Cooldown Aktiv</h3>
+                                        <p className="text-zinc-400 text-sm mt-1">Dieser Kunde hat vor Kurzem bereits gescannt.</p>
+                                    </div>
+
+                                    <div className="bg-white/5 rounded-xl p-3 w-full border border-white/5">
+                                        <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Wartezeit</p>
+                                        <p className="text-lg font-mono text-white">noch {cooldownData.minutes} Min</p>
+                                    </div>
+
+                                    <div className="w-full pt-4 border-t border-white/10 space-y-3">
+                                        <div className="text-xs text-zinc-500 text-left w-full pl-1">Chef Override (PIN):</div>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="password"
+                                                inputMode="numeric"
+                                                placeholder="PIN"
+                                                value={overridePin}
+                                                onChange={(e) => setOverridePin(e.target.value)}
+                                                className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 text-center text-white outline-none focus:border-blue-500 transition-colors"
+                                            />
+                                            <button
+                                                onClick={handleOverrideScan}
+                                                disabled={!overridePin || overrideLoading}
+                                                className="px-4 py-3 bg-blue-600 rounded-xl font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {overrideLoading ? '...' : <Check size={20} />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => {
+                                            setShowCooldownModal(false)
+                                            setCooldownData(null)
+                                            setOverridePin('')
+                                            setMode('idle')
+                                        }}
+                                        className="w-full py-3 bg-white/5 hover:bg-white/10 text-zinc-400 rounded-xl font-medium transition-colors"
+                                    >
+                                        Abbrechen
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
 
                 <div className="h-8" />
             </main>

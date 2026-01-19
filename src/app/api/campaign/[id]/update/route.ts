@@ -102,18 +102,25 @@ export async function POST(
         }
 
         // Update campaign
-        const { error: updateError } = await supabase
+        const { data: updatedCampaign, error: updateError } = await supabase
             .from('campaigns')
             .update(updateData)
             .eq('id', campaignId)
+            .select()
+            .select()
+            .maybeSingle()
 
         if (updateError) {
             console.error('Campaign update error:', updateError)
             return NextResponse.json({ error: updateError.message }, { status: 500 })
         }
 
-        console.log(`[UPDATE] Campaign ${campaignId} updated successfully`)
+        if (!updatedCampaign) {
+            console.error('Campaign update failed (RLS?): No rows returned')
+            return NextResponse.json({ error: 'Update failed - Permission denied?' }, { status: 403 })
+        }
 
+        console.log(`[UPDATE] Campaign ${campaignId} updated. Config:`, updatedCampaign.config)
         return NextResponse.json({
             success: true,
             message: 'Campaign updated'
