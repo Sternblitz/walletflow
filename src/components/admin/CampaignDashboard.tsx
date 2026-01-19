@@ -31,7 +31,8 @@ import {
     Zap,
     ChevronDown,
     ChevronUp,
-    History
+    History,
+    Calendar
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { getReviewStats, ReviewStats } from "@/lib/reviews"
@@ -148,6 +149,13 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
     const [pushHistory, setPushHistory] = useState<PushRequest[]>([])
     const [loadingPushHistory, setLoadingPushHistory] = useState(false)
     const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null)
+
+    // Enhanced Push State (like POS)
+    const [pushMode, setPushMode] = useState<'now' | 'schedule'>('now')
+    const [scheduleTime, setScheduleTime] = useState('')
+    const [pushTarget, setPushTarget] = useState<'all' | 'inactive'>('all')
+    const [inactivityDays, setInactivityDays] = useState<14 | 30 | 60 | 'custom'>(14)
+    const [customInactivityDays, setCustomInactivityDays] = useState(30)
 
     useEffect(() => {
         if (campaignId) {
@@ -292,22 +300,36 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
 
     const sendMessage = async () => {
         if (!message.trim() || !campaignId) return
+        if (pushMode === 'schedule' && !scheduleTime) return
 
         setSending(true)
         setSendResult(null)
 
         try {
+            const inactiveDaysValue = pushTarget === 'inactive'
+                ? (inactivityDays === 'custom' ? customInactivityDays : inactivityDays)
+                : null
+
             const response = await fetch(`/api/campaign/${campaignId}/message`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: message.trim() })
+                body: JSON.stringify({
+                    message: message.trim(),
+                    scheduleTime: pushMode === 'schedule' ? new Date(scheduleTime).toISOString() : null,
+                    targetType: pushTarget,
+                    inactiveDays: inactiveDaysValue
+                })
             })
 
             const result = await response.json()
             setSendResult({ sent: result.sent || 0, total: result.total || 0 })
             setMessage("")
+            setScheduleTime("")
+            setPushMode('now')
+            setPushTarget('all')
 
             fetchCampaign()
+            fetchPushHistory()
         } catch (error) {
             console.error('Error sending message:', error)
         } finally {
@@ -498,9 +520,25 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                             <MessageSquare className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h2 className="font-semibold text-white">Nachricht an alle Kunden</h2>
-                            <p className="text-xs text-white/60">Schicke eine Push-Benachrichtigung an alle {campaign.passes?.length || 0} Kunden</p>
+                            <h2 className="font-semibold text-white">Push-Nachricht senden</h2>
+                            <p className="text-xs text-white/60">Direkt senden oder planen • {campaign.passes?.length || 0} Kunden</p>
                         </div>
+                    </div>
+
+                    {/* Mode Toggle */}
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            onClick={() => setPushMode('now')}
+                            className={`p-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${pushMode === 'now' ? 'bg-emerald-500 text-white' : 'bg-white/5 border border-white/10 text-zinc-400 hover:bg-white/10'}`}
+                        >
+                            <Zap className="w-4 h-4" /> Jetzt senden
+                        </button>
+                        <button
+                            onClick={() => setPushMode('schedule')}
+                            className={`p-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${pushMode === 'schedule' ? 'bg-blue-500 text-white' : 'bg-white/5 border border-white/10 text-zinc-400 hover:bg-white/10'}`}
+                        >
+                            <Calendar className="w-4 h-4" /> Später planen
+                        </button>
                     </div>
 
                     <Textarea
@@ -510,28 +548,91 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                         className="bg-black/30 border-white/10 text-white placeholder:text-white/30 min-h-[80px]"
                     />
 
+                    {/* Target Audience */}
+                    <div className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3">
+                        <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                            <Users className="w-3 h-3" /> Zielgruppe
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                onClick={() => setPushTarget('all')}
+                                className={`p-2 rounded-lg text-sm font-medium transition-all ${pushTarget === 'all' ? 'bg-emerald-500 text-white' : 'bg-white/5 text-zinc-400 hover:bg-white/10'}`}
+                            >
+                                Alle Kunden
+                            </button>
+                            <button
+                                onClick={() => setPushTarget('inactive')}
+                                className={`p-2 rounded-lg text-sm font-medium transition-all ${pushTarget === 'inactive' ? 'bg-orange-500 text-white' : 'bg-white/5 text-zinc-400 hover:bg-white/10'}`}
+                            >
+                                Inaktive Kunden
+                            </button>
+                        </div>
+
+                        {pushTarget === 'inactive' && (
+                            <div className="space-y-2 pt-2 border-t border-white/5">
+                                <div className="text-xs text-zinc-500">Letzter Scan vor:</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {([14, 30, 60, 'custom'] as const).map(opt => (
+                                        <button
+                                            key={opt}
+                                            onClick={() => setInactivityDays(opt)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${inactivityDays === opt ? 'bg-orange-500 text-white' : 'bg-white/5 text-zinc-400 hover:bg-white/10'}`}
+                                        >
+                                            {opt === 'custom' ? '✏️ Eigene' : `${opt} Tage`}
+                                        </button>
+                                    ))}
+                                </div>
+                                {inactivityDays === 'custom' && (
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            max={365}
+                                            value={customInactivityDays}
+                                            onChange={(e) => setCustomInactivityDays(Math.max(1, parseInt(e.target.value) || 1))}
+                                            className="w-20 bg-black/30 border-white/10 text-white text-sm"
+                                        />
+                                        <span className="text-xs text-zinc-500">Tage</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Schedule Time */}
+                    {pushMode === 'schedule' && (
+                        <Input
+                            type="datetime-local"
+                            value={scheduleTime}
+                            onChange={(e) => setScheduleTime(e.target.value)}
+                            className="bg-black/30 border-white/10 text-white"
+                        />
+                    )}
+
                     <div className="flex items-center justify-between">
                         <div className="text-xs text-white/40">
                             {message.length} / 100 Zeichen empfohlen
                         </div>
                         <Button
                             onClick={sendMessage}
-                            disabled={!message.trim() || sending}
+                            disabled={!message.trim() || sending || (pushMode === 'schedule' && !scheduleTime)}
                             className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500"
                         >
                             {sending ? (
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : pushMode === 'schedule' ? (
+                                <Calendar className="w-4 h-4 mr-2" />
                             ) : (
                                 <Send className="w-4 h-4 mr-2" />
                             )}
-                            Jetzt senden
+                            {pushMode === 'schedule' ? 'Einplanen' : 'Jetzt senden'}
                         </Button>
                     </div>
 
                     {sendResult && (
                         <div className="flex items-center gap-2 text-sm text-green-400 bg-green-500/10 rounded-lg px-4 py-2">
                             <CheckCircle2 className="w-4 h-4" />
-                            Nachricht an {sendResult.total} {sendResult.total === 1 ? 'Kunden' : 'Kunden'} gesendet!
+                            {pushMode === 'schedule' ? 'Nachricht eingeplant!' : `Nachricht an ${sendResult.total} Kunden gesendet!`}
                         </div>
                     )}
                 </div>

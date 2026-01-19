@@ -1,8 +1,9 @@
 
-import { useState, useMemo } from 'react'
-import { Search, Info, Users, Filter, ArrowUpDown, Tag, Zap, Mail, Phone, Cake } from 'lucide-react'
-import formatDistanceToNow from 'date-fns/formatDistanceToNow'
+import { useState, useMemo, useRef, useEffect } from 'react'
+import { Users, Zap, ChevronDown, Check } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
 import { de } from 'date-fns/locale'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface CustomerListProps {
     customers: any[]
@@ -12,17 +13,30 @@ interface CustomerListProps {
 
 type FilterType = 'all' | 'recent' | 'absent' | 'risk' | 'inactive'
 
-const INACTIVITY_THRESHOLDS = {
-    recent: 7,
-    absent: 14,
-    risk: 30,
-    inactive: 60
-}
+// Filter configuration
+const FILTERS: { key: FilterType, label: string, color: string, dotColor: string, description: string }[] = [
+    { key: 'all', label: 'Alle Kunden', color: 'zinc', dotColor: 'bg-zinc-400', description: '' },
+    { key: 'recent', label: 'Aktiv', color: 'emerald', dotColor: 'bg-emerald-500', description: '< 7 Tage' },
+    { key: 'absent', label: 'Abwesend', color: 'blue', dotColor: 'bg-blue-500', description: '14+ Tage' },
+    { key: 'risk', label: 'Gefährdet', color: 'orange', dotColor: 'bg-orange-500', description: '30+ Tage' },
+    { key: 'inactive', label: 'Inaktiv', color: 'red', dotColor: 'bg-red-500', description: '60+ Tage' },
+]
 
 export function CustomerList({ customers, onSelectCustomer, loading }: CustomerListProps) {
     const [filter, setFilter] = useState<FilterType>('all')
-    const [search, setSearch] = useState('')
-    const [sort, setSort] = useState<'recent' | 'name' | 'stamps'>('recent')
+    const [isFilterOpen, setIsFilterOpen] = useState(false)
+    const filterRef = useRef<HTMLDivElement>(null)
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+                setIsFilterOpen(false)
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
 
     // Derived stats for filter badges
     const stats = useMemo(() => {
@@ -41,12 +55,11 @@ export function CustomerList({ customers, onSelectCustomer, loading }: CustomerL
         }
     }, [customers])
 
-    // Filtering & Sorting Logic
+    // Filtering Logic
     const filteredCustomers = useMemo(() => {
         let result = [...customers]
         const now = new Date()
 
-        // 1. Filter by Status
         if (filter !== 'all') {
             result = result.filter(c => {
                 const days = c.last_scan_at ? Math.floor((now.getTime() - new Date(c.last_scan_at).getTime()) / (1000 * 60 * 60 * 24)) : 999
@@ -58,42 +71,25 @@ export function CustomerList({ customers, onSelectCustomer, loading }: CustomerL
             })
         }
 
-        // 2. Search
-        if (search.trim()) {
-            const q = search.toLowerCase()
-            result = result.filter(c =>
-                (c.customer_name?.toLowerCase().includes(q)) ||
-                (c.customer_email?.toLowerCase().includes(q)) ||
-                (c.customer_phone?.includes(q))
-            )
-        }
-
-        // 3. Sort
-        result.sort((a, b) => {
-            if (sort === 'recent') return new Date(b.last_scan_at || 0).getTime() - new Date(a.last_scan_at || 0).getTime()
-            if (sort === 'name') return (a.customer_name || '').localeCompare(b.customer_name || '')
-            if (sort === 'stamps') return (b.current_state?.stamps || 0) - (a.current_state?.stamps || 0)
-            return 0
-        })
+        // Sort by most recent
+        result.sort((a, b) => new Date(b.last_scan_at || 0).getTime() - new Date(a.last_scan_at || 0).getTime())
 
         return result
-    }, [customers, filter, search, sort])
-
+    }, [customers, filter])
 
     // Helper for visual tags
     const getTags = (c: any) => {
         const tags = []
         const days = c.last_scan_at ? Math.floor((new Date().getTime() - new Date(c.last_scan_at).getTime()) / (1000 * 60 * 60 * 24)) : 999
 
-        // Status Tags
-        if (days < 7) tags.push({ label: 'Aktiv', color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', dot: 'bg-emerald-500' })
-        else if (days >= 14 && days < 30) tags.push({ label: '14 Tage nicht da', color: 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400', dot: 'bg-blue-500' })
-        else if (days >= 30 && days < 60) tags.push({ label: 'Gefährdet', color: 'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400', dot: 'bg-orange-500' })
-        else if (days >= 60) tags.push({ label: 'Inaktiv', color: 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400', dot: 'bg-red-500' })
+        if (days < 7) tags.push({ dot: 'bg-emerald-500' })
+        else if (days >= 14 && days < 30) tags.push({ dot: 'bg-blue-500' })
+        else if (days >= 30 && days < 60) tags.push({ dot: 'bg-orange-500' })
+        else if (days >= 60) tags.push({ dot: 'bg-red-500' })
 
         // New Customer (< 24 hours)
         if (c.created_at && (new Date().getTime() - new Date(c.created_at).getTime()) < 1000 * 60 * 60 * 24) {
-            tags.push({ label: 'Neu', color: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400', icon: '🆕' })
+            tags.push({ label: 'Neu', color: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400' })
         }
 
         // Birthday check (next 7 days)
@@ -101,12 +97,9 @@ export function CustomerList({ customers, onSelectCustomer, loading }: CustomerL
             const birthDate = new Date(c.customer_birthday);
             const today = new Date();
             birthDate.setFullYear(today.getFullYear());
-
-            // Handle year wrap
             const diff = (birthDate.getTime() - today.getTime()) / (1000 * 3600 * 24);
-
             if (diff >= 0 && diff <= 7) {
-                tags.push({ label: 'Geburtstag', color: 'bg-pink-100 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400', icon: '🎂' })
+                tags.push({ label: '🎂', color: 'bg-pink-100 dark:bg-pink-500/20' })
             }
         }
 
@@ -122,168 +115,132 @@ export function CustomerList({ customers, onSelectCustomer, loading }: CustomerL
         )
     }
 
+    const currentFilter = FILTERS.find(f => f.key === filter)!
+
     return (
         <div className="space-y-4">
-            {/* 1. Quick Info Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                <FilterCard
-                    label="Alle Kunden"
-                    count={stats.all}
-                    active={filter === 'all'}
-                    onClick={() => setFilter('all')}
-                    color="zinc"
-                />
-                <FilterCard
-                    label="Aktiv (<7 Tage)"
-                    count={stats.recent}
-                    active={filter === 'recent'}
-                    onClick={() => setFilter('recent')}
-                    color="emerald"
-                />
-                <FilterCard
-                    label="14 Tage nicht da"
-                    count={stats.absent}
-                    active={filter === 'absent'}
-                    onClick={() => setFilter('absent')}
-                    color="blue"
-                />
-                <FilterCard
-                    label="Gefährdet (>30 Tage)"
-                    count={stats.risk}
-                    active={filter === 'risk'}
-                    onClick={() => setFilter('risk')}
-                    color="orange"
-                />
-                <FilterCard
-                    label="Inaktiv (>60 Tage)"
-                    count={stats.inactive}
-                    active={filter === 'inactive'}
-                    onClick={() => setFilter('inactive')}
-                    color="red"
-                />
+            {/* Compact Filter Dropdown */}
+            <div className="flex items-center justify-between gap-3" ref={filterRef}>
+                <div className="relative">
+                    <button
+                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                        className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl text-sm font-medium text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                    >
+                        <span className={`w-2 h-2 rounded-full ${currentFilter.dotColor}`} />
+                        <span>{currentFilter.label}</span>
+                        <span className="text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+                            {stats[filter]}
+                        </span>
+                        <ChevronDown size={14} className={`text-zinc-400 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    <AnimatePresence>
+                        {isFilterOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute left-0 top-full mt-2 z-50 min-w-[200px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl shadow-xl shadow-black/10 dark:shadow-black/30 overflow-hidden"
+                            >
+                                {FILTERS.map((f) => {
+                                    const isActive = filter === f.key
+                                    return (
+                                        <button
+                                            key={f.key}
+                                            onClick={() => {
+                                                setFilter(f.key)
+                                                setIsFilterOpen(false)
+                                            }}
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors
+                                                ${isActive
+                                                    ? 'bg-zinc-100 dark:bg-zinc-800'
+                                                    : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                                                }
+                                            `}
+                                        >
+                                            <span className={`w-2.5 h-2.5 rounded-full ${f.dotColor}`} />
+                                            <span className="flex-1 font-medium text-zinc-900 dark:text-white">
+                                                {f.label}
+                                                {f.description && (
+                                                    <span className="text-xs text-zinc-400 ml-1.5">{f.description}</span>
+                                                )}
+                                            </span>
+                                            <span className="text-xs font-bold text-zinc-400">{stats[f.key]}</span>
+                                            {isActive && <Check size={14} className="text-emerald-500" />}
+                                        </button>
+                                    )
+                                })}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {/* Result Count */}
+                <span className="text-xs text-zinc-400">
+                    <span className="font-bold text-zinc-600 dark:text-zinc-300">{filteredCustomers.length}</span> Ergebnisse
+                </span>
             </div>
 
-            {/* 2. Search & Sort Bar */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Suche nach Name, E-Mail..."
-                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                    />
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
-                    <SortButton active={sort === 'recent'} onClick={() => setSort('recent')} label="Zuletzt" />
-                    <SortButton active={sort === 'name'} onClick={() => setSort('name')} label="Name" />
-                    <SortButton active={sort === 'stamps'} onClick={() => setSort('stamps')} label="Stempel" />
-                </div>
-            </div>
-
-            {/* 3. Customer List */}
-            <div className="space-y-3 pb-20">
+            {/* Customer List */}
+            <div className="space-y-1.5">
                 {filteredCustomers.length === 0 ? (
-                    <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-white/5">
-                        <Users className="mx-auto h-12 w-12 text-zinc-300 dark:text-zinc-600 mb-3" />
-                        <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Keine Kunden gefunden</h3>
-                        <p className="text-zinc-500 text-sm">Versuche die Filter anzupassen.</p>
+                    <div className="text-center py-12 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-dashed border-zinc-200 dark:border-white/5">
+                        <Users className="mx-auto h-8 w-8 text-zinc-300 dark:text-zinc-600 mb-2" />
+                        <p className="text-sm font-medium text-zinc-500">Keine Kunden in dieser Kategorie</p>
                     </div>
                 ) : (
                     filteredCustomers.map((c) => {
                         const tags = getTags(c)
-                        const primaryTag = tags[0] // Main status tag
+                        const statusDot = tags[0]?.dot
 
                         return (
                             <div
                                 key={c.id}
                                 onClick={() => onSelectCustomer(c)}
-                                className={`group relative bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-white/5 rounded-2xl p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-all cursor-pointer shadow-sm dark:shadow-none active:scale-[0.99]`}
+                                className="group flex items-center gap-3 bg-white dark:bg-zinc-900/60 border border-zinc-100 dark:border-white/5 rounded-xl px-3 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-all cursor-pointer active:scale-[0.99]"
                             >
-                                <div className="flex items-start justify-between gap-4">
-                                    {/* Left: Avatar & Info */}
-                                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                                        {/* Avatar with Status Dot */}
-                                        <div className="relative">
-                                            <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 font-bold text-lg border border-zinc-200 dark:border-white/5 group-hover:bg-white dark:group-hover:bg-zinc-700 transition-colors">
-                                                {(c.customer_name || '?').charAt(0).toUpperCase()}
-                                            </div>
-                                            {primaryTag?.dot && (
-                                                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-zinc-900 ${primaryTag.dot}`} />
-                                            )}
-                                        </div>
-
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-0.5">
-                                                <h3 className={`font-bold text-zinc-900 dark:text-white truncate ${c.deleted_at ? 'line-through opacity-50' : ''}`}>
-                                                    {c.customer_name || `Kunde #${c.customer_number || '---'}`}
-                                                </h3>
-                                                {/* Extra visual tags */}
-                                                {tags.slice(1).map((t, i) => (
-                                                    <span key={i} className={`hidden sm:inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${t.color}`}>
-                                                        {t.icon || t.label}
-                                                    </span>
-                                                ))}
-                                            </div>
-
-                                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
-                                                <span>{c.last_scan_at ? formatDistanceToNow(new Date(c.last_scan_at), { addSuffix: true, locale: de }) : 'Nie'}</span>
-                                                <span className="opacity-50">•</span>
-                                                <span>{c.current_state?.stamps || 0} Stempel</span>
-                                            </div>
-                                        </div>
+                                {/* Avatar */}
+                                <div className="relative shrink-0">
+                                    <div className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 font-bold text-sm">
+                                        {(c.customer_name || '?').charAt(0).toUpperCase()}
                                     </div>
+                                    {statusDot && (
+                                        <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-zinc-900 ${statusDot}`} />
+                                    )}
+                                </div>
 
-                                    {/* Right: Stamps & Chevron */}
-                                    <div className="flex flex-col items-end gap-1">
-                                        <div className="flex items-center gap-1 font-black text-emerald-600 dark:text-emerald-500 text-lg">
-                                            <Zap size={16} className="fill-current" />
-                                            {c.current_state?.stamps || 0}
-                                        </div>
+                                {/* Info */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className={`font-medium text-zinc-900 dark:text-white text-sm truncate ${c.deleted_at ? 'line-through opacity-50' : ''}`}>
+                                            {c.customer_name || `Kunde #${c.customer_number || '---'}`}
+                                        </span>
+                                        {tags.slice(1).map((t, i) => (
+                                            <span key={i} className={`px-1 py-0.5 rounded text-[10px] font-bold ${t.color}`}>
+                                                {t.label}
+                                            </span>
+                                        ))}
                                     </div>
+                                    <span className="text-xs text-zinc-400">
+                                        {c.last_scan_at ? formatDistanceToNow(new Date(c.last_scan_at), { addSuffix: true, locale: de }) : 'Nie'}
+                                    </span>
+                                </div>
+
+                                {/* Stamps */}
+                                <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-500 font-bold text-sm shrink-0">
+                                    <Zap size={12} className="fill-current" />
+                                    {c.current_state?.stamps || 0}
                                 </div>
                             </div>
                         )
                     })
                 )}
             </div>
+
+            {/* Bottom Spacer */}
+            <div className="h-16" />
         </div>
-    )
-}
-
-function FilterCard({ label, count, active, onClick, color }: { label: string, count: number, active: boolean, onClick: () => void, color: string }) {
-    const activeClasses = {
-        blue: 'bg-blue-500 text-white shadow-lg shadow-blue-500/20 ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-black',
-        emerald: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-black',
-        yellow: 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/20 ring-2 ring-yellow-500 ring-offset-2 dark:ring-offset-black',
-        orange: 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 ring-2 ring-orange-500 ring-offset-2 dark:ring-offset-black',
-        red: 'bg-red-500 text-white shadow-lg shadow-red-500/20 ring-2 ring-red-500 ring-offset-2 dark:ring-offset-black',
-    }[color] || 'bg-zinc-900 text-white'
-
-    const inactiveClasses = 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
-
-    return (
-        <button
-            onClick={onClick}
-            className={`p-3 rounded-2xl flex flex-col items-start gap-1 transition-all w-full text-left ${active ? activeClasses : inactiveClasses}`}
-        >
-            <span className="text-xs font-bold uppercase tracking-wider opacity-80">{label}</span>
-            <span className="text-xl font-black">{count}</span>
-        </button>
-    )
-}
-
-function SortButton({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) {
-    return (
-        <button
-            onClick={onClick}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors border ${active
-                ? 'bg-zinc-900 dark:bg-white text-white dark:text-black border-zinc-900 dark:border-white'
-                : 'bg-transparent border-transparent hover:bg-zinc-100 dark:hover:bg-white/5 text-zinc-500'
-                }`}
-        >
-            {label}
-        </button>
     )
 }
