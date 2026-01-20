@@ -1,23 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { sendPassUpdatePush } from "@/lib/wallet/apns"
-import { pushMessageSchema } from "@/lib/validations"
 
 export async function POST(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id: campaignId } = await params
-
-    // Validate Body
-    const json = await req.json()
-    const validation = pushMessageSchema.safeParse(json)
-
-    if (!validation.success) {
-        return NextResponse.json({ error: "Invalid request data", details: validation.error.format() }, { status: 400 })
-    }
-
-    const { message, header, scheduleTime, targetType, inactiveDays } = validation.data
+    const { message, header, scheduleTime, targetType, inactiveDays } = await req.json()
 
     if (!message || typeof message !== 'string') {
         return NextResponse.json({ error: 'Message is required' }, { status: 400 })

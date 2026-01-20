@@ -61,9 +61,7 @@ export async function createCampaignAction(data: any) {
     const { data: client, error: clientError } = await supabase.from('clients').insert({
         agency_id: agency.id,
         name: data.clientName,
-        slug: finalSlug,
-        admin_pin: '1234',
-        staff_pin: '0000'
+        slug: finalSlug
     }).select().single()
 
     if (clientError) {
