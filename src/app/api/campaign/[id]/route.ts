@@ -48,7 +48,8 @@ export async function GET(
             customer_birthday,
             customer_email,
             customer_phone,
-            deleted_at
+            deleted_at,
+            consent_marketing
         `)
         .eq('campaign_id', id)
         .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true,deleted_at.not.is.null')

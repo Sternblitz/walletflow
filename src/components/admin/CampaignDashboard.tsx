@@ -32,6 +32,8 @@ import {
     ChevronDown,
     ChevronUp,
     History,
+    Check,
+    X,
     Calendar
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -67,6 +69,7 @@ export interface Pass {
     customer_phone?: string | null
     // Deletion tracking (Apple Wallet only)
     deleted_at?: string | null
+    consent_marketing?: boolean
 }
 
 export interface Campaign {
@@ -1069,6 +1072,18 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                                                         <span className="text-xs text-zinc-500">
                                                             #{pass.current_state?.customer_number || pass.serial_number.slice(0, 8)}
                                                         </span>
+                                                        <div className="flex gap-1 mt-1">
+                                                            {pass.consent_marketing === true && (
+                                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1 w-fit">
+                                                                    <Check size={10} /> Opt-in
+                                                                </span>
+                                                            )}
+                                                            {pass.consent_marketing === false && (
+                                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1 w-fit">
+                                                                    <X size={10} /> Kein Opt-in
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
