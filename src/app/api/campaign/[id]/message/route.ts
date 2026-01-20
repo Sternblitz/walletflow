@@ -40,12 +40,13 @@ export async function POST(
         })
     }
 
-    // Immediate send - get all verified passes with last_scanned_at for filtering
+    // Immediate send - get all verified passes WITH MARKETING CONSENT
     const { data: passes, error: passesError } = await supabase
         .from('passes')
-        .select('id, current_state, wallet_type, is_installed_on_android, is_installed_on_ios, verification_status, last_scanned_at')
+        .select('id, current_state, wallet_type, is_installed_on_android, is_installed_on_ios, verification_status, last_scanned_at, consent_marketing')
         .eq('campaign_id', campaignId)
         .is('deleted_at', null)
+        .eq('consent_marketing', true)  // Only send to opted-in customers!
 
     if (passesError) {
         console.error('Error fetching passes:', passesError)
