@@ -54,14 +54,14 @@ export default async function SmartLinkPage({ params }: { params: Promise<{ slug
     // Redirects need full path because middleware rewrites happen AFTER redirect
     if (isIOS) {
         if (requiresOnboarding) {
-            redirect(`/start/${slug}/onboarding?campaignId=${campaign.id}&platform=ios`)
+            redirect(`/start/${slug}/onboarding?campaignId=${campaign.id}&platform=ios&clientId=${client.id}`)
         }
         redirect(`/api/pass/issue?campaignId=${campaign.id}&platform=ios`)
     }
 
     if (isAndroid) {
         if (requiresOnboarding) {
-            redirect(`/start/${slug}/onboarding?campaignId=${campaign.id}&platform=android`)
+            redirect(`/start/${slug}/onboarding?campaignId=${campaign.id}&platform=android&clientId=${client.id}`)
         }
         redirect(`/api/pass/issue?campaignId=${campaign.id}&platform=android`)
     }

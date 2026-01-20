@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { BenefitsPopup } from '@/components/wallet/BenefitsPopup'
 
 interface PersonalizationConfig {
     enabled?: boolean
@@ -89,6 +90,7 @@ interface OnboardingFormProps {
     customDescription?: string
     showTitle?: boolean
     personalization: PersonalizationConfig
+    clientId: string
 }
 
 export function OnboardingForm({
@@ -113,7 +115,8 @@ export function OnboardingForm({
     customTitle,
     customDescription,
     showTitle = false,
-    personalization
+    personalization,
+    clientId,
 }: OnboardingFormProps) {
     const [name, setName] = useState('')
     const [birthday, setBirthday] = useState('')
@@ -121,6 +124,9 @@ export function OnboardingForm({
     const [phone, setPhone] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [errors, setErrors] = useState<Record<string, string>>({})
+    const [consentAccepted, setConsentAccepted] = useState(false)
+    const [showBenefitsPopup, setShowBenefitsPopup] = useState(false)
+    const [consentError, setConsentError] = useState(false)
 
     const p = personalization
 
@@ -152,7 +158,38 @@ export function OnboardingForm({
 
         if (!validate()) return
 
+        // Check consent first
+        if (!consentAccepted) {
+            setConsentError(true)
+            setTimeout(() => setConsentError(false), 3000)
+            return
+        }
+
+        // Show benefits popup before proceeding
+        setShowBenefitsPopup(true)
+    }
+
+    const handleBenefitsChoice = async (withBenefits: boolean) => {
+        setShowBenefitsPopup(false)
         setIsLoading(true)
+
+        // Log consent to API
+        try {
+            await fetch('/api/consent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    campaignId,
+                    clientId,
+                    consentPrivacyTerms: true,
+                    consentBenefitsMarketing: withBenefits,
+                    platform: platform === 'android' ? 'google' : 'apple',
+                }),
+            })
+        } catch (error) {
+            console.error('Failed to log consent:', error)
+            // Continue anyway - don't block user
+        }
 
         // Build redirect URL with personalization params
         const params = new URLSearchParams({
@@ -237,13 +274,14 @@ export function OnboardingForm({
     }
 
     return (
-        <div
-            className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
-            style={{ ...getBackgroundStyle(), color: finalFgColor }}
-        >
+        <>
+            <div
+                className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
+                style={{ ...getBackgroundStyle(), color: finalFgColor }}
+            >
 
 
-            <style jsx global>{`
+                <style jsx global>{`
                 @keyframes spin {
                     from { --tw-rotate: 0deg; transform: rotate(0deg); }
                     to { --tw-rotate: 360deg; transform: rotate(360deg); }
@@ -269,308 +307,362 @@ export function OnboardingForm({
                 }
             `}</style>
 
-            {/* Animated Background */}
-            {backgroundStyle === 'animated' && (
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        background: `linear-gradient(-45deg, ${animatedSettings.colors?.[0] || finalBgColor}, ${animatedSettings.colors?.[1] || finalAccentColor}40, ${animatedSettings.colors?.[0] || finalBgColor})`,
-                        backgroundSize: '400% 400%',
-                        animation: `gradient-xy ${animationDuration} ease infinite`,
-                    }}
-                />
-            )}
-
-            {/* Mesh Background */}
-            {backgroundStyle === 'mesh' && (
-                <div className="absolute inset-0">
+                {/* Animated Background */}
+                {backgroundStyle === 'animated' && (
                     <div
-                        className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full animate-pulse"
+                        className="absolute inset-0"
                         style={{
-                            backgroundColor: meshSettings.color1 || finalAccentColor,
-                            opacity: (meshSettings.opacity1 || 40) / 100,
-                            filter: `blur(${meshSettings.blur || 80}px)`,
+                            background: `linear-gradient(-45deg, ${animatedSettings.colors?.[0] || finalBgColor}, ${animatedSettings.colors?.[1] || finalAccentColor}40, ${animatedSettings.colors?.[0] || finalBgColor})`,
+                            backgroundSize: '400% 400%',
+                            animation: `gradient-xy ${animationDuration} ease infinite`,
                         }}
                     />
-                    <div
-                        className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full animate-pulse"
-                        style={{
-                            backgroundColor: meshSettings.color2 || adjustColor(finalAccentColor, 40),
-                            opacity: (meshSettings.opacity2 || 30) / 100,
-                            filter: `blur(${meshSettings.blur || 80}px)`,
-                            animationDelay: '1s'
-                        }}
-                    />
-                </div>
-            )}
+                )}
 
-            {/* Noise Overlay */}
-            {backgroundStyle === 'noise' && (
-                <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                        opacity: (noiseSettings.intensity || 20) / 100,
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='${noiseFrequency}' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-                    }}
-                />
-            )}
-
-            {/* Orbs Background */}
-            {backgroundStyle === 'orbs' && (
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    {/* Top Left Orb */}
-                    <div
-                        className="absolute top-[-15%] left-[-15%] w-[50%] h-[50%] rounded-full"
-                        style={{
-                            backgroundColor: orbsSettings.color1 || '#6366F1',
-                            opacity: (orbsSettings.opacity || 15) / 100,
-                            filter: `blur(${orbsSettings.blur || 120}px)`,
-                            animation: `pulse-slow ${orbsAnimationDuration} ease-in-out infinite`,
-                        }}
-                    />
-                    {/* Top Right Orb */}
-                    <div
-                        className="absolute top-[-15%] right-[-15%] w-[50%] h-[50%] rounded-full"
-                        style={{
-                            backgroundColor: orbsSettings.color2 || '#D946EF',
-                            opacity: (orbsSettings.opacity || 15) / 100,
-                            filter: `blur(${orbsSettings.blur || 120}px)`,
-                            animation: `pulse-slow ${orbsAnimationDuration} ease-in-out infinite`,
-                            animationDelay: '1s',
-                        }}
-                    />
-                    {/* Bottom Center Orb */}
-                    <div
-                        className="absolute bottom-[-20%] left-[50%] -translate-x-1/2 w-[60%] h-[50%] rounded-full"
-                        style={{
-                            backgroundColor: orbsSettings.color3 || '#06B6D4',
-                            opacity: ((orbsSettings.opacity || 15) / 100) * 0.7,
-                            filter: `blur(${(orbsSettings.blur || 120) * 0.9}px)`,
-                            animation: `pulse-slow ${orbsAnimationDuration} ease-in-out infinite`,
-                            animationDelay: '2s',
-                        }}
-                    />
-                </div>
-            )}
-
-            {/* Background gradient overlay for depth */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/20 pointer-events-none" />
-
-            <div className="relative z-10 w-full max-w-md">
-                {/* Logo & Business Name */}
-                <div className="text-center mb-10 flex flex-col items-center">
-                    {logoUrl ? (
-                        <img
-                            src={logoUrl}
-                            alt={clientName}
-                            className="h-20 max-w-[180px] object-contain mx-auto mb-6"
-                        />
-                    ) : (
+                {/* Mesh Background */}
+                {backgroundStyle === 'mesh' && (
+                    <div className="absolute inset-0">
                         <div
-                            className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/10 flex items-center justify-center text-3xl font-bold"
-                            style={{ color: finalFgColor }}
-                        >
-                            {clientName.charAt(0).toUpperCase()}
-                        </div>
-                    )}
-                    {showTitle && (
-                        <h1 className="text-3xl font-bold mb-2" style={{ color: finalFgColor }}>
-                            {displayTitle}
-                        </h1>
-                    )}
-                    <p style={{ color: finalAccentColor }}>
-                        {displayDescription}
-                    </p>
-                </div>
-
-                {/* Form Card - Wrapper for animation */}
-                <div className="relative">
-                    {/* Rotating Glow Border - BEHIND the card */}
-                    <div className="absolute -inset-[3px] rounded-3xl overflow-hidden pointer-events-none">
-                        <div className="absolute inset-[-50%] animate-[spin_3s_linear_infinite]"
+                            className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full animate-pulse"
                             style={{
-                                background: `conic-gradient(from 0deg, transparent 0deg, ${finalBorderColor} 60deg, transparent 120deg)`,
-                                filter: 'blur(8px)',
+                                backgroundColor: meshSettings.color1 || finalAccentColor,
+                                opacity: (meshSettings.opacity1 || 40) / 100,
+                                filter: `blur(${meshSettings.blur || 80}px)`,
+                            }}
+                        />
+                        <div
+                            className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full animate-pulse"
+                            style={{
+                                backgroundColor: meshSettings.color2 || adjustColor(finalAccentColor, 40),
+                                opacity: (meshSettings.opacity2 || 30) / 100,
+                                filter: `blur(${meshSettings.blur || 80}px)`,
+                                animationDelay: '1s'
                             }}
                         />
                     </div>
+                )}
 
-                    {/* Actual Form Card - ON TOP of animation */}
+                {/* Noise Overlay */}
+                {backgroundStyle === 'noise' && (
                     <div
-                        className="rounded-3xl p-6 shadow-2xl relative"
-                        style={formCardStyle}
-                    >
-                        {/* Thin Border for definition */}
-                        <div className="absolute inset-0 rounded-3xl pointer-events-none border border-black/5" />
+                        className="absolute inset-0 pointer-events-none"
+                        style={{
+                            opacity: (noiseSettings.intensity || 20) / 100,
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='${noiseFrequency}' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+                        }}
+                    />
+                )}
 
+                {/* Orbs Background */}
+                {backgroundStyle === 'orbs' && (
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        {/* Top Left Orb */}
+                        <div
+                            className="absolute top-[-15%] left-[-15%] w-[50%] h-[50%] rounded-full"
+                            style={{
+                                backgroundColor: orbsSettings.color1 || '#6366F1',
+                                opacity: (orbsSettings.opacity || 15) / 100,
+                                filter: `blur(${orbsSettings.blur || 120}px)`,
+                                animation: `pulse-slow ${orbsAnimationDuration} ease-in-out infinite`,
+                            }}
+                        />
+                        {/* Top Right Orb */}
+                        <div
+                            className="absolute top-[-15%] right-[-15%] w-[50%] h-[50%] rounded-full"
+                            style={{
+                                backgroundColor: orbsSettings.color2 || '#D946EF',
+                                opacity: (orbsSettings.opacity || 15) / 100,
+                                filter: `blur(${orbsSettings.blur || 120}px)`,
+                                animation: `pulse-slow ${orbsAnimationDuration} ease-in-out infinite`,
+                                animationDelay: '1s',
+                            }}
+                        />
+                        {/* Bottom Center Orb */}
+                        <div
+                            className="absolute bottom-[-20%] left-[50%] -translate-x-1/2 w-[60%] h-[50%] rounded-full"
+                            style={{
+                                backgroundColor: orbsSettings.color3 || '#06B6D4',
+                                opacity: ((orbsSettings.opacity || 15) / 100) * 0.7,
+                                filter: `blur(${(orbsSettings.blur || 120) * 0.9}px)`,
+                                animation: `pulse-slow ${orbsAnimationDuration} ease-in-out infinite`,
+                                animationDelay: '2s',
+                            }}
+                        />
+                    </div>
+                )}
 
+                {/* Background gradient overlay for depth */}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/20 pointer-events-none" />
 
-                        <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
-                            {/* Name Field */}
-                            {p.ask_name && (
-                                <FormField
-                                    id="name"
-                                    label="Dein Name"
-                                    required={p.name_required}
-                                    value={name}
-                                    onChange={setName}
-                                    error={errors.name}
-                                    placeholder="Max Mustermann"
-                                    accentColor={finalAccentColor}
-                                    fgColor={finalFgColor}
-                                />
-                            )}
-
-                            {/* Birthday Field - Month/Day Picker */}
-                            {p.ask_birthday && (
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Geburtstag
-                                        {p.birthday_required ? (
-                                            <span className="text-red-500 ml-1">*</span>
-                                        ) : (
-                                            <span className="ml-1 text-xs opacity-60">(optional)</span>
-                                        )}
-                                    </label>
-                                    <div className="flex gap-3">
-                                        {/* Day Picker */}
-                                        <div className="relative flex-1">
-                                            <select
-                                                value={birthday.split('-')[2] || ''}
-                                                onChange={(e) => {
-                                                    const month = birthday.split('-')[1] || '01'
-                                                    setBirthday(e.target.value ? `2000-${month}-${e.target.value}` : '')
-                                                }}
-                                                className="w-full px-4 py-3 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer text-gray-900 bg-white border border-gray-200 shadow-sm"
-                                            >
-                                                <option value="">Tag</option>
-                                                {[...Array(31)].map((_, i) => (
-                                                    <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
-                                                        {i + 1}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                                ▼
-                                            </div>
-                                        </div>
-                                        {/* Month Picker */}
-                                        <div className="relative flex-[1.5]">
-                                            <select
-                                                value={birthday.split('-')[1] || ''}
-                                                onChange={(e) => {
-                                                    const day = birthday.split('-')[2] || '01'
-                                                    setBirthday(e.target.value ? `2000-${e.target.value}-${day}` : '')
-                                                }}
-                                                className="w-full px-4 py-3 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer text-gray-900 bg-white border border-gray-200 shadow-sm"
-                                            >
-                                                <option value="">Monat</option>
-                                                {['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'].map((month, i) => (
-                                                    <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
-                                                        {month}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                                ▼
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {errors.birthday && (
-                                        <p className="text-red-500 text-xs mt-1">{errors.birthday}</p>
-                                    )}
-                                    <p className="text-xs text-gray-500">Für Geburtstagsüberraschungen 🎂</p>
-                                </div>
-                            )}
-
-                            {/* Email Field */}
-                            {p.ask_email && (
-                                <FormField
-                                    id="email"
-                                    label="E-Mail"
-                                    required={p.email_required}
-                                    value={email}
-                                    onChange={setEmail}
-                                    error={errors.email}
-                                    type="email"
-                                    placeholder="max@beispiel.de"
-                                    hint="Für exklusive Angebote"
-                                    accentColor={finalAccentColor}
-                                    fgColor={finalFgColor}
-                                />
-                            )}
-
-                            {/* Phone Field */}
-                            {p.ask_phone && (
-                                <FormField
-                                    id="phone"
-                                    label="Telefon"
-                                    required={p.phone_required}
-                                    value={phone}
-                                    onChange={setPhone}
-                                    error={errors.phone}
-                                    type="tel"
-                                    placeholder="+49 123 456789"
-                                    accentColor={finalAccentColor}
-                                    fgColor={finalFgColor}
-                                />
-                            )}
-
-                            {/* Wallet Button with Pulse Animation */}
-                            <div className="mt-6 space-y-3">
-                                {/* Arrow indicator */}
-                                <div className="flex justify-center animate-bounce">
-                                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                                    </svg>
-                                </div>
-
-                                {/* Single Platform-Specific Wallet Button */}
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="w-full flex items-center justify-center py-3 transition-all transform hover:scale-[1.03] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed animate-pulse-subtle"
-                                >
-                                    {isLoading ? (
-                                        <span className="flex items-center justify-center gap-2 text-gray-600">
-                                            <Spinner />
-                                            Karte wird erstellt...
-                                        </span>
-                                    ) : platform === 'android' ? (
-                                        <img
-                                            src="/pass-assets/de_add_to_google_wallet_add-wallet-badge.svg"
-                                            alt="Zu Google Wallet hinzufügen"
-                                            className="w-full max-w-[280px] h-auto object-contain"
-                                        />
-                                    ) : (
-                                        <img
-                                            src="/DE_Add_to_Apple_Wallet_RGB_101421.svg"
-                                            alt="Zu Apple Wallet hinzufügen"
-                                            className="w-full max-w-[280px] h-auto object-contain"
-                                        />
-                                    )}
-                                </button>
+                <div className="relative z-10 w-full max-w-md">
+                    {/* Logo & Business Name */}
+                    <div className="text-center mb-10 flex flex-col items-center">
+                        {logoUrl ? (
+                            <img
+                                src={logoUrl}
+                                alt={clientName}
+                                className="h-20 max-w-[180px] object-contain mx-auto mb-6"
+                            />
+                        ) : (
+                            <div
+                                className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/10 flex items-center justify-center text-3xl font-bold"
+                                style={{ color: finalFgColor }}
+                            >
+                                {clientName.charAt(0).toUpperCase()}
                             </div>
-                        </form>
+                        )}
+                        {showTitle && (
+                            <h1 className="text-3xl font-bold mb-2" style={{ color: finalFgColor }}>
+                                {displayTitle}
+                            </h1>
+                        )}
+                        <p style={{ color: finalAccentColor }}>
+                            {displayDescription}
+                        </p>
+                    </div>
+
+                    {/* Form Card - Wrapper for animation */}
+                    <div className="relative">
+                        {/* Rotating Glow Border - BEHIND the card */}
+                        <div className="absolute -inset-[3px] rounded-3xl overflow-hidden pointer-events-none">
+                            <div className="absolute inset-[-50%] animate-[spin_3s_linear_infinite]"
+                                style={{
+                                    background: `conic-gradient(from 0deg, transparent 0deg, ${finalBorderColor} 60deg, transparent 120deg)`,
+                                    filter: 'blur(8px)',
+                                }}
+                            />
+                        </div>
+
+                        {/* Actual Form Card - ON TOP of animation */}
+                        <div
+                            className="rounded-3xl p-6 shadow-2xl relative"
+                            style={formCardStyle}
+                        >
+                            {/* Thin Border for definition */}
+                            <div className="absolute inset-0 rounded-3xl pointer-events-none border border-black/5" />
+
+
+
+                            <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
+                                {/* Name Field */}
+                                {p.ask_name && (
+                                    <FormField
+                                        id="name"
+                                        label="Dein Name"
+                                        required={p.name_required}
+                                        value={name}
+                                        onChange={setName}
+                                        error={errors.name}
+                                        placeholder="Max Mustermann"
+                                        accentColor={finalAccentColor}
+                                        fgColor={finalFgColor}
+                                    />
+                                )}
+
+                                {/* Birthday Field - Month/Day Picker */}
+                                {p.ask_birthday && (
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Geburtstag
+                                            {p.birthday_required ? (
+                                                <span className="text-red-500 ml-1">*</span>
+                                            ) : (
+                                                <span className="ml-1 text-xs opacity-60">(optional)</span>
+                                            )}
+                                        </label>
+                                        <div className="flex gap-3">
+                                            {/* Day Picker */}
+                                            <div className="relative flex-1">
+                                                <select
+                                                    value={birthday.split('-')[2] || ''}
+                                                    onChange={(e) => {
+                                                        const month = birthday.split('-')[1] || '01'
+                                                        setBirthday(e.target.value ? `2000-${month}-${e.target.value}` : '')
+                                                    }}
+                                                    className="w-full px-4 py-3 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer text-gray-900 bg-white border border-gray-200 shadow-sm"
+                                                >
+                                                    <option value="">Tag</option>
+                                                    {[...Array(31)].map((_, i) => (
+                                                        <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
+                                                            {i + 1}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                    ▼
+                                                </div>
+                                            </div>
+                                            {/* Month Picker */}
+                                            <div className="relative flex-[1.5]">
+                                                <select
+                                                    value={birthday.split('-')[1] || ''}
+                                                    onChange={(e) => {
+                                                        const day = birthday.split('-')[2] || '01'
+                                                        setBirthday(e.target.value ? `2000-${e.target.value}-${day}` : '')
+                                                    }}
+                                                    className="w-full px-4 py-3 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer text-gray-900 bg-white border border-gray-200 shadow-sm"
+                                                >
+                                                    <option value="">Monat</option>
+                                                    {['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'].map((month, i) => (
+                                                        <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
+                                                            {month}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                    ▼
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {errors.birthday && (
+                                            <p className="text-red-500 text-xs mt-1">{errors.birthday}</p>
+                                        )}
+                                        <p className="text-xs text-gray-500">Für Geburtstagsüberraschungen 🎂</p>
+                                    </div>
+                                )}
+
+                                {/* Email Field */}
+                                {p.ask_email && (
+                                    <FormField
+                                        id="email"
+                                        label="E-Mail"
+                                        required={p.email_required}
+                                        value={email}
+                                        onChange={setEmail}
+                                        error={errors.email}
+                                        type="email"
+                                        placeholder="max@beispiel.de"
+                                        hint="Für exklusive Angebote"
+                                        accentColor={finalAccentColor}
+                                        fgColor={finalFgColor}
+                                    />
+                                )}
+
+                                {/* Phone Field */}
+                                {p.ask_phone && (
+                                    <FormField
+                                        id="phone"
+                                        label="Telefon"
+                                        required={p.phone_required}
+                                        value={phone}
+                                        onChange={setPhone}
+                                        error={errors.phone}
+                                        type="tel"
+                                        placeholder="+49 123 456789"
+                                        accentColor={finalAccentColor}
+                                        fgColor={finalFgColor}
+                                    />
+                                )}
+
+                                {/* Consent Checkbox */}
+                                <div className="mt-5 pt-5 border-t border-gray-200">
+                                    <label className="flex items-start gap-3 cursor-pointer group select-none">
+                                        <div className="relative flex-shrink-0 mt-0.5">
+                                            <input
+                                                type="checkbox"
+                                                checked={consentAccepted}
+                                                onChange={(e) => {
+                                                    setConsentAccepted(e.target.checked)
+                                                    if (e.target.checked) setConsentError(false)
+                                                }}
+                                                className="sr-only peer"
+                                            />
+                                            <div
+                                                className="w-5 h-5 border-2 rounded-md transition-all duration-200 flex items-center justify-center group-hover:border-gray-400"
+                                                style={{
+                                                    borderColor: consentAccepted ? '#22C55E' : (consentError ? '#EF4444' : '#9CA3AF'),
+                                                    backgroundColor: consentAccepted ? '#22C55E' : 'white',
+                                                }}
+                                            >
+                                                {consentAccepted && (
+                                                    <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5">
+                                                        <path d="M5 12l5 5L20 7" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <span className="text-[13px] text-gray-700 leading-relaxed">
+                                            Ich akzeptiere die{' '}
+                                            <a href="#datenschutz" className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline">Datenschutzerklärung</a>
+                                            {' '}und{' '}
+                                            <a href="#nutzungsbedingungen" className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline">Nutzungsbedingungen</a>
+                                            <span className="text-red-500 font-bold ml-0.5">*</span>
+                                        </span>
+                                    </label>
+                                    {consentError && (
+                                        <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                            Pflichtfeld – bitte zustimmen
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Wallet Button with Pulse Animation */}
+                                <div className="mt-6 space-y-3">
+                                    {/* Arrow indicator */}
+                                    <div className="flex justify-center animate-bounce">
+                                        <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                        </svg>
+                                    </div>
+
+                                    {/* Single Platform-Specific Wallet Button */}
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading}
+                                        className="w-full flex items-center justify-center py-3 transition-all transform hover:scale-[1.03] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed animate-pulse-subtle"
+                                    >
+                                        {isLoading ? (
+                                            <span className="flex items-center justify-center gap-2 text-gray-600">
+                                                <Spinner />
+                                                Karte wird erstellt...
+                                            </span>
+                                        ) : platform === 'android' ? (
+                                            <img
+                                                src="/pass-assets/de_add_to_google_wallet_add-wallet-badge.svg"
+                                                alt="Zu Google Wallet hinzufügen"
+                                                className="w-full max-w-[280px] h-auto object-contain"
+                                            />
+                                        ) : (
+                                            <img
+                                                src="/DE_Add_to_Apple_Wallet_RGB_101421.svg"
+                                                alt="Zu Apple Wallet hinzufügen"
+                                                className="w-full max-w-[280px] h-auto object-contain"
+                                            />
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    {/* Privacy Note */}
+                    <p
+                        className="text-center text-xs mt-6 px-4"
+                        style={{ color: finalAccentColor }}
+                    >
+                        Deine Daten werden sicher gespeichert und nicht weitergegeben.
+                    </p>
+
+                    {/* Powered by QARD */}
+                    <div className="text-center mt-8" style={{ color: `${finalFgColor}40` }}>
+                        <p className="text-[10px] font-medium tracking-widest uppercase">
+                            Powered by <span className="font-bold">QARD</span>
+                        </p>
                     </div>
                 </div>
-
-                {/* Privacy Note */}
-                <p
-                    className="text-center text-xs mt-6 px-4"
-                    style={{ color: finalAccentColor }}
-                >
-                    Deine Daten werden sicher gespeichert und nicht weitergegeben.
-                </p>
-
-                {/* Powered by QARD */}
-                <div className="text-center mt-8" style={{ color: `${finalFgColor}40` }}>
-                    <p className="text-[10px] font-medium tracking-widest uppercase">
-                        Powered by <span className="font-bold">QARD</span>
-                    </p>
-                </div>
             </div>
-        </div>
+
+            {/* Benefits Popup */}
+            <BenefitsPopup
+                isOpen={showBenefitsPopup}
+                platform={platform === 'android' ? 'google' : 'apple'}
+                accentColor={finalAccentColor}
+                onAccept={handleBenefitsChoice}
+            />
+        </>
     )
 }
 

@@ -4,12 +4,12 @@ import { OnboardingForm } from "./onboarding-form"
 
 interface PageProps {
     params: Promise<{ slug: string }>
-    searchParams: Promise<{ campaignId?: string; platform?: string }>
+    searchParams: Promise<{ campaignId?: string; platform?: string; clientId?: string }>
 }
 
 export default async function OnboardingPage({ params, searchParams }: PageProps) {
     const { slug } = await params
-    const { campaignId, platform = 'ios' } = await searchParams
+    const { campaignId, platform = 'ios', clientId } = await searchParams
 
     const supabase = await createClient()
 
@@ -93,6 +93,7 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
             customDescription={customDescription}
             showTitle={showTitle}
             personalization={personalization}
+            clientId={clientId || client.id}
         />
     )
 }
