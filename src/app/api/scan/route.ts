@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { scanSchema } from "@/lib/validations"
 
 /**
  * POST /api/scan
@@ -10,8 +11,15 @@ import { createClient } from "@/lib/supabase/server"
  */
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json()
-        const { passId, action } = body
+        const json = await req.json()
+        const validation = scanSchema.safeParse(json)
+
+        if (!validation.success) {
+            return NextResponse.json({ error: "Invalid request data", details: validation.error.format() }, { status: 400 })
+        }
+
+        const { passId, action, points, force, chefPin } = validation.data
+        const body = validation.data // Keep body reference for compatibility if needed or just destructure
 
         console.log(`[SCAN REQ] Pass: ${passId}, Action: ${action}`)
 
@@ -36,7 +44,7 @@ export async function POST(req: NextRequest) {
         const currentState = pass.current_state || {}
         let newState = { ...currentState }
         let deltaValue = 0
-        let actionType = action || 'ADD_STAMP'
+        let actionType: string = action || 'ADD_STAMP'
 
         // --- SCAN COOLDOWN CHECK ---
         const scanCooldown = Number(pass.campaign?.config?.scanCooldown || 0)

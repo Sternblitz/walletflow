@@ -30,9 +30,9 @@ export async function GET(
         return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
-    // Get all passes including deleted ones for complete overview
+    // Get latest 50 passes for initial view/stats
     // We still filter for verified status to avoid showing "ghost" customers
-    const { data: passes } = await supabase
+    const { data: passes, count } = await supabase
         .from('passes')
         .select(`
             id,
@@ -49,16 +49,18 @@ export async function GET(
             customer_email,
             customer_phone,
             deleted_at
-        `)
+        `, { count: 'exact' })
         .eq('campaign_id', id)
         .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true,deleted_at.not.is.null')
         .order('deleted_at', { ascending: true, nullsFirst: true })
         .order('created_at', { ascending: false })
+        .limit(50)
 
     return NextResponse.json({
         campaign: {
             ...campaign,
-            passes: passes || []
+            passes: passes || [],
+            total_passes: count || 0
         }
     })
 }

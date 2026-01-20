@@ -80,6 +80,7 @@ export interface Campaign {
         slug: string
     }
     passes: Pass[]
+    total_passes?: number
     config?: {
         scanCooldown?: number
         [key: string]: any
@@ -137,6 +138,12 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
     const [sendResult, setSendResult] = useState<{ sent: number; total: number } | null>(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [deleting, setDeleting] = useState(false)
+
+    // Pagination State
+    const [renderedPasses, setRenderedPasses] = useState<Pass[]>([])
+    const [totalPasses, setTotalPasses] = useState(0)
+    const [page, setPage] = useState(1)
+    const [loadingMore, setLoadingMore] = useState(false)
 
     // POS Credentials State
     const [posCredentials, setPosCredentials] = useState<PosCredential[]>([])
@@ -294,11 +301,34 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
             const data = await response.json()
             if (data.campaign) {
                 setCampaign(data.campaign)
+                setRenderedPasses(data.campaign.passes || [])
+                setTotalPasses(data.campaign.total_passes || 0)
+                setPage(1)
             }
         } catch (error) {
             console.error('Error fetching campaign:', error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const loadMorePasses = async () => {
+        if (!campaignId || loadingMore) return
+
+        setLoadingMore(true)
+        const nextPage = page + 1
+        try {
+            const res = await fetch(`/api/campaign/${campaignId}/passes?page=${nextPage}&limit=50`)
+            const data = await res.json()
+
+            if (data.passes && data.passes.length > 0) {
+                setRenderedPasses(prev => [...prev, ...data.passes])
+                setPage(nextPage)
+            }
+        } catch (e) {
+            console.error('Failed to load more passes:', e)
+        } finally {
+            setLoadingMore(false)
         }
     }
 
@@ -428,7 +458,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                             <Users className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-white">{campaign.passes?.length || 0}</p>
+                            <p className="text-2xl font-bold text-white">{totalPasses || 0}</p>
                             <p className="text-xs text-zinc-400">Gesamt Kunden</p>
                         </div>
                     </div>
@@ -525,7 +555,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                         </div>
                         <div>
                             <h2 className="font-semibold text-white">Push-Nachricht senden</h2>
-                            <p className="text-xs text-white/60">Direkt senden oder planen • {campaign.passes?.length || 0} Kunden</p>
+                            <p className="text-xs text-white/60">Direkt senden oder planen • {totalPasses || 0} Kunden</p>
                         </div>
                     </div>
 
@@ -1024,7 +1054,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                 <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold flex items-center gap-2">
                         <Users className="w-5 h-5 text-zinc-400" />
-                        Kunden ({campaign.passes?.length || 0})
+                        Kunden ({renderedPasses.length} / {totalPasses})
                     </h2>
                     <Button variant="ghost" size="sm" onClick={fetchCampaign}>
                         <RefreshCw className="w-4 h-4 mr-2" />
@@ -1032,7 +1062,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                     </Button>
                 </div>
 
-                {campaign.passes?.length === 0 ? (
+                {renderedPasses.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
                         <p className="text-zinc-400">Noch keine Kunden. Teile deinen Link!</p>
                         <p className="text-sm text-violet-400 mt-2">
@@ -1052,7 +1082,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {campaign.passes?.map((pass) => (
+                                    {renderedPasses.map((pass) => (
                                         <tr key={pass.id} className={`hover:bg-white/5 transition-colors ${pass.deleted_at ? 'bg-red-500/5 opacity-60' : ''}`}>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-2">
@@ -1121,6 +1151,24 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                )}
+
+                {renderedPasses.length < totalPasses && (
+                    <div className="flex justify-center pt-2">
+                        <Button
+                            variant="outline"
+                            onClick={loadMorePasses}
+                            disabled={loadingMore}
+                            className="bg-zinc-900 border-white/10 hover:bg-zinc-800"
+                        >
+                            {loadingMore ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <ChevronDown className="w-4 h-4 mr-2" />
+                            )}
+                            Mehr laden...
+                        </Button>
                     </div>
                 )}
             </div>

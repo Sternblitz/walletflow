@@ -5,21 +5,25 @@ import { v4 as uuidv4 } from 'uuid'
 import { PassFactory } from "@/lib/wallet/pass-factory"
 import { loadAppleCerts } from "@/lib/wallet/apple"
 import { GoogleWalletService } from "@/lib/wallet/google"
+import { issueSchema } from "@/lib/validations"
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
-    const campaignId = searchParams.get('campaignId')
-    const platform = searchParams.get('platform') || 'ios' // 'ios' | 'android'
+    // Validate Query Params
+    const validation = issueSchema.safeParse({
+        campaignId: searchParams.get('campaignId'),
+        platform: searchParams.get('platform') || 'ios',
+        name: searchParams.get('name'),
+        birthday: searchParams.get('birthday'),
+        email: searchParams.get('email'),
+        phone: searchParams.get('phone')
+    })
 
-    // Personalization params (optional)
-    const customerName = searchParams.get('name')
-    const customerBirthday = searchParams.get('birthday')
-    const customerEmail = searchParams.get('email')
-    const customerPhone = searchParams.get('phone')
-
-    if (!campaignId) {
-        return NextResponse.json({ error: "Missing campaignId" }, { status: 400 })
+    if (!validation.success) {
+        return NextResponse.json({ error: "Invalid parameters", details: validation.error.format() }, { status: 400 })
     }
+
+    const { campaignId, platform, name: customerName, birthday: customerBirthday, email: customerEmail, phone: customerPhone } = validation.data
 
     const supabase = await createClient()
 
