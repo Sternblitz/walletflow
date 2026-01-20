@@ -200,6 +200,11 @@ export function CustomerList({ customers, onSelectCustomer, loading }: CustomerL
                                             <Cake size={8} /> 🎂
                                         </span>
                                     )}
+                                    {c.opt_in === true && (
+                                        <span className="px-1 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center gap-0.5">
+                                            <Check size={8} /> Opt-in
+                                        </span>
+                                    )}
                                 </div>
                                 <span className="text-xs text-zinc-400">
                                     {c.last_scan_at ? formatDistanceToNow(new Date(c.last_scan_at), { addSuffix: true, locale: de }) : 'Noch nie gescannt'}

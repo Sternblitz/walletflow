@@ -191,10 +191,13 @@ export function OnboardingForm({
             // Continue anyway - don't block user
         }
 
-        // Build redirect URL with personalization params
+        // Build redirect URL with personalization params + consent
+        const consentSource = withBenefits ? 'popup_yes' : 'popup_no'
         const params = new URLSearchParams({
             campaignId,
             platform,
+            consent_marketing: withBenefits ? 'true' : 'false',
+            consent_source: consentSource,
             ...(name && { name }),
             ...(birthday && { birthday }),
             ...(email && { email }),

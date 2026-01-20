@@ -50,7 +50,9 @@ export async function GET(req: NextRequest) {
             is_installed_on_ios,
             is_installed_on_android,
             verification_status,
-            deleted_at
+            deleted_at,
+            consent_marketing,
+            consent_marketing_at
         `)
         .eq('campaign_id', campaignId)
         // Only show customers who actually have the pass installed or verified
@@ -194,6 +196,9 @@ export async function GET(req: NextRequest) {
             days_inactive: daysSinceLastScan,
             is_new: isNew,
             birthday_upcoming: birthdayUpcoming,
+            // Consent status
+            opt_in: pass.consent_marketing ?? null,
+            opt_in_at: pass.consent_marketing_at || null,
             // Activity log
             activity: includeActivity ? activity : undefined
         }
@@ -220,6 +225,9 @@ export async function GET(req: NextRequest) {
         withBirthday: active.filter(c => c.customer_birthday).length,
         withEmail: active.filter(c => c.customer_email).length,
         withPhone: active.filter(c => c.customer_phone).length,
+        // Consent stats
+        withOptIn: active.filter(c => c.opt_in === true).length,
+        withoutOptIn: active.filter(c => c.opt_in === false).length,
     }
 
     // 6. Which fields are being collected (for dynamic display)

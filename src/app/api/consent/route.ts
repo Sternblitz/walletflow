@@ -11,6 +11,11 @@ export async function POST(req: NextRequest) {
             consentPrivacyTerms,
             consentBenefitsMarketing,
             platform,
+            // New fields for pass linking
+            passId,
+            consentSource, // 'popup1_yes' | 'popup2_yes' | 'popup2_no'
+            consentTextVersion,
+            consentTextHash,
         } = body
 
         // Validate required fields
@@ -46,7 +51,7 @@ export async function POST(req: NextRequest) {
         // Generate session token for optional future linking
         const sessionToken = uuidv4()
 
-        // Insert consent log
+        // Insert consent log (audit trail)
         const { data, error } = await supabase
             .from('consent_logs')
             .insert({
@@ -58,7 +63,11 @@ export async function POST(req: NextRequest) {
                 session_token: sessionToken,
                 user_agent: userAgent,
                 ip_address: ipAddress,
-                consent_version: '1.0',
+                consent_version: consentTextVersion || '1.0',
+                // New fields
+                pass_id: passId || null,
+                consent_source: consentSource || null,
+                consent_text_hash: consentTextHash || null,
             })
             .select('id')
             .single()
@@ -69,6 +78,24 @@ export async function POST(req: NextRequest) {
                 { error: "Failed to save consent" },
                 { status: 500 }
             )
+        }
+
+        // If passId provided, update the pass record with consent status
+        if (passId) {
+            const { error: updateError } = await supabase
+                .from('passes')
+                .update({
+                    consent_marketing: consentBenefitsMarketing ?? false,
+                    consent_marketing_at: new Date().toISOString(),
+                    consent_source: consentSource || null,
+                    consent_text_version: consentTextVersion || '1.0',
+                })
+                .eq('id', passId)
+
+            if (updateError) {
+                console.error('Error updating pass consent:', updateError)
+                // Don't fail the request, consent log was already saved
+            }
         }
 
         return NextResponse.json({

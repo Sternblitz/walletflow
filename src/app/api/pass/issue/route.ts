@@ -17,6 +17,10 @@ export async function GET(req: NextRequest) {
     const customerEmail = searchParams.get('email')
     const customerPhone = searchParams.get('phone')
 
+    // Consent params (new)
+    const consentMarketing = searchParams.get('consent_marketing') === 'true'
+    const consentSource = searchParams.get('consent_source') || null
+
     if (!campaignId) {
         return NextResponse.json({ error: "Missing campaignId" }, { status: 400 })
     }
@@ -199,10 +203,10 @@ export async function GET(req: NextRequest) {
             barcode: { format: 'PKBarcodeFormatQR', message: campaignId, messageEncoding: 'iso-8859-1' },
             content: { description: 'Loyalty Card', organizationName: campaign.client?.name || 'QARD' }
         }
-        return await generatePass(fallbackDraft, campaign, supabase, platform, { customerName, customerBirthday, customerEmail, customerPhone })
+        return await generatePass(fallbackDraft, campaign, supabase, platform, { customerName, customerBirthday, customerEmail, customerPhone, consentMarketing, consentSource })
     }
 
-    return await generatePass(draft, campaign, supabase, platform, { customerName, customerBirthday, customerEmail, customerPhone })
+    return await generatePass(draft, campaign, supabase, platform, { customerName, customerBirthday, customerEmail, customerPhone, consentMarketing, consentSource })
 }
 
 interface PersonalizationData {
@@ -210,6 +214,9 @@ interface PersonalizationData {
     customerBirthday?: string | null
     customerEmail?: string | null
     customerPhone?: string | null
+    // Consent data
+    consentMarketing?: boolean
+    consentSource?: string | null
 }
 
 async function generatePass(
@@ -303,7 +310,12 @@ async function generatePass(
                 customer_name: personalization.customerName || null,
                 customer_birthday: personalization.customerBirthday || null,
                 customer_email: personalization.customerEmail || null,
-                customer_phone: personalization.customerPhone || null
+                customer_phone: personalization.customerPhone || null,
+                // Consent fields
+                consent_marketing: personalization.consentMarketing ?? null,
+                consent_marketing_at: personalization.consentMarketing !== undefined ? new Date().toISOString() : null,
+                consent_source: personalization.consentSource || null,
+                consent_text_version: '1.0'
             })
             .select()
             .single()

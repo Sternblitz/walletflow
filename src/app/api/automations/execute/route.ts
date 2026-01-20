@@ -328,12 +328,13 @@ async function getBirthdayPasses(
     const targetMonth = targetDate.getMonth() + 1
     const targetDay = targetDate.getDate()
 
-    // Query passes with matching birthday (month and day)
+    // Query passes with matching birthday (month and day) AND consent
     const { data: passes } = await supabase
         .from('passes')
         .select('*')
         .eq('campaign_id', campaignId)
         .is('deleted_at', null)
+        .eq('consent_marketing', true)  // Only opted-in customers
         .not('customer_birthday', 'is', null)
 
     // Filter by birthday month/day in JS (since SQL varies by db)
@@ -350,6 +351,7 @@ async function getAllActivePasses(supabase: any, campaignId: string): Promise<Pa
         .select('*')
         .eq('campaign_id', campaignId)
         .is('deleted_at', null)
+        .eq('consent_marketing', true)  // Only opted-in customers
 
     return passes || []
 }
@@ -364,12 +366,13 @@ async function getInactivePasses(
     const cutoffDate = new Date(now)
     cutoffDate.setDate(cutoffDate.getDate() - daysInactive)
 
-    // Get passes that haven't been scanned recently
+    // Get passes that haven't been scanned recently AND have consent
     const { data: passes } = await supabase
         .from('passes')
         .select('*, scans(scanned_at)')
         .eq('campaign_id', campaignId)
         .is('deleted_at', null)
+        .eq('consent_marketing', true)  // Only opted-in customers
 
     // Filter to passes with no recent scans AND no recent inactivity push
     return (passes || []).filter((p: any) => {

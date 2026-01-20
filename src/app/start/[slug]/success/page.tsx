@@ -31,6 +31,8 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
     const birthday = searchParams.get('birthday')
     const email = searchParams.get('email')
     const phone = searchParams.get('phone')
+    const consentMarketing = searchParams.get('consent_marketing')
+    const consentSource = searchParams.get('consent_source')
 
     // Fetch campaign data FIRST
     useEffect(() => {
@@ -62,6 +64,8 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
             ...(birthday && { birthday }),
             ...(email && { email }),
             ...(phone && { phone }),
+            ...(consentMarketing && { consent_marketing: consentMarketing }),
+            ...(consentSource && { consent_source: consentSource }),
         })
 
         const timer = setTimeout(() => {
@@ -79,7 +83,7 @@ function SuccessPageContent({ slug }: SuccessPageContentProps) {
         }, 300)
 
         return () => clearTimeout(timer)
-    }, [campaignId, platform, name, birthday, email, phone, step])
+    }, [campaignId, platform, name, birthday, email, phone, consentMarketing, consentSource, step])
 
     // Track event
     const trackEvent = async (eventType: string, rating?: number) => {

@@ -56,12 +56,13 @@ export class PushService {
 
         console.log(`[PushService] Starting push for campaign ${campaignId}${inactiveDays ? ` (inactive ${inactiveDays} days)` : ''}`)
 
-        // Build query for active passes (verified OR installed)
+        // Build query for active passes WITH MARKETING CONSENT (verified OR installed)
         const { data: allPasses, error: passError } = await this.supabase
             .from('passes')
-            .select('id, wallet_type, current_state, last_scanned_at')
+            .select('id, wallet_type, current_state, last_scanned_at, consent_marketing')
             .eq('campaign_id', campaignId)
             .is('deleted_at', null)
+            .eq('consent_marketing', true)  // Only send to opted-in customers!
             .or('verification_status.eq.verified,is_installed_on_ios.eq.true,is_installed_on_android.eq.true')
 
         if (passError) {

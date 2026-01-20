@@ -52,18 +52,19 @@ export default async function SmartLinkPage({ params }: { params: Promise<{ slug
 
     // 4. Auto-Redirect Logic for Mobile
     // Redirects need full path because middleware rewrites happen AFTER redirect
+    // NOTE: Direct redirects skip consent popup, default to consent_marketing=true
     if (isIOS) {
         if (requiresOnboarding) {
             redirect(`/start/${slug}/onboarding?campaignId=${campaign.id}&platform=ios&clientId=${client.id}`)
         }
-        redirect(`/api/pass/issue?campaignId=${campaign.id}&platform=ios`)
+        redirect(`/api/pass/issue?campaignId=${campaign.id}&platform=ios&consent_marketing=true&consent_source=direct_mobile`)
     }
 
     if (isAndroid) {
         if (requiresOnboarding) {
             redirect(`/start/${slug}/onboarding?campaignId=${campaign.id}&platform=android&clientId=${client.id}`)
         }
-        redirect(`/api/pass/issue?campaignId=${campaign.id}&platform=android`)
+        redirect(`/api/pass/issue?campaignId=${campaign.id}&platform=android&consent_marketing=true&consent_source=direct_mobile`)
     }
 
     // 5. Desktop Fallback (The Landing Page)
@@ -110,7 +111,7 @@ export default async function SmartLinkPage({ params }: { params: Promise<{ slug
             {/* Platform Buttons */}
             <div className="relative z-10 flex flex-col sm:flex-row gap-4 items-center mt-4">
                 <Link
-                    href={`/api/pass/issue?campaignId=${campaign.id}&platform=ios`}
+                    href={`/api/pass/issue?campaignId=${campaign.id}&platform=ios&consent_marketing=true&consent_source=desktop`}
                     className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -119,7 +120,7 @@ export default async function SmartLinkPage({ params }: { params: Promise<{ slug
                     Apple Wallet
                 </Link>
                 <Link
-                    href={`/api/pass/issue?campaignId=${campaign.id}&platform=android`}
+                    href={`/api/pass/issue?campaignId=${campaign.id}&platform=android&consent_marketing=true&consent_source=desktop`}
                     className="flex items-center gap-2 px-6 py-3 bg-white text-black border border-gray-200 rounded-full hover:bg-gray-100 transition-colors"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">

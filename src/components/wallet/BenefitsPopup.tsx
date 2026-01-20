@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 interface BenefitsPopupProps {
     isOpen: boolean
@@ -13,111 +13,151 @@ interface BenefitsPopupProps {
 export function BenefitsPopup({
     isOpen,
     platform,
-    accentColor = '#22C55E',
+    accentColor = '#22C55E', // Default Green
     onAccept,
     onClose,
 }: BenefitsPopupProps) {
-    const [isVisible, setIsVisible] = useState(false)
-    const [isAnimating, setIsAnimating] = useState(false)
+    const [step, setStep] = useState<'initial' | 'confirm_decline'>('initial')
 
-    useEffect(() => {
-        if (isOpen) {
-            setIsVisible(true)
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    setIsAnimating(true)
-                })
-            })
-        } else {
-            setIsAnimating(false)
-            const timer = setTimeout(() => setIsVisible(false), 300)
-            return () => clearTimeout(timer)
-        }
-    }, [isOpen])
-
-    if (!isVisible) return null
+    if (!isOpen) return null
 
     const handleWithBenefits = () => {
         onAccept(true)
     }
 
-    const handleWithoutBenefits = () => {
+    const handleInitialDecline = () => {
+        setStep('confirm_decline')
+    }
+
+    const handleConfirmDecline = () => {
         onAccept(false)
     }
 
-    const platformName = platform === 'apple' ? 'Apple Wallet' : 'Google Wallet'
-
     return (
         <div
-            className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${isAnimating ? 'bg-black/40 backdrop-blur-sm' : 'bg-transparent'
-                }`}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300"
             onClick={(e) => {
                 if (e.target === e.currentTarget && onClose) {
                     onClose()
                 }
             }}
         >
-            {/* Popup Card - Light Theme */}
-            <div
-                className={`relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${isAnimating
-                        ? 'opacity-100 scale-100 translate-y-0'
-                        : 'opacity-0 scale-95 translate-y-4'
-                    }`}
-                style={{
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                }}
-            >
-                {/* Content */}
-                <div className="p-7 text-center">
-                    {/* Icon */}
-                    <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg">
-                        <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-                        </svg>
+            <style jsx>{`
+                @keyframes shine-sweep {
+                    0% { transform: translateX(-100%) skewX(-20deg); opacity: 0; }
+                    10% { opacity: 1; }
+                    90% { opacity: 1; }
+                    100% { transform: translateX(200%) skewX(-20deg); opacity: 0; }
+                }
+                .animate-shine-effect {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 50%;
+                    height: 100%;
+                    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+                    transform: translateX(-150%) skewX(-20deg);
+                    animation: shine-sweep 1s ease-in-out forwards;
+                    animation-delay: 0.5s;
+                    pointer-events: none;
+                    z-index: 20;
+                }
+            `}</style>
+
+            <div className="w-full max-w-sm bg-white rounded-[32px] shadow-2xl overflow-hidden relative animate-in fade-in zoom-in-95 duration-200 ring-1 ring-white/20">
+
+                {/* STEP 1: INITIAL OFFER */}
+                {step === 'initial' && (
+                    <div className="p-8 pt-10 text-center">
+
+                        {/* Bouncing Checkmark Icon - No Background */}
+                        <div className="relative mx-auto mb-6 w-16 h-16 flex items-center justify-center">
+                            {/* Background Glow (Static behind) */}
+                            <div className="absolute inset-0 bg-green-500 rounded-full blur-2xl opacity-20"></div>
+
+                            {/* Icon Itself - Bouncing */}
+                            <div className="animate-bounce relative z-10" style={{ animationDuration: '2s' }}>
+                                {/* Bold Checkmark with Drop Shadow */}
+                                <svg className="w-16 h-16 text-green-500 drop-shadow-lg filter" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Title */}
+                        <h2 className="text-[28px] font-bold text-gray-900 mb-3 leading-tight tracking-tight">
+                            Vorteile aktivieren 🎁
+                        </h2>
+
+                        {/* Main Text */}
+                        <p className="text-gray-600 text-[16px] leading-relaxed mb-6 px-1 font-medium">
+                            Rabatte, Gutscheinaktionen & Überraschungen direkt in deiner Karte.
+                        </p>
+
+                        {/* Mini-Text */}
+                        <p className="text-xs text-gray-400 mb-8 px-4 leading-normal">
+                            Angebote per Wallet-Push. Jederzeit in der Karte deaktivierbar.
+                        </p>
+
+                        {/* Primary Button - Improved Shine */}
+                        <button
+                            onClick={handleWithBenefits}
+                            className="w-full relative overflow-hidden py-4 px-6 rounded-2xl bg-gradient-to-r from-green-600 to-green-500 text-white font-bold text-[17px] shadow-lg shadow-green-200 hover:shadow-green-300 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 group"
+                        >
+                            {/* Shine Element */}
+                            <div className="animate-shine-effect"></div>
+
+                            {/* Button Content */}
+                            <span className="relative z-10">Ja, Vorteile aktivieren ✅</span>
+                        </button>
+
+                        {/* Secondary Link */}
+                        <button
+                            onClick={handleInitialDecline}
+                            className="mt-5 text-[13px] text-gray-400 font-medium hover:text-gray-600 transition-colors py-2 px-4 rounded-lg hover:bg-gray-50 bg-transparent border-none"
+                        >
+                            Ohne Vorteile fortfahren
+                        </button>
                     </div>
+                )}
 
-                    {/* Headline */}
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">
-                        Exklusive Vorteile aktivieren?
-                    </h2>
+                {/* STEP 2: NEUTRAL CONFIRMATION */}
+                {step === 'confirm_decline' && (
+                    <div className="p-8 pt-12 pb-10 text-center animate-in slide-in-from-right-4 fade-in duration-300">
+                        {/* Neutral Header Icon (Gray) */}
+                        <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100 shadow-sm">
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+                            </svg>
+                        </div>
 
-                    {/* Description */}
-                    <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                        Erhalte <span className="font-semibold text-gray-800">Rabatte, Gutscheinaktionen</span> und{' '}
-                        <span className="font-semibold text-gray-800">besondere Überraschungen</span> – direkt per Push auf deine {platformName}-Karte.
-                    </p>
+                        <h2 className="text-xl font-bold text-gray-900 mb-3 tracking-tight">
+                            Ohne Vorteile fortfahren?
+                        </h2>
 
-                    {/* Primary Button - Green CTA */}
-                    <button
-                        onClick={handleWithBenefits}
-                        className="w-full py-3.5 px-6 rounded-xl text-white font-semibold text-base shadow-lg transform transition-all duration-200 hover:scale-[1.02] hover:shadow-xl active:scale-[0.98] mb-3 flex items-center justify-center gap-2"
-                        style={{
-                            background: 'linear-gradient(135deg, #22C55E, #16A34A)',
-                            boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)',
-                        }}
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        Ja, Vorteile aktivieren
-                    </button>
+                        <p className="text-gray-500 text-[15px] leading-relaxed mb-10 px-2">
+                            Du nutzt die Karte dann ohne Angebote.
+                        </p>
 
-                    {/* Secondary Button */}
-                    <button
-                        onClick={handleWithoutBenefits}
-                        className="w-full py-2.5 px-6 rounded-xl text-gray-500 font-medium text-sm transition-all duration-200 hover:text-gray-700 hover:bg-gray-50"
-                    >
-                        Nein danke, ohne Vorteile fortfahren
-                    </button>
+                        <div className="space-y-4">
+                            {/* Button 1: Activate (GREEN GRADIENT) */}
+                            <button
+                                onClick={handleWithBenefits}
+                                className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-green-600 to-green-500 text-white font-bold text-[16px] shadow-lg shadow-green-100 hover:shadow-green-200 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                            >
+                                Vorteile aktivieren 🎁
+                            </button>
 
-                    {/* Trust Note */}
-                    <p className="text-gray-400 text-xs mt-5 leading-relaxed flex items-center justify-center gap-1.5">
-                        <svg className="w-3.5 h-3.5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Jederzeit in den Einstellungen änderbar
-                    </p>
-                </div>
+                            {/* Button 2: Continue without benefits (Gray) */}
+                            <button
+                                onClick={handleConfirmDecline}
+                                className="w-full py-3.5 px-6 rounded-xl bg-white border-2 border-gray-200 text-gray-600 font-semibold text-[15px] hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                            >
+                                Ohne Vorteile weiter
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )
