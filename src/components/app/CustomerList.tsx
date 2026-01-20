@@ -1,6 +1,6 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Users, Zap, ChevronDown, Check, Cake, Sparkles } from 'lucide-react'
+import { Users, Zap, ChevronDown, Check, Cake, Sparkles, X } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -203,6 +203,11 @@ export function CustomerList({ customers, onSelectCustomer, loading }: CustomerL
                                     {c.opt_in === true && (
                                         <span className="px-1 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center gap-0.5">
                                             <Check size={8} /> Opt-in
+                                        </span>
+                                    )}
+                                    {c.opt_in === false && (
+                                        <span className="px-1 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 flex items-center gap-0.5">
+                                            <X size={8} /> Kein Opt-in
                                         </span>
                                     )}
                                 </div>
