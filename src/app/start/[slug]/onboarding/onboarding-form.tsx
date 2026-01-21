@@ -698,21 +698,36 @@ export function OnboardingForm({
                     <div className="relative w-full max-w-4xl h-[85vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         {/* Header */}
                         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white z-10">
-                            <h3 className="text-lg font-bold text-gray-900">{legalPopup.title}</h3>
-                            <button
-                                onClick={() => setLegalPopup(null)}
-                                className="p-2 -mr-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-                            >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+                            <h3 className="text-lg font-bold text-gray-900 truncate pr-4">{legalPopup.title}</h3>
+                            <div className="flex items-center gap-2">
+                                {/* External Link Button */}
+                                <a
+                                    href={legalPopup.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium flex items-center gap-1.5"
+                                    title="In neuem Fenster öffnen"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                    <span className="hidden sm:inline">Extern öffnen</span>
+                                </a>
+                                <button
+                                    onClick={() => setLegalPopup(null)}
+                                    className="p-2 -mr-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Content (Iframe for PDF) */}
-                        <div className="flex-1 bg-gray-50 relative">
+                        <div className="flex-1 bg-gray-50 relative overflow-hidden">
                             <iframe
-                                src={legalPopup.url}
+                                src={`https://docs.google.com/viewer?url=${encodeURIComponent(legalPopup.url)}&embedded=true`}
                                 className="w-full h-full border-0"
                                 title={legalPopup.title}
                             />
