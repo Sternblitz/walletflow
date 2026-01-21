@@ -586,9 +586,9 @@ export function OnboardingForm({
                                         </div>
                                         <span className="text-[13px] text-gray-700 leading-relaxed">
                                             Ich akzeptiere die{' '}
-                                            <a href="/Datenschutzerklaerung.pdf" target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline">Datenschutzerklärung</a>
+                                            <a href="https://ofqsgrdjgbngqjqirqft.supabase.co/storage/v1/object/public/legal/Datenschutzerklaerung%20.pdf" target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline">Datenschutzerklärung</a>
                                             {' '}und{' '}
-                                            <a href="/Nutzungsbedingungen.pdf" target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline">Nutzungsbedingungen</a>
+                                            <a href="https://ofqsgrdjgbngqjqirqft.supabase.co/storage/v1/object/public/legal/Nutzungsbedingungen.pdf" target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline">Nutzungsbedingungen</a>
                                             <span className="text-red-500 font-bold ml-0.5">*</span>
                                         </span>
                                     </label>
