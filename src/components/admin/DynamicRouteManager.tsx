@@ -19,10 +19,12 @@ import {
     RefreshCw,
     Link2,
     ArrowRight,
-    Check
+    Check,
+    Printer
 } from 'lucide-react'
 import { getDynamicQRURL, getStartURL } from '@/lib/domain-urls'
 import { toast } from 'sonner'
+import Link from 'next/link'
 
 interface DynamicRoute {
     id: string
@@ -36,9 +38,10 @@ interface DynamicRoute {
 interface DynamicRouteManagerProps {
     clientId: string
     clientSlug: string
+    campaignId?: string
 }
 
-export function DynamicRouteManager({ clientId, clientSlug }: DynamicRouteManagerProps) {
+export function DynamicRouteManager({ clientId, clientSlug, campaignId }: DynamicRouteManagerProps) {
     const [route, setRoute] = useState<DynamicRoute | null>(null)
     const [loading, setLoading] = useState(true)
     const [creating, setCreating] = useState(false)
@@ -226,6 +229,18 @@ export function DynamicRouteManager({ clientId, clientSlug }: DynamicRouteManage
                                     <span className="text-sm text-white font-mono truncate">{route.target_url}</span>
                                 </div>
                             </div>
+
+                            {/* Print Button */}
+                            {campaignId && (
+                                <div className="pt-4 border-t border-white/5">
+                                    <Link href={`/admin/campaign/${campaignId}/marketing`}>
+                                        <Button variant="secondary" size="sm" className="w-full">
+                                            <Printer className="w-3 h-3 mr-2" />
+                                            Aufsteller & Flyer drucken
+                                        </Button>
+                                    </Link>
+                                </div>
+                            )}
                         </>
                     ) : (
                         <div className="text-center py-8">

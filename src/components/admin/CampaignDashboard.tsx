@@ -475,6 +475,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                     <DynamicRouteManager
                         clientId={campaign.client.id}
                         clientSlug={campaign.client.slug}
+                        campaignId={campaignId || undefined}
                     />
                 )}
 
