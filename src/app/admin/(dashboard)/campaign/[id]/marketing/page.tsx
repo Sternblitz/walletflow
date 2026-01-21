@@ -4,8 +4,18 @@ import { useState, useEffect } from "react"
 import { MarketingDesigner } from "@/components/marketing/marketing-designer"
 import { Loader2 } from "lucide-react"
 
+interface CampaignData {
+    id: string
+    name: string
+    slug: string
+    color: string
+    logoUrl?: string
+    maxStamps?: number
+    reward?: string
+}
+
 export default function MarketingPage({ params }: { params: Promise<{ id: string }> }) {
-    const [campaign, setCampaign] = useState<{ id: string, name: string, slug: string, color: string } | null>(null)
+    const [campaign, setCampaign] = useState<CampaignData | null>(null)
     const [loading, setLoading] = useState(true)
     const [campaignId, setCampaignId] = useState<string | null>(null)
 
@@ -25,16 +35,38 @@ export default function MarketingPage({ params }: { params: Promise<{ id: string
             const response = await fetch(`/api/campaign/${campaignId}`)
             const data = await response.json()
             if (data.campaign) {
-                // Determine accent color from pass config or fallback
-                // Assuming campaign.pass_template_config might hold styling, or we use a default
-                // For now, let's extract or default
-                const mockColor = data.campaign.pass_template_config?.backgroundColor || '#000000'
+                const designAssets = data.campaign.design_assets || {}
+                const config = data.campaign.config || {}
+
+                // Extract accent color from design assets or config
+                const accentColor = designAssets.colors?.accent ||
+                    designAssets.backgroundColor ||
+                    config.accentColor ||
+                    '#000000'
+
+                // Extract logo from design assets
+                const logoUrl = designAssets.images?.logo?.url ||
+                    designAssets.logoUrl ||
+                    null
+
+                // Extract stamp info
+                const maxStamps = designAssets.stampConfig?.total ||
+                    config.maxStamps ||
+                    10
+
+                // Extract reward text
+                const reward = config.rewardText ||
+                    designAssets.rewardText ||
+                    '1x Gratis'
 
                 setCampaign({
                     id: data.campaign.id,
                     name: data.campaign.client?.name || data.campaign.name,
                     slug: data.campaign.client?.slug,
-                    color: mockColor
+                    color: accentColor,
+                    logoUrl: logoUrl,
+                    maxStamps: maxStamps,
+                    reward: reward
                 })
             }
         } catch (error) {
