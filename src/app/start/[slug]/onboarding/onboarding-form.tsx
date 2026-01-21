@@ -127,6 +127,7 @@ export function OnboardingForm({
     const [consentAccepted, setConsentAccepted] = useState(false)
     const [showBenefitsPopup, setShowBenefitsPopup] = useState(false)
     const [consentError, setConsentError] = useState(false)
+    const [legalPopup, setLegalPopup] = useState<{ isOpen: boolean, title: string, url: string } | null>(null)
 
     const p = personalization
 
@@ -586,9 +587,35 @@ export function OnboardingForm({
                                         </div>
                                         <span className="text-[13px] text-gray-700 leading-relaxed">
                                             Ich akzeptiere die{' '}
-                                            <a href="https://ofqsgrdjgbngqjqirqft.supabase.co/storage/v1/object/public/legal/Datenschutzerklaerung%20.pdf" target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline">Datenschutzerklärung</a>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.preventDefault()
+                                                    setLegalPopup({
+                                                        isOpen: true,
+                                                        title: 'Datenschutzerklärung',
+                                                        url: 'https://ofqsgrdjgbngqjqirqft.supabase.co/storage/v1/object/public/legal/Datenschutzerklaerung%20.pdf'
+                                                    })
+                                                }}
+                                                className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 rounded-sm"
+                                            >
+                                                Datenschutzerklärung
+                                            </button>
                                             {' '}und{' '}
-                                            <a href="https://ofqsgrdjgbngqjqirqft.supabase.co/storage/v1/object/public/legal/Nutzungsbedingungen.pdf" target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline">Nutzungsbedingungen</a>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.preventDefault()
+                                                    setLegalPopup({
+                                                        isOpen: true,
+                                                        title: 'Nutzungsbedingungen',
+                                                        url: 'https://ofqsgrdjgbngqjqirqft.supabase.co/storage/v1/object/public/legal/Nutzungsbedingungen.pdf'
+                                                    })
+                                                }}
+                                                className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 rounded-sm"
+                                            >
+                                                Nutzungsbedingungen
+                                            </button>
                                             <span className="text-red-500 font-bold ml-0.5">*</span>
                                         </span>
                                     </label>
@@ -657,6 +684,52 @@ export function OnboardingForm({
                     </div>
                 </div>
             </div>
+
+            {/* Legal Document Popup */}
+            {legalPopup && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+                        onClick={() => setLegalPopup(null)}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative w-full max-w-4xl h-[85vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white z-10">
+                            <h3 className="text-lg font-bold text-gray-900">{legalPopup.title}</h3>
+                            <button
+                                onClick={() => setLegalPopup(null)}
+                                className="p-2 -mr-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Content (Iframe for PDF) */}
+                        <div className="flex-1 bg-gray-50 relative">
+                            <iframe
+                                src={legalPopup.url}
+                                className="w-full h-full border-0"
+                                title={legalPopup.title}
+                            />
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+                            <button
+                                onClick={() => setLegalPopup(null)}
+                                className="px-6 py-2.5 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 active:scale-95 transform transition-transform"
+                            >
+                                Schließen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Benefits Popup */}
             <BenefitsPopup
