@@ -5,12 +5,14 @@ export default async function DynamicRedirectPage({ params }: { params: Promise<
     const { code } = await params
     const supabase = await createClient()
 
-    // Lookup the dynamic route
+    // Lookup the dynamic route (case-insensitive)
     const { data: route, error } = await supabase
         .from('dynamic_routes')
-        .select('target_slug, is_active')
+        .select('target_url, is_active')
         .eq('code', code.toUpperCase())
         .single()
+
+    console.log('[DynamicRedirect]', { code: code.toUpperCase(), route, error })
 
     if (error || !route || !route.is_active) {
         return (
@@ -24,6 +26,6 @@ export default async function DynamicRedirectPage({ params }: { params: Promise<
         )
     }
 
-    // Redirect to the target campaign slug
-    redirect(`/start/${route.target_slug}`)
+    // Redirect to the target URL (full URL now)
+    redirect(route.target_url)
 }

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
+import { getStartURL } from "@/lib/domain-urls"
 
 // Generate a random 8-character alphanumeric code
 function generateCode(): string {
@@ -38,10 +39,17 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const body = await request.json()
-    const { clientId, targetSlug } = body
+    const { clientId, targetUrl, clientSlug } = body
 
-    if (!clientId || !targetSlug) {
-        return NextResponse.json({ error: 'clientId and targetSlug are required' }, { status: 400 })
+    if (!clientId) {
+        return NextResponse.json({ error: 'clientId is required' }, { status: 400 })
+    }
+
+    // If no targetUrl provided, use the default campaign URL based on slug
+    const finalTargetUrl = targetUrl || (clientSlug ? getStartURL(clientSlug) : null)
+
+    if (!finalTargetUrl) {
+        return NextResponse.json({ error: 'targetUrl or clientSlug is required' }, { status: 400 })
     }
 
     // Check if route already exists for this client
@@ -56,7 +64,7 @@ export async function POST(request: NextRequest) {
         const { data, error } = await supabase
             .from('dynamic_routes')
             .update({
-                target_slug: targetSlug,
+                target_url: finalTargetUrl,
                 updated_at: new Date().toISOString()
             })
             .eq('id', existing.id)
@@ -80,7 +88,7 @@ export async function POST(request: NextRequest) {
                 .insert({
                     client_id: clientId,
                     code: code,
-                    target_slug: targetSlug
+                    target_url: finalTargetUrl
                 })
                 .select()
                 .single()
