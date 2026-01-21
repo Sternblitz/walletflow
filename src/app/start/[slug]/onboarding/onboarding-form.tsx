@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { BenefitsPopup } from '@/components/wallet/BenefitsPopup'
+import { PrivacyContent, TermsContent } from '@/components/legal/LegalTexts'
 
 interface PersonalizationConfig {
     enabled?: boolean
@@ -127,7 +128,7 @@ export function OnboardingForm({
     const [consentAccepted, setConsentAccepted] = useState(false)
     const [showBenefitsPopup, setShowBenefitsPopup] = useState(false)
     const [consentError, setConsentError] = useState(false)
-    const [legalPopup, setLegalPopup] = useState<{ isOpen: boolean, title: string, url: string } | null>(null)
+    const [legalPopup, setLegalPopup] = useState<{ isOpen: boolean, title: string, url: string, docType: 'privacy' | 'terms' } | null>(null)
 
     const p = personalization
 
@@ -594,7 +595,8 @@ export function OnboardingForm({
                                                     setLegalPopup({
                                                         isOpen: true,
                                                         title: 'Datenschutzerklärung',
-                                                        url: 'https://ofqsgrdjgbngqjqirqft.supabase.co/storage/v1/object/public/legal/Datenschutzerklaerung%20.pdf'
+                                                        url: 'https://ofqsgrdjgbngqjqirqft.supabase.co/storage/v1/object/public/legal/Datenschutzerklaerung%20.pdf',
+                                                        docType: 'privacy'
                                                     })
                                                 }}
                                                 className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 rounded-sm"
@@ -609,7 +611,8 @@ export function OnboardingForm({
                                                     setLegalPopup({
                                                         isOpen: true,
                                                         title: 'Nutzungsbedingungen',
-                                                        url: 'https://ofqsgrdjgbngqjqirqft.supabase.co/storage/v1/object/public/legal/Nutzungsbedingungen%20.pdf'
+                                                        url: 'https://ofqsgrdjgbngqjqirqft.supabase.co/storage/v1/object/public/legal/Nutzungsbedingungen%20.pdf',
+                                                        docType: 'terms'
                                                     })
                                                 }}
                                                 className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 rounded-sm"
@@ -711,7 +714,7 @@ export function OnboardingForm({
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                     </svg>
-                                    <span className="hidden sm:inline">Extern öffnen</span>
+                                    <span className="hidden sm:inline">Als PDF öffnen</span>
                                 </a>
                                 <button
                                     onClick={() => setLegalPopup(null)}
@@ -724,13 +727,9 @@ export function OnboardingForm({
                             </div>
                         </div>
 
-                        {/* Content (Iframe for PDF) */}
-                        <div className="flex-1 bg-gray-50 relative overflow-hidden">
-                            <iframe
-                                src={`https://docs.google.com/viewer?url=${encodeURIComponent(legalPopup.url)}&embedded=true`}
-                                className="w-full h-full border-0"
-                                title={legalPopup.title}
-                            />
+                        {/* Content (TextScroll) */}
+                        <div className="flex-1 bg-white relative overflow-y-auto p-6 custom-scrollbar">
+                            {legalPopup.docType === 'privacy' ? <PrivacyContent /> : <TermsContent />}
                         </div>
 
                         {/* Footer */}
