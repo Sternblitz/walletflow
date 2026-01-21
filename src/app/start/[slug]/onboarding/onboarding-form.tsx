@@ -594,7 +594,7 @@ export function OnboardingForm({
                                                     setLegalPopup({
                                                         isOpen: true,
                                                         title: 'Datenschutzerklärung',
-                                                        url: '/Datenschutzerklaerung%20.pdf'
+                                                        url: 'https://ofqsgrdjgbngqjqirqft.supabase.co/storage/v1/object/public/legal/Datenschutzerklaerung%20.pdf'
                                                     })
                                                 }}
                                                 className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 rounded-sm"
@@ -609,7 +609,7 @@ export function OnboardingForm({
                                                     setLegalPopup({
                                                         isOpen: true,
                                                         title: 'Nutzungsbedingungen',
-                                                        url: '/Nutzungsbedingungen%20.pdf'
+                                                        url: 'https://ofqsgrdjgbngqjqirqft.supabase.co/storage/v1/object/public/legal/Nutzungsbedingungen%20.pdf'
                                                     })
                                                 }}
                                                 className="font-medium text-gray-900 underline underline-offset-2 hover:no-underline focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 rounded-sm"
@@ -727,7 +727,7 @@ export function OnboardingForm({
                         {/* Content (Iframe for PDF) */}
                         <div className="flex-1 bg-gray-50 relative overflow-hidden">
                             <iframe
-                                src={legalPopup.url}
+                                src={`https://docs.google.com/viewer?url=${encodeURIComponent(legalPopup.url)}&embedded=true`}
                                 className="w-full h-full border-0"
                                 title={legalPopup.title}
                             />
