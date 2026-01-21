@@ -178,5 +178,39 @@ export async function createCampaignAction(data: any) {
         return { success: false, error: `Kampagne konnte nicht gespeichert werden: ${campaignError.message}` }
     }
 
+    // 7. Create Dynamic Route for QR Code (auto-generation for new campaigns)
+    const generateCode = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+        let code = ''
+        for (let i = 0; i < 8; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length))
+        }
+        return code
+    }
+
+    const targetUrl = process.env.NODE_ENV === 'development'
+        ? `http://localhost:3000/start/${finalSlug}`
+        : `https://start.getqard.com/${finalSlug}`
+
+    // Try to create dynamic route (retry if code collision)
+    let dynamicRouteCreated = false
+    for (let attempt = 0; attempt < 5; attempt++) {
+        const { error: routeError } = await supabase.from('dynamic_routes').insert({
+            client_id: client.id,
+            code: generateCode(),
+            target_url: targetUrl
+        })
+
+        if (!routeError) {
+            dynamicRouteCreated = true
+            console.log(`[CREATE CAMPAIGN] Dynamic route created for ${finalSlug}`)
+            break
+        } else if (routeError.code !== '23505') { // Not a unique constraint error
+            console.error("Dynamic route creation failed:", routeError)
+            break
+        }
+        // If unique constraint error, retry with new code
+    }
+
     return { success: true, slug: finalSlug, id: campaign.id }
 }
