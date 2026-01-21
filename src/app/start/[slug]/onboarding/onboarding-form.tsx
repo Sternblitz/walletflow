@@ -728,7 +728,7 @@ export function OnboardingForm({
                         </div>
 
                         {/* Content (TextScroll) */}
-                        <div className="flex-1 bg-white relative overflow-y-auto p-6 custom-scrollbar">
+                        <div className="flex-1 bg-white relative overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
                             {legalPopup.docType === 'privacy' ? <PrivacyContent /> : <TermsContent />}
                         </div>
 
