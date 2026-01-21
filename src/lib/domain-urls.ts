@@ -57,3 +57,11 @@ export const getAdminURL = (path?: string): string => {
     const urls = getDomainURLs();
     return path ? `${urls.admin}${path}` : urls.admin;
 };
+
+/**
+ * Generate dynamic QR code URL (permanent, redirectable)
+ */
+export const getDynamicQRURL = (code: string): string => {
+    const urls = getDomainURLs();
+    return `${urls.start}/d/${code}`;
+};

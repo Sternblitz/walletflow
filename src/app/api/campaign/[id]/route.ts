@@ -20,7 +20,7 @@ export async function GET(
             config,
             design_assets,
             google_place_id,
-            client:clients(name, slug)
+            client:clients(id, name, slug)
         `)
         .eq('id', id)
         .single()

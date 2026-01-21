@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
-import { getStartURL, getPOSURL } from "@/lib/domain-urls"
+import { getPOSURL } from "@/lib/domain-urls"
+import { DynamicRouteManager } from "@/components/admin/DynamicRouteManager"
 import {
     ArrowLeft,
     Users,
@@ -80,6 +81,7 @@ export interface Campaign {
     is_active: boolean
     created_at: string
     client: {
+        id: string
         name: string
         slug: string
     }
@@ -468,61 +470,13 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
 
             {/* Distribution Card & Message Card Grid */}
             <div className="grid lg:grid-cols-2 gap-4">
-                <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-6 space-y-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
-                            <QrCode className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h2 className="font-semibold text-white">Dein Kampagnen-Link</h2>
-                            <p className="text-xs text-zinc-400">Teile diesen Link oder QR-Code mit deinen Kunden</p>
-                        </div>
-                    </div>
-
-                    <div className="p-4 rounded-lg bg-black/50 border border-white/5 space-y-4">
-                        <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-zinc-900 rounded-md border border-white/10 px-3 py-2 text-sm text-zinc-300 font-mono truncate">
-                                {getStartURL(campaign.client?.slug || '')}
-                            </div>
-                            <Button
-                                size="icon"
-                                variant="outline"
-                                className="shrink-0"
-                                onClick={() => {
-                                    navigator.clipboard.writeText(getStartURL(campaign.client?.slug || ''))
-                                    alert('Link kopiert!')
-                                }}
-                            >
-                                <Copy className="w-4 h-4" />
-                            </Button>
-                            <Link href={`/start/${campaign.client?.slug}`} target="_blank">
-                                <Button size="icon" variant="outline" className="shrink-0">
-                                    <ExternalLink className="w-4 h-4" />
-                                </Button>
-                            </Link>
-                        </div>
-
-                        <div className="flex justify-center pt-2">
-                            <div className="p-2 bg-white rounded-xl">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(getStartURL(campaign.client?.slug || ''))}`}
-                                    alt="QR Code"
-                                    className="w-32 h-32"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex justify-center">
-                            <Link href={`/admin/campaign/${campaignId}/marketing`}>
-                                <Button variant="secondary" size="sm" className="w-full">
-                                    <Printer className="w-3 h-3 mr-2" />
-                                    Aufsteller & Flyer drucken
-                                </Button>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
+                {/* Dynamic QR Code Manager */}
+                {campaign.client?.id && campaign.client?.slug && (
+                    <DynamicRouteManager
+                        clientId={campaign.client.id}
+                        clientSlug={campaign.client.slug}
+                    />
+                )}
 
                 <div className="rounded-xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 p-6 space-y-4">
                     <div className="flex items-center gap-3">
