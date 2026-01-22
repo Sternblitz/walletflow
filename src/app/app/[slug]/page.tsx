@@ -154,6 +154,11 @@ export default function POSPage() {
     // Scan Error State
     const [scanErrorMessage, setScanErrorMessage] = useState<string>('')
 
+    // Gift Modal State
+    const [pendingGift, setPendingGift] = useState<any>(null)
+    const [showGiftModal, setShowGiftModal] = useState(false)
+    const [redeemingGift, setRedeemingGift] = useState(false)
+
 
     // Dashboard
     const [stats, setStats] = useState<any>(null)
@@ -449,6 +454,18 @@ export default function POSPage() {
                 setResult(data)
                 setMode('result')
                 toast.success('Stempel erfolgreich!')
+
+                // Check for pending gifts (birthday, loyalty, etc.)
+                if (data.pendingGifts && data.pendingGifts.length > 0) {
+                    // Show the first pending gift
+                    setPendingGift({
+                        ...data.pendingGifts[0],
+                        customerName: data.customerName,
+                        customerBirthday: data.customerBirthday
+                    })
+                    // Small delay to let result show first
+                    setTimeout(() => setShowGiftModal(true), 500)
+                }
             } else if (res.status === 429 && data.error === 'SCAN_COOLDOWN') {
                 // Handle Cooldown
                 playErrorSound()
@@ -543,6 +560,42 @@ export default function POSPage() {
         setResult(null)
         setManualId('')
         setError(null)
+    }
+
+    // ===============================================
+    // GIFT REDEMPTION
+    // ===============================================
+
+    const handleRedeemGift = async () => {
+        if (!pendingGift) return
+        setRedeemingGift(true)
+
+        try {
+            const res = await fetch('/api/gifts/redeem', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    giftId: pendingGift.id,
+                    redeemedBy: label || 'Mitarbeiter'
+                })
+            })
+
+            if (res.ok) {
+                playSuccessSound()
+                setShowGiftModal(false)
+                setPendingGift(null)
+                toast.success('🎂 Geburtstagsgeschenk eingelöst!', {
+                    description: pendingGift.gift_title
+                })
+            } else {
+                const data = await res.json()
+                toast.error(data.error || 'Einlösen fehlgeschlagen')
+            }
+        } catch (e) {
+            toast.error('Netzwerkfehler')
+        } finally {
+            setRedeemingGift(false)
+        }
     }
 
     // ===============================================
@@ -1667,6 +1720,96 @@ export default function POSPage() {
                         </button>
                     </div>
                 )}
+
+                {/* BIRTHDAY GIFT MODAL */}
+                <AnimatePresence>
+                    {showGiftModal && pendingGift && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                            onClick={() => setShowGiftModal(false)}
+                        >
+                            <motion.div
+                                initial={{ scale: 0.8, y: 20 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.8, y: 20 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="bg-white dark:bg-zinc-900 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-zinc-200 dark:border-white/10 relative overflow-hidden"
+                            >
+                                {/* Decorative background */}
+                                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-pink-500/20 to-transparent pointer-events-none" />
+                                <div className="absolute top-4 left-4 text-2xl animate-bounce" style={{ animationDelay: '0ms' }}>🎈</div>
+                                <div className="absolute top-4 right-4 text-2xl animate-bounce" style={{ animationDelay: '200ms' }}>🎉</div>
+
+                                {/* Content */}
+                                <div className="relative z-10">
+                                    <div className="text-7xl mb-4 animate-pulse">🎂</div>
+
+                                    <h2 className="text-2xl font-extrabold mb-2 bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                                        Geburtstagsgeschenk!
+                                    </h2>
+
+                                    {pendingGift.customerName && (
+                                        <p className="text-zinc-600 dark:text-zinc-300 font-medium mb-1">
+                                            {pendingGift.customerName}
+                                        </p>
+                                    )}
+
+                                    {pendingGift.birthday_date && (
+                                        <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-4">
+                                            🎈 Geburtstag: {formatBirthday(pendingGift.birthday_date || pendingGift.customerBirthday)}
+                                        </p>
+                                    )}
+
+                                    {/* Gift card */}
+                                    <div className="bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-indigo-500/10 border border-pink-200 dark:border-pink-500/20 rounded-2xl p-5 mb-6">
+                                        <div className="flex items-center justify-center gap-2 mb-2">
+                                            <Gift className="w-5 h-5 text-pink-500" />
+                                            <p className="text-lg font-bold text-zinc-900 dark:text-white">
+                                                {pendingGift.gift_title}
+                                            </p>
+                                        </div>
+                                        {pendingGift.gift_description && (
+                                            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                                                {pendingGift.gift_description}
+                                            </p>
+                                        )}
+                                        {pendingGift.gift_message && (
+                                            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 italic">
+                                                "{pendingGift.gift_message}"
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Action buttons */}
+                                    <button
+                                        onClick={handleRedeemGift}
+                                        disabled={redeemingGift}
+                                        className="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white font-bold rounded-2xl transition-all active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-pink-500/20 mb-3"
+                                    >
+                                        {redeemingGift ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                Wird eingelöst...
+                                            </span>
+                                        ) : (
+                                            '🎁 Geschenk eingelöst'
+                                        )}
+                                    </button>
+
+                                    <button
+                                        onClick={() => setShowGiftModal(false)}
+                                        className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                                    >
+                                        Später einlösen
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <div className="h-8" />
             </main>

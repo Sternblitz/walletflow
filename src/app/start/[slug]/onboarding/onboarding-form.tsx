@@ -464,7 +464,7 @@ export function OnboardingForm({
                                     />
                                 )}
 
-                                {/* Birthday Field - Month/Day Picker */}
+                                {/* Birthday Field - Day/Month Picker */}
                                 {p.ask_birthday && (
                                     <div className="space-y-2">
                                         <label className="block text-sm font-medium text-gray-700">
@@ -479,12 +479,24 @@ export function OnboardingForm({
                                             {/* Day Picker */}
                                             <div className="relative flex-1">
                                                 <select
-                                                    value={birthday.split('-')[2] || ''}
+                                                    value={birthday ? birthday.split('-')[2] || '' : ''}
                                                     onChange={(e) => {
-                                                        const month = birthday.split('-')[1] || '01'
-                                                        setBirthday(e.target.value ? `2000-${month}-${e.target.value}` : '')
+                                                        const currentMonth = birthday ? birthday.split('-')[1] : ''
+                                                        if (e.target.value) {
+                                                            setBirthday(currentMonth && currentMonth !== '00'
+                                                                ? `2000-${currentMonth}-${e.target.value}`
+                                                                : `2000-00-${e.target.value}`)
+                                                        } else {
+                                                            setBirthday(currentMonth && currentMonth !== '00' ? `2000-${currentMonth}-00` : '')
+                                                        }
                                                     }}
-                                                    className="w-full px-4 py-3 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer text-gray-900 bg-white border border-gray-200 shadow-sm"
+                                                    className="w-full px-4 py-3 rounded-2xl appearance-none cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/30 bg-white"
+                                                    style={{
+                                                        color: '#1a1a1a',
+                                                        borderColor: '#E5E7EB',
+                                                        borderWidth: '2px',
+                                                        borderStyle: 'solid'
+                                                    }}
                                                 >
                                                     <option value="">Tag</option>
                                                     {[...Array(31)].map((_, i) => (
@@ -494,33 +506,61 @@ export function OnboardingForm({
                                                     ))}
                                                 </select>
                                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                                    ▼
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
                                                 </div>
                                             </div>
                                             {/* Month Picker */}
                                             <div className="relative flex-[1.5]">
                                                 <select
-                                                    value={birthday.split('-')[1] || ''}
+                                                    value={birthday ? birthday.split('-')[1] || '' : ''}
                                                     onChange={(e) => {
-                                                        const day = birthday.split('-')[2] || '01'
-                                                        setBirthday(e.target.value ? `2000-${e.target.value}-${day}` : '')
+                                                        const currentDay = birthday ? birthday.split('-')[2] : ''
+                                                        if (e.target.value && e.target.value !== '00') {
+                                                            setBirthday(currentDay && currentDay !== '00'
+                                                                ? `2000-${e.target.value}-${currentDay}`
+                                                                : `2000-${e.target.value}-00`)
+                                                        } else {
+                                                            setBirthday(currentDay && currentDay !== '00' ? `2000-00-${currentDay}` : '')
+                                                        }
                                                     }}
-                                                    className="w-full px-4 py-3 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer text-gray-900 bg-white border border-gray-200 shadow-sm"
+                                                    className="w-full px-4 py-3 rounded-2xl appearance-none cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/30 bg-white"
+                                                    style={{
+                                                        color: '#1a1a1a',
+                                                        borderColor: '#E5E7EB',
+                                                        borderWidth: '2px',
+                                                        borderStyle: 'solid'
+                                                    }}
                                                 >
                                                     <option value="">Monat</option>
-                                                    {['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'].map((month, i) => (
-                                                        <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
-                                                            {month}
-                                                        </option>
-                                                    ))}
+                                                    <option value="01">Januar</option>
+                                                    <option value="02">Februar</option>
+                                                    <option value="03">März</option>
+                                                    <option value="04">April</option>
+                                                    <option value="05">Mai</option>
+                                                    <option value="06">Juni</option>
+                                                    <option value="07">Juli</option>
+                                                    <option value="08">August</option>
+                                                    <option value="09">September</option>
+                                                    <option value="10">Oktober</option>
+                                                    <option value="11">November</option>
+                                                    <option value="12">Dezember</option>
                                                 </select>
                                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                                    ▼
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
                                                 </div>
                                             </div>
                                         </div>
                                         {errors.birthday && (
-                                            <p className="text-red-500 text-xs mt-1">{errors.birthday}</p>
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                </svg>
+                                                {errors.birthday}
+                                            </p>
                                         )}
                                         <p className="text-xs text-gray-500">Für Geburtstagsüberraschungen 🎂</p>
                                     </div>
@@ -805,13 +845,12 @@ function FormField({
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
-                className="w-full px-4 py-3 rounded-xl transition-all placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                className="w-full px-4 py-3 rounded-2xl transition-all placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 bg-white"
                 style={{
-                    backgroundColor: 'rgba(0,0,0,0.03)',
-                    color: '#1a1a1a',
-                    borderColor: error ? '#ef4444' : 'rgba(0,0,0,0.1)',
-                    borderWidth: '1px',
-                    borderStyle: 'solid'
+                    borderColor: error ? '#ef4444' : '#E5E7EB',
+                    borderWidth: '2px',
+                    borderStyle: 'solid',
+                    color: '#1a1a1a'
                 }}
             />
             {error && (

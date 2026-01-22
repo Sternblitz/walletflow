@@ -239,6 +239,29 @@ async function executeRule(
                         execution_date: today
                     })
 
+                // For birthday rules with gift enabled: create a redeemable gift record
+                if (rule.rule_type === 'birthday' && rule.config.gift_enabled) {
+                    const expiresAt = rule.config.gift_expires_days
+                        ? new Date(Date.now() + rule.config.gift_expires_days * 24 * 60 * 60 * 1000).toISOString()
+                        : null
+
+                    await supabase
+                        .from('pass_gifts')
+                        .insert({
+                            pass_id: pass.id,
+                            campaign_id: rule.campaign_id,
+                            automation_rule_id: rule.id,
+                            gift_type: 'birthday',
+                            gift_title: rule.config.gift_title || 'Geburtstagsgeschenk',
+                            gift_description: rule.config.gift_description || null,
+                            gift_message: message,
+                            birthday_date: pass.customer_birthday,
+                            expires_at: expiresAt
+                        })
+
+                    console.log(`[AUTOMATION] Created birthday gift for pass ${pass.id}`)
+                }
+
                 sentCount++
             } else {
                 throw new Error(updateError.message)

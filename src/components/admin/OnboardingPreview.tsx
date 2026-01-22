@@ -330,32 +330,36 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                             <label className="block text-[10px] font-medium mb-1" style={{ color: formTextColor }}>
                                                 Geburtstag {!birthdayRequired && <span className="opacity-50">(optional)</span>}
                                             </label>
-                                            <div className="flex gap-2">
+                                            <div className="flex gap-1.5">
                                                 <div
-                                                    className="flex-1 h-8 rounded-lg px-2 flex items-center justify-between text-[10px]"
+                                                    className="flex-1 h-8 rounded-xl px-2 flex items-center justify-between text-[10px]"
                                                     style={{
-                                                        backgroundColor: `${formTextColor}08`,
+                                                        backgroundColor: `${formTextColor}05`,
                                                         color: `${formTextColor}50`,
-                                                        border: `1px solid ${formTextColor}15`
+                                                        border: `1px solid ${formTextColor}10`
                                                     }}
                                                 >
                                                     <span>Tag</span>
-                                                    <span>▼</span>
+                                                    <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
                                                 </div>
                                                 <div
-                                                    className="flex-[1.5] h-8 rounded-lg px-2 flex items-center justify-between text-[10px]"
+                                                    className="flex-[1.5] h-8 rounded-xl px-2 flex items-center justify-between text-[10px]"
                                                     style={{
-                                                        backgroundColor: `${formTextColor}08`,
+                                                        backgroundColor: `${formTextColor}05`,
                                                         color: `${formTextColor}50`,
-                                                        border: `1px solid ${formTextColor}15`
+                                                        border: `1px solid ${formTextColor}10`
                                                     }}
                                                 >
                                                     <span>Monat</span>
-                                                    <span>▼</span>
+                                                    <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
                                                 </div>
                                             </div>
                                             <p className="text-[8px] mt-1 opacity-50" style={{ color: formTextColor }}>
-                                                Für Geburtstagsüberraschungen 🎂
+                                                Für Geburtstagsüberraschungen
                                             </p>
                                         </div>
                                     )}
@@ -395,6 +399,23 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Consent Checkbox - Pixelgenaue Vorschau */}
+                                    <div className="pt-3 mt-3 border-t" style={{ borderColor: `${formTextColor}10` }}>
+                                        <div className="flex items-start gap-2">
+                                            <div
+                                                className="w-4 h-4 rounded border-2 flex-shrink-0 mt-0.5 flex items-center justify-center"
+                                                style={{ borderColor: `${formTextColor}30`, backgroundColor: 'white' }}
+                                            >
+                                                <svg className="w-2.5 h-2.5" style={{ color: '#22C55E' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
+                                                    <path d="M5 12l5 5L20 7" />
+                                                </svg>
+                                            </div>
+                                            <span className="text-[8px] leading-relaxed" style={{ color: `${formTextColor}90` }}>
+                                                Ich akzeptiere die <span className="underline font-medium" style={{ color: formTextColor }}>Datenschutzerklärung</span> und <span className="underline font-medium" style={{ color: formTextColor }}>Nutzungsbedingungen</span><span className="text-red-500">*</span>
+                                            </span>
+                                        </div>
+                                    </div>
 
                                     {/* Wallet Button */}
                                     <div className="pt-2">

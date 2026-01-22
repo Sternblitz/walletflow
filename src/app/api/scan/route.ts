@@ -46,6 +46,20 @@ export async function POST(req: NextRequest) {
         }
         // --- END CAMPAIGN VALIDATION ---
 
+        // --- PENDING GIFTS CHECK ---
+        // Check for unredeemed gifts (birthday, loyalty, etc.)
+        const { data: pendingGifts } = await supabase
+            .from('pass_gifts')
+            .select('*')
+            .eq('pass_id', passId)
+            .is('redeemed_at', null)
+            .order('created_at', { ascending: false })
+
+        if (pendingGifts && pendingGifts.length > 0) {
+            console.log(`[SCAN] Found ${pendingGifts.length} pending gift(s) for pass ${passId}`)
+        }
+        // --- END PENDING GIFTS CHECK ---
+
         const currentState = pass.current_state || {}
         let newState = { ...currentState }
         let deltaValue = 0
@@ -350,6 +364,12 @@ export async function POST(req: NextRequest) {
                 sent: pushStatus.sent,
                 errors: pushStatus.errors
             },
+            // Pending gifts for POS to display
+            pendingGifts: pendingGifts || [],
+            hasBirthdayGift: pendingGifts?.some((g: any) => g.gift_type === 'birthday') || false,
+            // Customer info for gift display
+            customerName: pass.customer_name,
+            customerBirthday: pass.customer_birthday,
             // Review Gate data (for customer-facing popup)
             reviewGate: pass.campaign?.google_place_id ? {
                 placeId: pass.campaign.google_place_id,
