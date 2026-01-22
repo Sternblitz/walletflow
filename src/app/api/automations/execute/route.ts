@@ -242,9 +242,8 @@ async function executeRule(
                 // For birthday rules: ALWAYS create a gift record with the push message
                 // This shows as a "Geschenkhinweis" when the customer is scanned
                 if (rule.rule_type === 'birthday') {
-                    const expiresAt = rule.config.gift_expires_days
-                        ? new Date(Date.now() + rule.config.gift_expires_days * 24 * 60 * 60 * 1000).toISOString()
-                        : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // Default: 14 days
+                    // Gift validity is unlimited - staff can see time since birthday and decide
+                    const expiresAt = null
 
                     await supabase
                         .from('pass_gifts')

@@ -1217,7 +1217,7 @@ export default function POSPage() {
                 <AnimatePresence>
                     {showPushModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md">
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden relative">
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl relative">
                                 <button onClick={() => setShowPushModal(false)} className="absolute top-4 right-4 p-2 bg-zinc-100 dark:bg-white/5 rounded-full hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors z-20"><X size={18} className="text-zinc-500 dark:text-zinc-400" /></button>
 
                                 <div className="p-8 relative">
@@ -1760,6 +1760,18 @@ export default function POSPage() {
                                     {pendingGift.birthday_date && (
                                         <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-4">
                                             🎈 Geburtstag: {formatBirthday(pendingGift.birthday_date || pendingGift.customerBirthday)}
+                                            {(() => {
+                                                const bday = new Date(pendingGift.birthday_date || pendingGift.customerBirthday)
+                                                const today = new Date()
+                                                // This year's birthday
+                                                const thisYearBday = new Date(today.getFullYear(), bday.getMonth(), bday.getDate())
+                                                const diffDays = Math.floor((today.getTime() - thisYearBday.getTime()) / (1000 * 60 * 60 * 24))
+                                                if (diffDays === 0) return <span className="ml-2 text-pink-500 font-bold">(heute! 🎉)</span>
+                                                if (diffDays === 1) return <span className="ml-2 text-pink-400">(gestern)</span>
+                                                if (diffDays > 1 && diffDays <= 14) return <span className="ml-2 text-zinc-400">(vor {diffDays} Tagen)</span>
+                                                if (diffDays > 14) return <span className="ml-2 text-orange-400">(vor {diffDays} Tagen ⚠️)</span>
+                                                return null
+                                            })()}
                                         </p>
                                     )}
 
