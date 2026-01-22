@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'sonner'
-import { ActivityChart } from '@/components/app/POSCharts'
+import { PremiumActivityChart } from '@/components/app/POSCharts'
 import { AutomationRulesManager } from '@/components/app/AutomationRulesManager'
 import { LiveActivityFeed } from '@/components/app/LiveActivityFeed'
 import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js'
@@ -865,8 +865,8 @@ export default function POSPage() {
                             </div>
                         </div>
 
-                        {/* KEY STATS GRID - 5 Cards with distinct colors */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                        {/* KEY STATS GRID - 4 Cards with distinct colors */}
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             {/* Stempel */}
                             <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl p-4 hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all shadow-lg shadow-emerald-900/5 dark:shadow-emerald-900/10">
                                 <div className="flex justify-between items-start mb-2">
@@ -891,27 +891,15 @@ export default function POSPage() {
                                 </div>
                             </div>
 
-                            {/* Neue Kunden */}
+                            {/* Kunden */}
                             <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-500/20 rounded-2xl p-4 hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-all shadow-lg shadow-blue-900/5 dark:shadow-blue-900/10">
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-blue-600/70 dark:text-blue-200/70 text-[10px] font-bold uppercase tracking-wider">Neue Kunden</span>
+                                    <span className="text-blue-600/70 dark:text-blue-200/70 text-[10px] font-bold uppercase tracking-wider">Kunden</span>
                                     <div className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/10"><Users size={14} /></div>
                                 </div>
-                                <div className="text-2xl font-black text-blue-900 dark:text-white">{stats?.stats?.newPasses || 0}</div>
-                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-[10px] font-bold mt-2">
-                                    im Zeitraum ({rangeLabels[statsRange]})
-                                </div>
-                            </div>
-
-                            {/* Aktive Pässe */}
-                            <div className="bg-cyan-50 dark:bg-cyan-900/10 border border-cyan-200 dark:border-cyan-500/20 rounded-2xl p-4 hover:bg-cyan-100 dark:hover:bg-cyan-900/20 transition-all shadow-lg shadow-cyan-900/5 dark:shadow-cyan-900/10">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="text-cyan-600/70 dark:text-cyan-200/70 text-[10px] font-bold uppercase tracking-wider">Aktive Pässe</span>
-                                    <div className="p-1.5 rounded-lg text-cyan-600 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-500/10"><Check size={14} /></div>
-                                </div>
-                                <div className="text-2xl font-black text-cyan-900 dark:text-white">{stats?.stats?.totalPasses || 0}</div>
-                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 text-[10px] font-bold mt-2">
-                                    Gesamt
+                                <div className="text-2xl font-black text-blue-900 dark:text-white">{stats?.stats?.totalPasses || 0}</div>
+                                <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold mt-2">
+                                    +{stats?.stats?.newPasses || 0} in 7 Tagen
                                 </div>
                             </div>
 
@@ -951,7 +939,7 @@ export default function POSPage() {
                         {/* CHART + ACTIONS */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             {/* Activity Chart */}
-                            <div className="lg:col-span-2 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-white/5 rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-sm min-h-[300px] shadow-sm dark:shadow-none">
+                            <div className="lg:col-span-2 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-white/5 rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-sm shadow-sm dark:shadow-none">
                                 <div className="flex justify-between items-center mb-6">
                                     <h3 className="font-bold text-lg text-zinc-900 dark:text-white flex items-center gap-2"><BarChart3 size={20} className="text-emerald-500" /> Aktivität</h3>
                                     <span className="text-xs font-mono text-zinc-500">{rangeLabels[statsRange]}</span>
@@ -962,7 +950,7 @@ export default function POSPage() {
                                             <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
                                         </div>
                                     ) : (
-                                        <ActivityChart data={stats?.chartData || []} />
+                                        <PremiumActivityChart data={stats?.chartData || []} range={statsRange} />
                                     )}
                                 </div>
                             </div>
