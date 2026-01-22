@@ -416,11 +416,50 @@ export default function POSPage() {
                     () => { }
                 )
 
-                // Apply custom styling to hide default scanner borders
-                const scanRegion = document.querySelector('#qr-reader__scan_region')
-                if (scanRegion) {
-                    (scanRegion as HTMLElement).style.border = 'none'
+                // Hide ALL default html5-qrcode overlay elements with JavaScript
+                // This is more reliable than CSS on mobile browsers
+                const hideDefaultOverlays = () => {
+                    // Hide the shaded region overlay
+                    const shadedRegion = document.querySelector('#qr-reader__qr_shaded_region')
+                    if (shadedRegion) {
+                        (shadedRegion as HTMLElement).style.display = 'none'
+                    }
+
+                    // Hide scan region borders
+                    const scanRegion = document.querySelector('#qr-reader__scan_region')
+                    if (scanRegion) {
+                        (scanRegion as HTMLElement).style.border = 'none';
+                        (scanRegion as HTMLElement).style.boxShadow = 'none';
+
+                        // Find and hide all corner/border elements inside scan region
+                        const children = scanRegion.querySelectorAll('div')
+                        children.forEach((child) => {
+                            const style = (child as HTMLElement).style
+                            // If it has any border styling, remove it
+                            if (style.borderLeft || style.borderRight || style.borderTop || style.borderBottom) {
+                                (child as HTMLElement).style.display = 'none'
+                            }
+                        })
+                    }
+
+                    // Also try to hide by looking for elements with corner-like inline styles
+                    const allQrElements = document.querySelectorAll('#qr-reader *')
+                    allQrElements.forEach((el) => {
+                        const htmlEl = el as HTMLElement
+                        const style = htmlEl.style
+                        // Check for corner styling patterns
+                        if ((style.position === 'absolute' &&
+                            (style.borderLeft || style.borderRight || style.borderTop || style.borderBottom)) ||
+                            htmlEl.id?.includes('shaded')) {
+                            htmlEl.style.display = 'none'
+                        }
+                    })
                 }
+
+                // Run immediately and again after a short delay to catch late-rendered elements
+                hideDefaultOverlays()
+                setTimeout(hideDefaultOverlays, 200)
+                setTimeout(hideDefaultOverlays, 500)
             } catch (err: any) {
                 console.error('Camera error:', err)
                 setCameraError(err.message || 'Error starting camera')
