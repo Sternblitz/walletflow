@@ -239,11 +239,12 @@ async function executeRule(
                         execution_date: today
                     })
 
-                // For birthday rules with gift enabled: create a redeemable gift record
-                if (rule.rule_type === 'birthday' && rule.config.gift_enabled) {
+                // For birthday rules: ALWAYS create a gift record with the push message
+                // This shows as a "Geschenkhinweis" when the customer is scanned
+                if (rule.rule_type === 'birthday') {
                     const expiresAt = rule.config.gift_expires_days
                         ? new Date(Date.now() + rule.config.gift_expires_days * 24 * 60 * 60 * 1000).toISOString()
-                        : null
+                        : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // Default: 14 days
 
                     await supabase
                         .from('pass_gifts')
@@ -252,14 +253,14 @@ async function executeRule(
                             campaign_id: rule.campaign_id,
                             automation_rule_id: rule.id,
                             gift_type: 'birthday',
-                            gift_title: rule.config.gift_title || 'Geburtstagsgeschenk',
-                            gift_description: rule.config.gift_description || null,
-                            gift_message: message,
+                            gift_title: 'Geburtstags-Nachricht 🎂',
+                            gift_description: null,
+                            gift_message: message, // The actual push message becomes the gift hint
                             birthday_date: pass.customer_birthday,
                             expires_at: expiresAt
                         })
 
-                    console.log(`[AUTOMATION] Created birthday gift for pass ${pass.id}`)
+                    console.log(`[AUTOMATION] Created birthday gift hint for pass ${pass.id}`)
                 }
 
                 sentCount++
