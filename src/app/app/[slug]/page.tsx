@@ -899,10 +899,7 @@ export default function POSPage() {
                                 </div>
                                 <div className="text-2xl font-black text-blue-900 dark:text-white">{stats?.stats?.newPasses || 0}</div>
                                 <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-[10px] font-bold mt-2">
-                                    {statsRange === 'all' ? 'Gesamt' :
-                                        statsRange === '24h' ? 'in den letzten 24h' :
-                                            statsRange === '7d' ? 'in den letzten 7 Tagen' :
-                                                'in den letzten 30 Tagen'}
+                                    im Zeitraum ({rangeLabels[statsRange]})
                                 </div>
                             </div>
 
