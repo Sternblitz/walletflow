@@ -56,11 +56,12 @@ export async function POST(req: NextRequest) {
             .eq('id', giftId)
 
         if (updateError) {
-            console.error("Failed to redeem gift:", updateError)
+            console.error("[GIFT] Failed to redeem gift:", updateError)
             return NextResponse.json({ error: "Update failed" }, { status: 500 })
         }
 
-        console.log(`[GIFT] Redeemed gift ${giftId} (${gift.gift_title}) by ${redeemedBy || 'Mitarbeiter'}`)
+        console.log(`[GIFT] ✅ Successfully redeemed gift ${giftId}`)
+        console.log(`[GIFT] Title: ${gift.gift_title}, Pass: ${gift.pass_id}`)
 
         return NextResponse.json({
             success: true,
