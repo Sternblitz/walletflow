@@ -510,6 +510,62 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
                                         className="w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none"
                                     />
                                 </div>
+
+                                {/* Gift Configuration */}
+                                <div className="border-t border-zinc-200 dark:border-white/10 pt-4 mt-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <p className="text-sm font-medium text-zinc-900 dark:text-white">🎁 Geschenk aktivieren</p>
+                                            <p className="text-xs text-zinc-500 dark:text-zinc-400">Kunde kann Geschenk beim Scan einlösen</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => updateConfig('gift_enabled', !config.gift_enabled)}
+                                            className={`w-12 h-6 rounded-full transition-colors relative ${config.gift_enabled ? 'bg-pink-500' : 'bg-zinc-300 dark:bg-zinc-700'}`}
+                                        >
+                                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${config.gift_enabled ? 'left-7' : 'left-1'}`} />
+                                        </button>
+                                    </div>
+
+                                    {config.gift_enabled && (
+                                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <div>
+                                                <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 block">Geschenk-Titel *</label>
+                                                <input
+                                                    type="text"
+                                                    value={config.gift_title || ''}
+                                                    onChange={e => updateConfig('gift_title', e.target.value)}
+                                                    placeholder="z.B. Gratis Kaffee"
+                                                    className="w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none focus:border-pink-500/50"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 block">Beschreibung (optional)</label>
+                                                <input
+                                                    type="text"
+                                                    value={config.gift_description || ''}
+                                                    onChange={e => updateConfig('gift_description', e.target.value)}
+                                                    placeholder="z.B. Ein Kaffee deiner Wahl"
+                                                    className="w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 block">Gültigkeit</label>
+                                                <select
+                                                    value={config.gift_expires_days ?? 7}
+                                                    onChange={e => updateConfig('gift_expires_days', parseInt(e.target.value))}
+                                                    className="w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none"
+                                                >
+                                                    <option value={0}>Unbegrenzt</option>
+                                                    <option value={7}>7 Tage</option>
+                                                    <option value={14}>14 Tage</option>
+                                                    <option value={30}>30 Tage</option>
+                                                    <option value={60}>60 Tage</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </>
                         )}
 
