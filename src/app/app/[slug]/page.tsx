@@ -416,50 +416,6 @@ export default function POSPage() {
                     () => { }
                 )
 
-                // Hide ALL default html5-qrcode overlay elements with JavaScript
-                // This is more reliable than CSS on mobile browsers
-                const hideDefaultOverlays = () => {
-                    // Hide the shaded region overlay
-                    const shadedRegion = document.querySelector('#qr-reader__qr_shaded_region')
-                    if (shadedRegion) {
-                        (shadedRegion as HTMLElement).style.display = 'none'
-                    }
-
-                    // Hide scan region borders
-                    const scanRegion = document.querySelector('#qr-reader__scan_region')
-                    if (scanRegion) {
-                        (scanRegion as HTMLElement).style.border = 'none';
-                        (scanRegion as HTMLElement).style.boxShadow = 'none';
-
-                        // Find and hide all corner/border elements inside scan region
-                        const children = scanRegion.querySelectorAll('div')
-                        children.forEach((child) => {
-                            const style = (child as HTMLElement).style
-                            // If it has any border styling, remove it
-                            if (style.borderLeft || style.borderRight || style.borderTop || style.borderBottom) {
-                                (child as HTMLElement).style.display = 'none'
-                            }
-                        })
-                    }
-
-                    // Also try to hide by looking for elements with corner-like inline styles
-                    const allQrElements = document.querySelectorAll('#qr-reader *')
-                    allQrElements.forEach((el) => {
-                        const htmlEl = el as HTMLElement
-                        const style = htmlEl.style
-                        // Check for corner styling patterns
-                        if ((style.position === 'absolute' &&
-                            (style.borderLeft || style.borderRight || style.borderTop || style.borderBottom)) ||
-                            htmlEl.id?.includes('shaded')) {
-                            htmlEl.style.display = 'none'
-                        }
-                    })
-                }
-
-                // Run immediately and again after a short delay to catch late-rendered elements
-                hideDefaultOverlays()
-                setTimeout(hideDefaultOverlays, 200)
-                setTimeout(hideDefaultOverlays, 500)
             } catch (err: any) {
                 console.error('Camera error:', err)
                 setCameraError(err.message || 'Error starting camera')
@@ -1538,31 +1494,9 @@ export default function POSPage() {
                         {/* Square camera container with custom corners */}
                         <div className="relative w-full max-w-[300px] mx-auto">
                             {/* Camera feed container */}
-                            <div className="aspect-square w-full rounded-2xl overflow-hidden bg-black relative z-10">
+                            <div className="aspect-square w-full rounded-2xl overflow-hidden bg-black relative">
                                 <div id="qr-reader" className="w-full h-full" />
-
-                                {/* Custom squared corner overlay */}
-                                <div className="absolute inset-0 pointer-events-none z-30">
-                                    {/* Scan area cutout using box-shadow */}
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px]">
-                                        {/* Cut out the center - this darkens everything OUTSIDE the box */}
-                                        <div className="absolute inset-0 bg-transparent" style={{ boxShadow: '0 0 0 2000px rgba(0,0,0,0.6)' }} />
-
-                                        {/* Squared corner brackets */}
-                                        {/* Top Left */}
-                                        <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white" />
-                                        {/* Top Right */}
-                                        <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white" />
-                                        {/* Bottom Left */}
-                                        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white" />
-                                        {/* Bottom Right */}
-                                        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white" />
-                                    </div>
-                                </div>
                             </div>
-
-                            {/* Outer glow effect */}
-                            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-2xl blur-xl -z-10" />
                         </div>
 
                         <p className="text-zinc-400 text-sm mt-6 mb-4">QR-Code in das Feld halten</p>

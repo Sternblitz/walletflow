@@ -203,7 +203,7 @@
     }
 }
 
-/* QR Scanner - Hide default html5-qrcode styling but keep video */
+/* QR Scanner - Clean up default html5-qrcode styling */
 #qr-reader {
     border: none !important;
     background: transparent !important;
@@ -216,7 +216,7 @@
     height: 100% !important;
 }
 
-/* Hide the dashboard/controls */
+/* Hide the dashboard/controls - keep only the scanner overlay */
 #qr-reader__dashboard,
 #qr-reader__dashboard_section,
 #qr-reader__dashboard_section_swaplink,
@@ -227,29 +227,5 @@
 
 /* Hide any images in the scanner */
 #qr-reader img {
-    display: none !important;
-}
-
-/* Target the shaded region overlay that html5-qrcode creates */
-#qr-reader__scan_region {
-    background: transparent !important;
-}
-
-/* Hide the default corner brackets - they have inline styles with border */
-#qr-reader__scan_region>div {
-    border: none !important;
-    box-shadow: none !important;
-}
-
-/* The library creates 4 corner divs with specific positioning - hide all */
-#qr-reader [style*="border-left"],
-#qr-reader [style*="border-right"],
-#qr-reader [style*="border-top"],
-#qr-reader [style*="border-bottom"] {
-    border: none !important;
-}
-
-/* Hide the shaded overlay around qr box */
-#qr-reader__qr_shaded_region {
     display: none !important;
 }
