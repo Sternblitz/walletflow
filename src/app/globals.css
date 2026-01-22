@@ -213,12 +213,12 @@
     object-fit: cover !important;
 }
 
+/* Slightly safer selector to allow video but hide overlay elements */
 #qr-reader__scan_region {
-    border: none !important;
-    background: transparent !important;
+    display: none !important;
 }
 
-#qr-reader__scan_region img {
+#qr-reader img {
     display: none !important;
 }
 

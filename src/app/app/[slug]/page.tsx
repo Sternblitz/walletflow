@@ -1504,13 +1504,10 @@ export default function POSPage() {
 
                                 {/* Custom squared corner overlay */}
                                 <div className="absolute inset-0 pointer-events-none z-30">
-                                    {/* Dark overlay around scan area */}
-                                    <div className="absolute inset-0 bg-black/40" />
-
-                                    {/* Clear scan area in center */}
+                                    {/* Scan area cutout using box-shadow */}
                                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px]">
-                                        {/* Cut out the center */}
-                                        <div className="absolute inset-0 bg-transparent" style={{ boxShadow: '0 0 0 2000px rgba(0,0,0,0.5)' }} />
+                                        {/* Cut out the center - this darkens everything OUTSIDE the box */}
+                                        <div className="absolute inset-0 bg-transparent" style={{ boxShadow: '0 0 0 2000px rgba(0,0,0,0.6)' }} />
 
                                         {/* Squared corner brackets */}
                                         {/* Top Left */}
