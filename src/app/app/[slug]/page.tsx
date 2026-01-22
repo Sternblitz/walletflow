@@ -1289,8 +1289,21 @@ export default function POSPage() {
                                             )}
                                         </div>
 
-                                        {pushMode === 'schedule' && <input type="datetime-local" value={pushScheduleTime} onChange={(e) => setPushScheduleTime(e.target.value)} className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-4 text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 font-mono text-sm" />}
+                                        {pushMode === 'schedule' && (
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                                                    📅 Zeitpunkt wählen
+                                                </label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={pushScheduleTime}
+                                                    onChange={(e) => setPushScheduleTime(e.target.value)}
+                                                    className="w-full bg-blue-50 dark:bg-blue-500/10 border-2 border-blue-200 dark:border-blue-500/30 rounded-2xl p-4 text-zinc-900 dark:text-white outline-none focus:border-blue-500 font-mono text-base"
+                                                />
+                                            </div>
+                                        )}
                                         <button type="submit" disabled={pushLoading || !pushMessage.trim()} className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-xl font-bold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 shadow-lg shadow-black/5 dark:shadow-white/5">{pushLoading ? 'Wird gesendet...' : (pushMode === 'now' ? '⚡ Jetzt absenden' : '📅 Einplanen')}</button>
+                                        <div className="h-4" /> {/* Extra padding for mobile */}
                                     </form>
                                 </div>
                             </motion.div>
