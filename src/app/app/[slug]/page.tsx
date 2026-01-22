@@ -864,12 +864,12 @@ export default function POSPage() {
                         </motion.div>
 
                         {/* STATS HEADER with Time Range Selector */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <h3 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                                 <BarChart3 className="w-4 h-4 text-violet-500 dark:text-violet-400" />
                                 Statistiken
                             </h3>
-                            <div className="flex bg-zinc-200 dark:bg-zinc-800/80 border border-zinc-200 dark:border-white/10 rounded-xl p-1 gap-1">
+                            <div className="flex bg-zinc-200 dark:bg-zinc-800/80 border border-zinc-200 dark:border-white/10 rounded-xl p-1 gap-0.5 sm:gap-1 w-full sm:w-auto">
                                 {(['all', '24h', '7d', '30d'] as const).map(r => {
                                     const isAll = r === 'all'
                                     const active = statsRange === r
@@ -877,7 +877,7 @@ export default function POSPage() {
                                         <button
                                             key={r}
                                             onClick={() => setStatsRange(r)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${active
+                                            className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all whitespace-nowrap ${active
                                                 ? isAll
                                                     ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20 ring-2 ring-emerald-500 ring-offset-1 dark:ring-offset-zinc-900'
                                                     : 'bg-violet-500 text-white shadow-md shadow-violet-500/20'
