@@ -11,9 +11,9 @@ import { createClient } from "@/lib/supabase/server"
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json()
-        const { passId, action } = body
+        const { passId, action, slug } = body
 
-        console.log(`[SCAN REQ] Pass: ${passId}, Action: ${action}`)
+        console.log(`[SCAN REQ] Pass: ${passId}, Action: ${action}, Slug: ${slug}`)
 
 
         if (!passId) {
@@ -25,13 +25,26 @@ export async function POST(req: NextRequest) {
         // 1. Fetch the pass with full campaign data including design_assets and google_place_id
         const { data: pass, error: fetchError } = await supabase
             .from('passes')
-            .select('*, campaign:campaigns(id, concept, config, design_assets, google_place_id, client:clients(name))')
+            .select('*, campaign:campaigns(id, slug, concept, config, design_assets, google_place_id, client:clients(name))')
             .eq('id', passId)
             .single()
 
         if (fetchError || !pass) {
             return NextResponse.json({ error: "Pass not found" }, { status: 404 })
         }
+
+        // --- CAMPAIGN VALIDATION ---
+        // Ensure the scanned pass belongs to the same campaign as the scanner
+        if (slug && pass.campaign?.slug && pass.campaign.slug !== slug) {
+            console.log(`[SCAN] ❌ Campaign mismatch! Pass campaign: ${pass.campaign.slug}, Scanner campaign: ${slug}`)
+            return NextResponse.json({
+                error: 'WRONG_CAMPAIGN',
+                message: 'Falscher QR-Code! Diese Karte gehört zu einem anderen Geschäft.',
+                passCampaign: pass.campaign.slug,
+                scannerCampaign: slug
+            }, { status: 403 })
+        }
+        // --- END CAMPAIGN VALIDATION ---
 
         const currentState = pass.current_state || {}
         let newState = { ...currentState }

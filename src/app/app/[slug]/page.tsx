@@ -34,7 +34,7 @@ function getSupabaseClient() {
 }
 
 type Role = 'none' | 'staff' | 'chef'
-type Mode = 'idle' | 'camera' | 'result' | 'cooldown'
+type Mode = 'idle' | 'camera' | 'result' | 'cooldown' | 'wrongCampaign' | 'scanError'
 
 // Helper: Format birthday as "15. März" (day first, never year)
 function formatBirthday(dateStr: string | null | undefined): string {
@@ -73,6 +73,57 @@ const isMobileOrTablet = (): boolean => {
         (navigator.maxTouchPoints > 0 && window.innerWidth <= 1024)
 }
 
+// Sound Effects using Web Audio API
+const playSuccessSound = () => {
+    if (typeof window === 'undefined') return
+    try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+
+        // Pleasant success tone (two-note ascending)
+        oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime) // C5
+        oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1) // E5
+        oscillator.type = 'sine'
+
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3)
+
+        oscillator.start(audioContext.currentTime)
+        oscillator.stop(audioContext.currentTime + 0.3)
+    } catch (e) {
+        console.log('Audio not available')
+    }
+}
+
+const playErrorSound = () => {
+    if (typeof window === 'undefined') return
+    try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+
+        // Error tone (descending, slightly harsh)
+        oscillator.frequency.setValueAtTime(349.23, audioContext.currentTime) // F4
+        oscillator.frequency.setValueAtTime(293.66, audioContext.currentTime + 0.15) // D4
+        oscillator.type = 'square'
+
+        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3)
+
+        oscillator.start(audioContext.currentTime)
+        oscillator.stop(audioContext.currentTime + 0.3)
+    } catch (e) {
+        console.log('Audio not available')
+    }
+}
+
 export default function POSPage() {
     const params = useParams()
     const slug = params.slug as string
@@ -99,6 +150,9 @@ export default function POSPage() {
     const [showCooldownModal, setShowCooldownModal] = useState(false)
     const [overridePin, setOverridePin] = useState('')
     const [overrideLoading, setOverrideLoading] = useState(false)
+
+    // Scan Error State
+    const [scanErrorMessage, setScanErrorMessage] = useState<string>('')
 
 
     // Dashboard
@@ -378,29 +432,46 @@ export default function POSPage() {
             const res = await fetch('/api/scan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ passId: decodedText, action: 'ADD_STAMP' })
+                body: JSON.stringify({ passId: decodedText, action: 'ADD_STAMP', slug })
             })
             const data = await res.json()
             if (res.ok) {
+                playSuccessSound()
                 setResult(data)
                 setMode('result')
                 toast.success('Stempel erfolgreich!')
             } else if (res.status === 429 && data.error === 'SCAN_COOLDOWN') {
                 // Handle Cooldown
+                playErrorSound()
                 setCooldownData({
                     minutes: data.remainingMinutes,
                     passId: decodedText
                 })
                 setMode('cooldown')
                 stopCamera()
+            } else if (res.status === 403 && data.error === 'WRONG_CAMPAIGN') {
+                // Handle Wrong Campaign - scanned pass from different business
+                playErrorSound()
+                setMode('wrongCampaign')
+                stopCamera()
+            } else if (res.status === 404) {
+                // Handle Pass not found - might be wrong QR code or invalid
+                playErrorSound()
+                setScanErrorMessage('Dieser QR-Code gehört nicht zu diesem System oder ist ungültig.')
+                setMode('scanError')
+                stopCamera()
             } else {
-                setError(data.error || 'Scan failed')
-                setMode('idle')
-                toast.error(data.error || 'Scan failed')
+                // Handle other errors
+                playErrorSound()
+                setScanErrorMessage(data.message || data.error || 'Ein unbekannter Fehler ist aufgetreten.')
+                setMode('scanError')
+                stopCamera()
             }
         } catch (e) {
-            setError('Netzwerkfehler')
-            setMode('idle')
+            playErrorSound()
+            setScanErrorMessage('Netzwerkfehler - Bitte Internetverbindung prüfen.')
+            setMode('scanError')
+            stopCamera()
         } finally {
             setTimeout(() => { isProcessing.current = false }, 2000)
         }
@@ -418,12 +489,14 @@ export default function POSPage() {
                     passId: cooldownData.passId,
                     action: 'ADD_STAMP',
                     force: true,
-                    chefPin: overridePin
+                    chefPin: overridePin,
+                    slug
                 })
             })
             const data = await res.json()
 
             if (res.ok) {
+                playSuccessSound()
                 setShowCooldownModal(false)
                 setResult(data)
                 setMode('result')
@@ -431,12 +504,14 @@ export default function POSPage() {
                 setOverridePin('')
                 setCooldownData(null)
             } else {
+                playErrorSound()
                 toast.error(data.error || 'Override gescheitert')
                 if (data.requiresOverride) {
                     toast.error('Falscher PIN')
                 }
             }
         } catch (e) {
+            playErrorSound()
             toast.error('Netzwerkfehler')
         } finally {
             setOverrideLoading(false)
@@ -1521,6 +1596,67 @@ export default function POSPage() {
                             className="w-full py-4 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white rounded-2xl font-bold transition-colors"
                         >
                             Abbrechen
+                        </button>
+                    </div>
+                )}
+
+                {/* WRONG CAMPAIGN ERROR */}
+                {mode === 'wrongCampaign' && (
+                    <div className="w-full bg-white dark:bg-zinc-900 border border-red-200 dark:border-red-500/20 rounded-3xl p-8 text-center animate-in zoom-in shadow-xl dark:shadow-none mb-8">
+                        <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-500 flex items-center justify-center mx-auto mb-6">
+                            <AlertTriangle className="w-10 h-10" />
+                        </div>
+
+                        <h2 className="text-2xl font-bold mb-2 text-red-600 dark:text-red-500">
+                            Falscher QR-Code!
+                        </h2>
+
+                        <p className="text-zinc-500 dark:text-zinc-400 mb-4 leading-relaxed">
+                            Diese Karte gehört zu einem <span className="font-bold text-zinc-900 dark:text-white">anderen Geschäft</span>.
+                        </p>
+
+                        <p className="text-sm text-zinc-400 dark:text-zinc-500 mb-8">
+                            Bitte scannen Sie nur Karten, die zu diesem Geschäft gehören.
+                        </p>
+
+                        <button
+                            onClick={resetScanner}
+                            className="w-full py-4 bg-red-500 hover:bg-red-400 text-white rounded-2xl font-bold transition-colors"
+                        >
+                            Erneut scannen
+                        </button>
+                    </div>
+                )}
+
+                {/* GENERIC SCAN ERROR */}
+                {mode === 'scanError' && (
+                    <div className="w-full bg-white dark:bg-zinc-900 border border-orange-200 dark:border-orange-500/20 rounded-3xl p-8 text-center animate-in zoom-in shadow-xl dark:shadow-none mb-8">
+                        <div className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-500 flex items-center justify-center mx-auto mb-6">
+                            <X className="w-10 h-10" />
+                        </div>
+
+                        <h2 className="text-2xl font-bold mb-2 text-orange-600 dark:text-orange-500">
+                            Scan fehlgeschlagen
+                        </h2>
+
+                        <p className="text-zinc-500 dark:text-zinc-400 mb-4 leading-relaxed">
+                            {scanErrorMessage || 'Ein Fehler ist aufgetreten.'}
+                        </p>
+
+                        <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 rounded-xl p-4 mb-8">
+                            <p className="text-sm text-orange-700 dark:text-orange-400">
+                                💡 <span className="font-semibold">Tipp:</span> Stellen Sie sicher, dass Sie eine gültige Kundenkarte dieses Geschäfts scannen.
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setScanErrorMessage('')
+                                resetScanner()
+                            }}
+                            className="w-full py-4 bg-orange-500 hover:bg-orange-400 text-white rounded-2xl font-bold transition-colors"
+                        >
+                            Erneut scannen
                         </button>
                     </div>
                 )}
