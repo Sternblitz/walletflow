@@ -248,7 +248,17 @@ export default function POSPage() {
         // Cleanup scanner when switching to dashboard or customers
         // Only try to stop if we're in camera mode (scanner is actually running)
         if (view !== 'scanner' && scannerRef.current && mode === 'camera') {
-            scannerRef.current.stop().catch(() => { /* Ignore stop errors */ })
+            // Safe stop using getState check
+            const scanner = scannerRef.current
+            try {
+                const state = scanner.getState()
+                // Only stop if actually scanning (state 2) or paused (state 3)
+                if (state === 2 || state === 3) {
+                    scanner.stop().catch(() => { })
+                }
+            } catch {
+                // getState may throw if scanner not initialized properly
+            }
             scannerRef.current = null
             setMode('idle')
         }
@@ -390,7 +400,14 @@ export default function POSPage() {
 
     useEffect(() => {
         return () => {
-            if (scannerRef.current) scannerRef.current.stop().catch(() => { })
+            if (scannerRef.current) {
+                try {
+                    const state = scannerRef.current.getState()
+                    if (state === 2 || state === 3) {
+                        scannerRef.current.stop().catch(() => { })
+                    }
+                } catch { }
+            }
             isProcessing.current = false
         }
     }, [])
@@ -435,7 +452,12 @@ export default function POSPage() {
 
     const stopCamera = async () => {
         if (scannerRef.current) {
-            await scannerRef.current.stop().catch(() => { })
+            try {
+                const state = scannerRef.current.getState()
+                if (state === 2 || state === 3) {
+                    await scannerRef.current.stop().catch(() => { })
+                }
+            } catch { }
             scannerRef.current = null
         }
         setMode('idle')
