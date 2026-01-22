@@ -399,14 +399,28 @@ export default function POSPage() {
                 const scanner = new Html5Qrcode('qr-reader')
                 scannerRef.current = scanner
                 await scanner.start(
-                    { facingMode: 'environment' },
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    {
+                        facingMode: 'environment'
+                    },
+                    {
+                        fps: 10,
+                        qrbox: { width: 220, height: 220 },
+                        aspectRatio: 1.0,
+                        // Disable built-in corner styling - we use custom CSS
+                        disableFlip: false
+                    },
                     async (decodedText) => {
                         await scanner.stop()
                         handleScan(decodedText)
                     },
                     () => { }
                 )
+
+                // Apply custom styling to hide default scanner borders
+                const scanRegion = document.querySelector('#qr-reader__scan_region')
+                if (scanRegion) {
+                    (scanRegion as HTMLElement).style.border = 'none'
+                }
             } catch (err: any) {
                 console.error('Camera error:', err)
                 setCameraError(err.message || 'Error starting camera')
@@ -1482,14 +1496,37 @@ export default function POSPage() {
                 )}
                 {mode === 'camera' && (
                     <div className="w-full flex flex-col items-center justify-center">
-                        {/* Square camera container with brighter styling */}
-                        <div className="relative w-full max-w-[320px] mx-auto">
-                            <div className="aspect-square w-full rounded-3xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-4 border-emerald-500/50 dark:border-emerald-400 shadow-2xl shadow-emerald-500/20 relative z-10">
-                                <div id="qr-reader" className="w-full h-full object-cover" />
+                        {/* Square camera container with custom corners */}
+                        <div className="relative w-full max-w-[300px] mx-auto">
+                            {/* Camera feed container */}
+                            <div className="aspect-square w-full rounded-2xl overflow-hidden bg-black relative z-10">
+                                <div id="qr-reader" className="w-full h-full" />
+
+                                {/* Custom squared corner overlay */}
+                                <div className="absolute inset-0 pointer-events-none z-30">
+                                    {/* Dark overlay around scan area */}
+                                    <div className="absolute inset-0 bg-black/40" />
+
+                                    {/* Clear scan area in center */}
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px]">
+                                        {/* Cut out the center */}
+                                        <div className="absolute inset-0 bg-transparent" style={{ boxShadow: '0 0 0 2000px rgba(0,0,0,0.5)' }} />
+
+                                        {/* Squared corner brackets */}
+                                        {/* Top Left */}
+                                        <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white" />
+                                        {/* Top Right */}
+                                        <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white" />
+                                        {/* Bottom Left */}
+                                        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white" />
+                                        {/* Bottom Right */}
+                                        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white" />
+                                    </div>
+                                </div>
                             </div>
-                            {/* Scanning indicator details */}
-                            <div className="absolute inset-0 border-2 border-emerald-500/30 rounded-3xl animate-pulse pointer-events-none z-20" />
-                            <div className="absolute top-0 right-0 p-32 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+
+                            {/* Outer glow effect */}
+                            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-2xl blur-xl -z-10" />
                         </div>
 
                         <p className="text-zinc-400 text-sm mt-6 mb-4">QR-Code in das Feld halten</p>
