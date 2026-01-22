@@ -342,26 +342,29 @@ export function PremiumActivityChart({
                     ))}
                 </svg>
 
-                {/* X-Axis Labels */}
-                <div className="flex justify-between px-1 mt-2">
-                    {data.map((d, i) => (
-                        shouldShowLabel(i, data.length) ? (
+                {/* X-Axis Labels - with proper containment */}
+                <div className="relative h-4 mt-2">
+                    {data.map((d, i) => {
+                        if (!shouldShowLabel(i, data.length)) return null
+                        const leftPercent = (i / Math.max(data.length - 1, 1)) * 100
+                        // Clamp edges to prevent overflow
+                        const clampedLeft = Math.max(5, Math.min(95, leftPercent))
+                        return (
                             <span
                                 key={i}
-                                className={`text-[9px] font-medium transition-colors ${hoveredIndex === i
+                                className={`text-[9px] font-medium transition-colors absolute ${hoveredIndex === i
                                     ? 'text-emerald-500 dark:text-emerald-400'
                                     : 'text-zinc-400 dark:text-zinc-600'
                                     }`}
                                 style={{
-                                    position: 'absolute',
-                                    left: `${(i / Math.max(data.length - 1, 1)) * 100}%`,
+                                    left: `${clampedLeft}%`,
                                     transform: 'translateX(-50%)'
                                 }}
                             >
                                 {formatLabel(d.date, i)}
                             </span>
-                        ) : null
-                    ))}
+                        )
+                    })}
                 </div>
             </div>
         </div>
