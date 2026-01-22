@@ -248,7 +248,7 @@ export default function POSPage() {
         // Cleanup scanner when switching to dashboard or customers
         // Only try to stop if we're in camera mode (scanner is actually running)
         if (view !== 'scanner' && scannerRef.current && mode === 'camera') {
-            scannerRef.current.stop().catch(() => { })
+            scannerRef.current.stop().catch(() => { /* Ignore stop errors */ })
             scannerRef.current = null
             setMode('idle')
         }
@@ -415,7 +415,11 @@ export default function POSPage() {
                         disableFlip: false
                     },
                     async (decodedText) => {
-                        await scanner.stop()
+                        try {
+                            await scanner.stop()
+                        } catch {
+                            // Ignore stop errors
+                        }
                         handleScan(decodedText)
                     },
                     () => { }
@@ -940,9 +944,26 @@ export default function POSPage() {
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             {/* Activity Chart */}
                             <div className="lg:col-span-2 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-white/5 rounded-3xl p-6 flex flex-col relative overflow-hidden backdrop-blur-sm shadow-sm dark:shadow-none">
-                                <div className="flex justify-between items-center mb-6">
+                                <div className="flex justify-between items-center mb-4">
                                     <h3 className="font-bold text-lg text-zinc-900 dark:text-white flex items-center gap-2"><BarChart3 size={20} className="text-emerald-500" /> Aktivität</h3>
-                                    <span className="text-xs font-mono text-zinc-500">{rangeLabels[statsRange]}</span>
+                                    <div className="flex items-center gap-5">
+                                        {/* Legend with labels */}
+                                        <div className="hidden sm:flex items-center gap-4 text-[11px] text-zinc-500 dark:text-zinc-400">
+                                            <span className="flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                Stempel
+                                            </span>
+                                            <span className="flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-purple-500" />
+                                                Einlösungen
+                                            </span>
+                                            <span className="flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                                                Neue Kunden
+                                            </span>
+                                        </div>
+                                        <span className="text-xs font-mono text-zinc-500">{rangeLabels[statsRange]}</span>
+                                    </div>
                                 </div>
                                 <div className="flex-1 w-full">
                                     {statsLoading ? (

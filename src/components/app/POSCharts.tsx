@@ -154,23 +154,8 @@ export function PremiumActivityChart({
 
     return (
         <div className="flex flex-col h-full">
-            {/* Chart Area with overlaid legend */}
+            {/* Chart Area - full height, legend moved to page header */}
             <div className="relative h-[120px]">
-                {/* Subtle legend - absolutely positioned top right */}
-                <div className="absolute top-0 right-0 z-20 flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        <span className="text-[9px] text-zinc-500 dark:text-zinc-500">{chartConfig.totalStamps}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                        <span className="text-[9px] text-zinc-500 dark:text-zinc-500">{chartConfig.totalRedemptions}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                        <span className="text-[9px] text-zinc-500 dark:text-zinc-500">{chartConfig.totalNewPasses}</span>
-                    </div>
-                </div>
                 {/* Hover Tooltip */}
                 {hoveredData && hoveredIndex !== null && (
                     <motion.div
