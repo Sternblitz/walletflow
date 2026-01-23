@@ -101,6 +101,29 @@ Deno.serve(async (req) => {
                     // Generate personalized message
                     const message = generateMessage(rule.message_template, pass)
 
+                    // REDEEM FLOW: Create Gift if enabled
+                    if (rule.config?.redeem_flow_enabled) {
+                        try {
+                            const expiresHours = rule.config.redeem_expires_hours
+                            const expiresAt = expiresHours
+                                ? new Date(Date.now() + expiresHours * 60 * 60 * 1000).toISOString()
+                                : null
+
+                            await supabase.from('pass_gifts').insert({
+                                pass_id: pass.id,
+                                campaign_id: rule.campaign_id,
+                                gift_type: 'push', // Uses the newly allowed 'push' type via constraint fix
+                                gift_title: '🎁 Geschenk',
+                                gift_message: message,
+                                expires_at: expiresAt
+                            })
+                            console.log(`[Automation] Created gift for pass ${pass.id}`)
+                        } catch (giftError) {
+                            console.error(`[Automation] Failed to create gift for pass ${pass.id}:`, giftError)
+                            // Continue execution even if gift fails? Yes, but log it.
+                        }
+                    }
+
                     // Update pass state to trigger push notification
                     const { error: updateError } = await supabase
                         .from('passes')

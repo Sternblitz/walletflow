@@ -239,6 +239,33 @@ async function executeRule(
                         execution_date: today
                     })
 
+                // REDEEM FLOW: Create Gift if enabled in config
+                // (For Inactivity, Weekday, or Custom rules that have this enabled)
+                if (rule.config?.redeem_flow_enabled) {
+                    try {
+                        const expiresHours = rule.config.redeem_expires_hours
+                        const expiresAt = expiresHours
+                            ? new Date(Date.now() + expiresHours * 60 * 60 * 1000).toISOString()
+                            : null
+
+                        await supabase
+                            .from('pass_gifts')
+                            .insert({
+                                pass_id: pass.id,
+                                campaign_id: rule.campaign_id,
+                                automation_rule_id: rule.id,
+                                gift_type: 'push', // Uses the allowed 'push' type
+                                gift_title: '🎁 Automatisches Geschenk',
+                                gift_message: message,
+                                expires_at: expiresAt
+                            })
+
+                        console.log(`[AUTOMATION] Created redeem gift for pass ${pass.id}`)
+                    } catch (giftError: any) {
+                        console.error(`[AUTOMATION] Failed to create gift for pass ${pass.id}:`, giftError.message)
+                    }
+                }
+
                 // For birthday rules: ALWAYS create a gift record with the push message
                 // This shows as a "Geschenkhinweis" when the customer is scanned
                 if (rule.rule_type === 'birthday') {
