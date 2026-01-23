@@ -554,20 +554,68 @@ function RuleEditor({ rule, showCustomType = false, onSave, onClose }: RuleEdito
                         )}
 
                         {ruleType === 'inactivity' && (
-                            <div>
-                                <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 block">Tage ohne Scan</label>
-                                <select
-                                    value={config.days_inactive ?? 14}
-                                    onChange={e => updateConfig('days_inactive', parseInt(e.target.value))}
-                                    className="w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none"
-                                >
-                                    <option value={7}>7 Tage</option>
-                                    <option value={14}>14 Tage</option>
-                                    <option value={21}>21 Tage</option>
-                                    <option value={30}>30 Tage</option>
-                                    <option value={60}>60 Tage</option>
-                                    <option value={90}>90 Tage</option>
-                                </select>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 block">Tage ohne Scan</label>
+                                    <select
+                                        value={config.days_inactive ?? 14}
+                                        onChange={e => updateConfig('days_inactive', parseInt(e.target.value))}
+                                        className="w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none"
+                                    >
+                                        <option value={7}>7 Tage</option>
+                                        <option value={14}>14 Tage</option>
+                                        <option value={21}>21 Tage</option>
+                                        <option value={30}>30 Tage</option>
+                                        <option value={60}>60 Tage</option>
+                                        <option value={90}>90 Tage</option>
+                                    </select>
+                                </div>
+
+                                {/* Redeem Flow Toggle for Inactivity */}
+                                <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-500/10 dark:to-purple-500/10 border border-pink-200 dark:border-pink-500/30 rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-lg">🎁</span>
+                                            <span className="text-sm font-bold text-zinc-700 dark:text-white">Redeem Flow aktiv</span>
+                                        </div>
+                                        <button
+                                            onClick={() => updateConfig('redeem_flow_enabled', !config.redeem_flow_enabled)}
+                                            className={`w-10 h-5 rounded-full transition-colors relative ${config.redeem_flow_enabled ? 'bg-pink-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+                                        >
+                                            <div className={`absolute top-1 w-3 h-3 rounded-full bg-white shadow transition-transform ${config.redeem_flow_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+                                        Erstellt ein einlösbares Geschenk wenn die Inaktivitäts-Nachricht gesendet wird.
+                                    </p>
+
+                                    {config.redeem_flow_enabled && (
+                                        <div className="space-y-2 pt-2 border-t border-pink-200 dark:border-pink-500/20">
+                                            <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Gültigkeit</div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {[
+                                                    { value: 24, label: '24h' },
+                                                    { value: 72, label: '3 Tage' },
+                                                    { value: 168, label: '7 Tage' },
+                                                    { value: 336, label: '14 Tage' },
+                                                    { value: 720, label: '30 Tage' },
+                                                    { value: null, label: '∞ Ewig' }
+                                                ].map(opt => (
+                                                    <button
+                                                        key={String(opt.value)}
+                                                        onClick={() => updateConfig('redeem_expires_hours', opt.value)}
+                                                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${config.redeem_expires_hours === opt.value
+                                                                ? 'bg-pink-500 text-white'
+                                                                : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-pink-100 dark:hover:bg-pink-500/20'
+                                                            }`}
+                                                    >
+                                                        {opt.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 

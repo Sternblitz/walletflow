@@ -166,6 +166,9 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
     const [pushTarget, setPushTarget] = useState<'all' | 'inactive'>('all')
     const [inactivityDays, setInactivityDays] = useState<14 | 30 | 60 | 'custom'>(14)
     const [customInactivityDays, setCustomInactivityDays] = useState(30)
+    // Redeem Flow
+    const [redeemFlowEnabled, setRedeemFlowEnabled] = useState(false)
+    const [redeemExpiresHours, setRedeemExpiresHours] = useState<number | null>(null)
 
     useEffect(() => {
         if (campaignId) {
@@ -327,7 +330,10 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                     message: message.trim(),
                     scheduleTime: pushMode === 'schedule' ? new Date(scheduleTime).toISOString() : null,
                     targetType: pushTarget,
-                    inactiveDays: inactiveDaysValue
+                    inactiveDays: inactiveDaysValue,
+                    // Redeem Flow
+                    redeemFlowEnabled,
+                    redeemExpiresHours: redeemFlowEnabled ? redeemExpiresHours : null
                 })
             })
 
@@ -337,6 +343,8 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
             setScheduleTime("")
             setPushMode('now')
             setPushTarget('all')
+            setRedeemFlowEnabled(false)
+            setRedeemExpiresHours(null)
 
             fetchCampaign()
             fetchPushHistory()
@@ -560,6 +568,52 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                                         <span className="text-xs text-zinc-500">Tage</span>
                                     </div>
                                 )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* REDEEM FLOW TOGGLE */}
+                    <div className="bg-black/20 border border-white/5 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <span className="text-lg">🎁</span>
+                                <span className="text-sm font-bold text-white">Redeem Flow aktiv</span>
+                            </div>
+                            <button
+                                onClick={() => setRedeemFlowEnabled(!redeemFlowEnabled)}
+                                className={`w-10 h-5 rounded-full transition-colors relative ${redeemFlowEnabled ? 'bg-pink-500' : 'bg-zinc-700'}`}
+                            >
+                                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white shadow transition-transform ${redeemFlowEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                        <p className="text-xs text-zinc-400 mb-3">
+                            Erstellt ein einlösbares Geschenk, das beim Scannen angezeigt wird.
+                        </p>
+
+                        {redeemFlowEnabled && (
+                            <div className="space-y-2 pt-2 border-t border-white/5">
+                                <div className="text-xs font-bold text-zinc-400">Gültigkeit</div>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { value: 24, label: '24h' },
+                                        { value: 72, label: '3 Tage' },
+                                        { value: 168, label: '7 Tage' },
+                                        { value: 336, label: '14 Tage' },
+                                        { value: 720, label: '30 Tage' },
+                                        { value: null, label: '∞ Ewig' }
+                                    ].map(opt => (
+                                        <button
+                                            key={String(opt.value)}
+                                            onClick={() => setRedeemExpiresHours(opt.value)}
+                                            className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${redeemExpiresHours === opt.value
+                                                    ? 'bg-pink-500 text-white'
+                                                    : 'bg-white/5 text-zinc-400 hover:bg-white/10'
+                                                }`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>

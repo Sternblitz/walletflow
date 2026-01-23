@@ -20,6 +20,9 @@ export interface PushOptions {
     batchSize?: number
     notifyGoogle?: boolean
     inactiveDays?: number // Only send to customers inactive for X days (based on last_scanned_at)
+    // Redeem Flow
+    redeemFlowEnabled?: boolean
+    redeemExpiresHours?: number | null
 }
 
 /**
@@ -51,10 +54,10 @@ export class PushService {
         message: string,
         options: PushOptions = {}
     ): Promise<PushResult> {
-        const { batchSize = 20, notifyGoogle = true, inactiveDays } = options
+        const { batchSize = 20, notifyGoogle = true, inactiveDays, redeemFlowEnabled, redeemExpiresHours } = options
         const errors: string[] = []
 
-        console.log(`[PushService] Starting push for campaign ${campaignId}${inactiveDays ? ` (inactive ${inactiveDays} days)` : ''}`)
+        console.log(`[PushService] Starting push for campaign ${campaignId}${inactiveDays ? ` (inactive ${inactiveDays} days)` : ''}${redeemFlowEnabled ? ' [REDEEM FLOW]' : ''}`)
 
         // Build query for active passes WITH MARKETING CONSENT (verified OR installed)
         const { data: allPasses, error: passError } = await this.supabase
@@ -93,6 +96,44 @@ export class PushService {
         if (passes.length === 0) {
             console.log('[PushService] No inactive customers found matching criteria')
             return { sentCount: 0, failCount: 0, totalCount: 0, errors: ['No inactive customers found'] }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // REDEEM FLOW: Create GIFTS
+        // ═══════════════════════════════════════════════════════════════
+        if (redeemFlowEnabled) {
+            try {
+                console.log(`[PushService] Creating gifts for ${passes.length} passes`)
+                const expiresAt = redeemExpiresHours
+                    ? new Date(Date.now() + redeemExpiresHours * 60 * 60 * 1000).toISOString()
+                    : null
+
+                const giftInserts = passes.map((p: any) => ({
+                    pass_id: p.id,
+                    campaign_id: campaignId,
+                    gift_type: 'push',
+                    gift_title: '🎁 Push-Angebot',
+                    gift_message: message,
+                    expires_at: expiresAt
+                }))
+
+                // Insert in chunks of 1000 to avoid request size limits
+                const chunkSize = 1000
+                for (let i = 0; i < giftInserts.length; i += chunkSize) {
+                    const chunk = giftInserts.slice(i, i + chunkSize)
+                    const { error: giftError } = await this.supabase
+                        .from('pass_gifts')
+                        .insert(chunk)
+
+                    if (giftError) {
+                        console.error('[PushService] Error creating gifts:', giftError)
+                        errors.push(`Gift creation error: ${giftError.message}`)
+                    }
+                }
+            } catch (e: any) {
+                console.error('[PushService] Gift creation failed:', e)
+                errors.push(`Gift logic error: ${e.message}`)
+            }
         }
 
         // Separate by platform
@@ -262,6 +303,13 @@ export class PushService {
         if (request.target_type === 'inactive' && request.inactive_days) {
             options.inactiveDays = request.inactive_days
             console.log(`[PushService] Request ${requestId} targets inactive customers (${request.inactive_days} days)`)
+        }
+
+        // REDEEM FLOW PARAMS
+        if (request.redeem_flow_enabled) {
+            options.redeemFlowEnabled = true
+            options.redeemExpiresHours = request.redeem_expires_hours
+            console.log(`[PushService] Request ${requestId} includes Redeem Flow (valid: ${request.redeem_expires_hours || '∞'}h)`)
         }
 
         console.log(`[PushService] Processing request ${requestId} for campaign ${request.campaign?.id}`)

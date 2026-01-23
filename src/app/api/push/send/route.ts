@@ -7,7 +7,16 @@ export async function POST(request: Request) {
     try {
         const supabase = await createClient()
         const body = await request.json()
-        const { message, slug, scheduleTime, targetType, inactiveDays } = body
+        const {
+            message,
+            slug,
+            scheduleTime,
+            targetType,
+            inactiveDays,
+            // Redeem Flow params
+            redeemFlowEnabled,
+            redeemExpiresHours
+        } = body
 
         if (!message || !slug) {
             return NextResponse.json({ error: 'Message and slug are required' }, { status: 400 })
@@ -45,7 +54,10 @@ export async function POST(request: Request) {
                 status: 'pending', // Always pending - admin must approve!
                 scheduled_at: scheduleTime || null,
                 target_type: targetType || 'all',
-                inactive_days: targetType === 'inactive' ? inactiveDays : null
+                inactive_days: targetType === 'inactive' ? inactiveDays : null,
+                // Redeem Flow columns
+                redeem_flow_enabled: redeemFlowEnabled || false,
+                redeem_expires_hours: redeemFlowEnabled ? redeemExpiresHours : null
             })
             .select()
             .single()
@@ -63,7 +75,8 @@ export async function POST(request: Request) {
                 : 'Push-Anfrage für Genehmigung erstellt.',
             id: pushRequest.id,
             scheduledAt: scheduleTime,
-            needsApproval: true
+            needsApproval: true,
+            redeemFlowEnabled: redeemFlowEnabled || false
         })
 
     } catch (e: any) {

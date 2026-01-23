@@ -7,7 +7,16 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id: campaignId } = await params
-    const { message, header, scheduleTime, targetType, inactiveDays } = await req.json()
+    const {
+        message,
+        header,
+        scheduleTime,
+        targetType,
+        inactiveDays,
+        // Redeem Flow params
+        redeemFlowEnabled,
+        redeemExpiresHours
+    } = await req.json()
 
     if (!message || typeof message !== 'string') {
         return NextResponse.json({ error: 'Message is required' }, { status: 400 })
@@ -25,7 +34,10 @@ export async function POST(
                 status: 'scheduled', // Admin = directly scheduled, no approval needed
                 scheduled_at: scheduleTime,
                 target_type: targetType || 'all',
-                inactive_days: targetType === 'inactive' ? inactiveDays : null
+                inactive_days: targetType === 'inactive' ? inactiveDays : null,
+                // Redeem flow columns
+                redeem_flow_enabled: redeemFlowEnabled || false,
+                redeem_expires_hours: redeemFlowEnabled ? redeemExpiresHours : null
             })
 
         if (insertError) {
@@ -36,7 +48,8 @@ export async function POST(
         return NextResponse.json({
             success: true,
             scheduled: true,
-            scheduled_at: scheduleTime
+            scheduled_at: scheduleTime,
+            redeemFlowEnabled: redeemFlowEnabled || false
         })
     }
 
@@ -90,7 +103,7 @@ export async function POST(
     const applePasses = verifiedPasses.filter(p => p.wallet_type === 'apple' || !p.wallet_type)
     const googlePasses = verifiedPasses.filter(p => p.wallet_type === 'google')
 
-    console.log(`[MESSAGE] Sending to ${verifiedPasses.length} passes (${applePasses.length} Apple, ${googlePasses.length} Google)${targetType === 'inactive' ? ` [inactive ${inactiveDays}d]` : ''}`)
+    console.log(`[MESSAGE] Sending to ${verifiedPasses.length} passes (${applePasses.length} Apple, ${googlePasses.length} Google)${targetType === 'inactive' ? ` [inactive ${inactiveDays}d]` : ''}${redeemFlowEnabled ? ' [REDEEM FLOW]' : ''}`)
 
     // Update all passes with the new notification
     const updatePromises = verifiedPasses.map(async (pass) => {
@@ -160,6 +173,42 @@ export async function POST(
         }
     }
 
+    // ════════════════════════════════════════════════════════════════════════
+    // REDEEM FLOW: Create pass_gifts entries for all recipients
+    // ════════════════════════════════════════════════════════════════════════
+    let giftsCreated = 0
+    if (redeemFlowEnabled) {
+        console.log(`[REDEEM FLOW] Creating gift entries for ${verifiedPasses.length} recipients`)
+
+        // Calculate expiration time
+        const expiresAt = redeemExpiresHours
+            ? new Date(Date.now() + redeemExpiresHours * 60 * 60 * 1000).toISOString()
+            : null // Unlimited
+
+        // Batch insert all gifts
+        const giftInserts = verifiedPasses.map(pass => ({
+            pass_id: pass.id,
+            campaign_id: campaignId,
+            gift_type: 'push',
+            gift_title: '🎁 Push-Angebot',
+            gift_message: message.trim(),
+            expires_at: expiresAt
+        }))
+
+        const { error: giftError, data: giftData } = await supabase
+            .from('pass_gifts')
+            .insert(giftInserts)
+            .select('id')
+
+        if (giftError) {
+            console.error('[REDEEM FLOW] Failed to create gifts:', giftError)
+            allErrors.push(`Redeem flow: ${giftError.message}`)
+        } else {
+            giftsCreated = giftData?.length || 0
+            console.log(`[REDEEM FLOW ✅] Created ${giftsCreated} gift entries (expires: ${expiresAt || 'never'})`)
+        }
+    }
+
     // Log push for history
     await supabase.from('push_requests').insert({
         campaign_id: campaignId,
@@ -170,7 +219,10 @@ export async function POST(
         success_count: totalSent,
         failure_count: allErrors.length,
         target_type: targetType || 'all',
-        inactive_days: targetType === 'inactive' ? inactiveDays : null
+        inactive_days: targetType === 'inactive' ? inactiveDays : null,
+        // Redeem flow columns
+        redeem_flow_enabled: redeemFlowEnabled || false,
+        redeem_expires_hours: redeemFlowEnabled ? redeemExpiresHours : null
     })
 
     console.log(`[MESSAGE ✅] Sent ${totalSent} push notifications to ${verifiedPasses.length} passes`)
@@ -182,6 +234,9 @@ export async function POST(
         apple: applePasses.length,
         google: googlePasses.length,
         targetType: targetType || 'all',
+        redeemFlowEnabled: redeemFlowEnabled || false,
+        giftsCreated,
         errors: allErrors.length > 0 ? allErrors : undefined
     })
 }
+

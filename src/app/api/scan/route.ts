@@ -52,15 +52,23 @@ export async function POST(req: NextRequest) {
         // --- END CAMPAIGN VALIDATION ---
 
         // --- PENDING GIFTS CHECK ---
-        // Check for unredeemed gifts (birthday, loyalty, etc.)
-        const { data: pendingGifts } = await supabase
+        // Check for unredeemed gifts (birthday, push, loyalty, etc.)
+        // Filter: not redeemed AND (no expiry OR not expired yet)
+        const { data: allPendingGifts } = await supabase
             .from('pass_gifts')
             .select('*')
             .eq('pass_id', passId)
             .is('redeemed_at', null)
             .order('created_at', { ascending: false })
 
-        if (pendingGifts && pendingGifts.length > 0) {
+        // Filter out expired gifts in JS (Supabase doesn't support OR with IS NULL easily)
+        const giftCheckTime = new Date()
+        const pendingGifts = (allPendingGifts || []).filter(gift => {
+            if (!gift.expires_at) return true // No expiry = always valid
+            return new Date(gift.expires_at) > giftCheckTime // Not expired yet
+        })
+
+        if (pendingGifts.length > 0) {
             console.log(`[SCAN] Found ${pendingGifts.length} pending gift(s) for pass ${passId}`)
         }
         // --- END PENDING GIFTS CHECK ---

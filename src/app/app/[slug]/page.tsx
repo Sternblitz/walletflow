@@ -184,6 +184,9 @@ export default function POSPage() {
     const [pushTarget, setPushTarget] = useState<'all' | 'inactive'>('all')
     const [inactivityDays, setInactivityDays] = useState<14 | 30 | 60 | 'custom'>(14)
     const [customInactivityDays, setCustomInactivityDays] = useState(30)
+    // Redeem Flow
+    const [redeemFlowEnabled, setRedeemFlowEnabled] = useState(false)
+    const [redeemExpiresHours, setRedeemExpiresHours] = useState<number | null>(null) // null = unlimited
 
     // Reviews
     const [showReviewsModal, setShowReviewsModal] = useState(false)
@@ -647,7 +650,10 @@ export default function POSPage() {
                     targetType: pushTarget,
                     inactiveDays: pushTarget === 'inactive'
                         ? (inactivityDays === 'custom' ? customInactivityDays : inactivityDays)
-                        : null
+                        : null,
+                    // Redeem Flow
+                    redeemFlowEnabled,
+                    redeemExpiresHours: redeemFlowEnabled ? redeemExpiresHours : null
                 })
             })
             if (res.ok) {
@@ -659,10 +665,16 @@ export default function POSPage() {
                             : 'Der Admin wird benachrichtigt.'
                     })
                 } else {
-                    toast.success(pushMode === 'schedule' ? 'Nachricht eingeplant!' : 'Nachricht gesendet!')
+                    const successMsg = pushMode === 'schedule' ? 'Nachricht eingeplant!' : 'Nachricht gesendet!'
+                    toast.success(successMsg, {
+                        description: redeemFlowEnabled ? `🎁 Redeem Flow aktiv (${data.giftsCreated || 0} Angebote erstellt)` : undefined
+                    })
                 }
+                // Reset all push states
                 setPushMessage('')
                 setPushScheduleTime('')
+                setRedeemFlowEnabled(false)
+                setRedeemExpiresHours(null)
                 setShowPushModal(false)
                 loadScheduledPushes()
             } else {
@@ -1333,6 +1345,55 @@ export default function POSPage() {
                                                 />
                                             </div>
                                         )}
+
+                                        {/* REDEEM FLOW TOGGLE */}
+                                        <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-500/10 dark:to-purple-500/10 border border-pink-200 dark:border-pink-500/30 rounded-2xl p-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Gift className="w-4 h-4 text-pink-500" />
+                                                    <span className="text-sm font-bold text-zinc-700 dark:text-white">Redeem Flow aktiv</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRedeemFlowEnabled(!redeemFlowEnabled)}
+                                                    className={`w-12 h-6 rounded-full transition-colors relative ${redeemFlowEnabled ? 'bg-pink-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+                                                >
+                                                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${redeemFlowEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+                                                Wenn aktiv, erscheint beim Scannen ein Popup zum Einlösen
+                                            </p>
+
+                                            {redeemFlowEnabled && (
+                                                <div className="space-y-2 pt-3 border-t border-pink-200 dark:border-pink-500/20">
+                                                    <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Wie lange einlösbar?</div>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {[
+                                                            { value: 24, label: '24h' },
+                                                            { value: 72, label: '3 Tage' },
+                                                            { value: 168, label: '7 Tage' },
+                                                            { value: 336, label: '14 Tage' },
+                                                            { value: 720, label: '30 Tage' },
+                                                            { value: null, label: '∞ Unbegrenzt' }
+                                                        ].map(opt => (
+                                                            <button
+                                                                type="button"
+                                                                key={String(opt.value)}
+                                                                onClick={() => setRedeemExpiresHours(opt.value)}
+                                                                className={`px-2 py-2 rounded-lg text-xs font-medium transition-all ${redeemExpiresHours === opt.value
+                                                                    ? 'bg-pink-500 text-white'
+                                                                    : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-pink-100 dark:hover:bg-pink-500/20'
+                                                                    }`}
+                                                            >
+                                                                {opt.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <button type="submit" disabled={pushLoading || !pushMessage.trim()} className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-xl font-bold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 shadow-lg shadow-black/5 dark:shadow-white/5">{pushLoading ? 'Wird gesendet...' : (pushMode === 'now' ? '⚡ Jetzt absenden' : '📅 Einplanen')}</button>
                                         <div className="h-4" /> {/* Extra padding for mobile */}
                                     </form>
@@ -1789,19 +1850,27 @@ export default function POSPage() {
 
                                 {/* Content */}
                                 <div className="relative z-10">
-                                    <div className="text-7xl mb-4 animate-pulse">🎂</div>
+                                    {/* Dynamic emoji based on gift type */}
+                                    <div className="text-7xl mb-4 animate-pulse">
+                                        {pendingGift.gift_type === 'birthday' ? '🎂' : '🎁'}
+                                    </div>
 
-                                    <h2 className="text-2xl font-extrabold mb-2 bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-                                        Geburtstagsgeschenk!
+                                    {/* Generic title that works for all gift types */}
+                                    <h2 className="text-xl font-extrabold mb-1 text-zinc-800 dark:text-white">
+                                        HINWEIS
                                     </h2>
+                                    <p className="text-zinc-600 dark:text-zinc-300 text-sm mb-4">
+                                        Kunde hat ein Geschenk bekommen
+                                    </p>
 
                                     {pendingGift.customerName && (
-                                        <p className="text-zinc-600 dark:text-zinc-300 font-medium mb-1">
+                                        <p className="text-zinc-700 dark:text-zinc-200 font-bold text-lg mb-1">
                                             {pendingGift.customerName}
                                         </p>
                                     )}
 
-                                    {pendingGift.birthday_date && (
+                                    {/* Birthday-specific info */}
+                                    {pendingGift.gift_type === 'birthday' && pendingGift.birthday_date && (
                                         <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-4">
                                             🎈 Geburtstag: {formatBirthday(pendingGift.birthday_date || pendingGift.customerBirthday)}
                                             {(() => {
@@ -1819,6 +1888,13 @@ export default function POSPage() {
                                         </p>
                                     )}
 
+                                    {/* Expiration info for push gifts */}
+                                    {pendingGift.gift_type === 'push' && pendingGift.expires_at && (
+                                        <p className="text-xs text-orange-500 mb-4">
+                                            ⏰ Gültig bis: {new Date(pendingGift.expires_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    )}
+
                                     {/* Gift card */}
                                     <div className="bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-indigo-500/10 border border-pink-200 dark:border-pink-500/20 rounded-2xl p-5 mb-6">
                                         <div className="flex items-center justify-center gap-2 mb-2">
@@ -1833,7 +1909,7 @@ export default function POSPage() {
                                             </p>
                                         )}
                                         {pendingGift.gift_message && (
-                                            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 italic">
+                                            <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-2 italic bg-white/50 dark:bg-white/5 rounded-lg p-3">
                                                 "{pendingGift.gift_message}"
                                             </p>
                                         )}
