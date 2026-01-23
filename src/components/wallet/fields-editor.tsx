@@ -111,8 +111,8 @@ export function FieldsEditor({ draft, onChange }: FieldsEditorProps) {
         </div>
       </div>
 
-      {/* Stamp Logic (Only for StoreCard / EventTicket) */}
-      {(draft.meta.style === 'storeCard' || draft.meta.style === 'eventTicket') && (
+      {/* Stamp Logic (Only for StoreCard / EventTicket / Generic with stampConfig) */}
+      {(draft.meta.style === 'storeCard' || draft.meta.style === 'eventTicket' || (draft.meta.style === 'generic' && draft.stampConfig)) && (
         <div className="field-group bg-emerald-900/10 border-emerald-900/30">
           <div className="field-group-header">
             <h3>Stempel-Logik (Automatik)</h3>
@@ -238,30 +238,48 @@ export function FieldsEditor({ draft, onChange }: FieldsEditorProps) {
                 newFields.primaryFields.push({ key: 'stamps', label: 'DEINE STEMPEL', value: textValue })
               }
 
-              // Move 'Powered By' to Secondary if in Auxiliary
-              const poweredInAuxIdx = newFields.auxiliaryFields.findIndex(f => f.key === 'powered')
-              if (poweredInAuxIdx >= 0) {
-                const field = newFields.auxiliaryFields[poweredInAuxIdx]
-                newFields.auxiliaryFields.splice(poweredInAuxIdx, 1)
-                if (!newFields.secondaryFields.find(f => f.key === 'powered')) {
-                  newFields.secondaryFields.push(field)
+              // For GENERIC style (Flex): Keep progress_visual in secondary, powered in auxiliary
+              if (draft.meta.style === 'generic') {
+                // Update Visual Field in Secondary (for two-row layout)
+                let secFields = [...newFields.secondaryFields]
+                const visualIdx = secFields.findIndex(f => f.key === 'progress_visual')
+                if (visualIdx >= 0) {
+                  secFields[visualIdx] = { ...secFields[visualIdx], value: visual.trim(), label: 'FORTSCHRITT' }
+                } else if (secFields.length < 4) {
+                  secFields.push({
+                    key: 'progress_visual',
+                    label: 'FORTSCHRITT',
+                    value: visual.trim(),
+                    textAlignment: 'PKTextAlignmentCenter'
+                  })
                 }
-              }
+                newFields.secondaryFields = secFields
+              } else {
+                // For storeCard/eventTicket: Move 'Powered By' to Secondary if in Auxiliary
+                const poweredInAuxIdx = newFields.auxiliaryFields.findIndex(f => f.key === 'powered')
+                if (poweredInAuxIdx >= 0) {
+                  const field = newFields.auxiliaryFields[poweredInAuxIdx]
+                  newFields.auxiliaryFields.splice(poweredInAuxIdx, 1)
+                  if (!newFields.secondaryFields.find(f => f.key === 'powered')) {
+                    newFields.secondaryFields.push(field)
+                  }
+                }
 
-              // Update Visual Field in Auxiliary
-              let auxFields = [...newFields.auxiliaryFields]
-              const visualIdx = auxFields.findIndex(f => f.key === 'progress_visual')
-              if (visualIdx >= 0) {
-                auxFields[visualIdx] = { ...auxFields[visualIdx], value: visual.trim(), label: 'DEIN FORTSCHRITT' }
-              } else if (auxFields.length < 4) {
-                auxFields.push({
-                  key: 'progress_visual',
-                  label: 'DEIN FORTSCHRITT',
-                  value: visual.trim(),
-                  textAlignment: 'PKTextAlignmentCenter'
-                })
+                // Update Visual Field in Auxiliary
+                let auxFields = [...newFields.auxiliaryFields]
+                const visualIdx = auxFields.findIndex(f => f.key === 'progress_visual')
+                if (visualIdx >= 0) {
+                  auxFields[visualIdx] = { ...auxFields[visualIdx], value: visual.trim(), label: 'DEIN FORTSCHRITT' }
+                } else if (auxFields.length < 4) {
+                  auxFields.push({
+                    key: 'progress_visual',
+                    label: 'DEIN FORTSCHRITT',
+                    value: visual.trim(),
+                    textAlignment: 'PKTextAlignmentCenter'
+                  })
+                }
+                newFields.auxiliaryFields = auxFields
               }
-              newFields.auxiliaryFields = auxFields
 
               onChange({
                 ...draft,

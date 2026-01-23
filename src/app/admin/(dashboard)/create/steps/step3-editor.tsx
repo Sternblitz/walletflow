@@ -21,7 +21,7 @@ const CONCEPT_TEMPLATE_MAP: Record<string, string> = {
     'MEMBER_CARD': 'mitgliederkarte',
     'POINTS_CARD': 'punktekarte',
     'COUPON': 'gutschein',
-    'CUSTOM': 'individuell'
+    'CUSTOM': 'stempelkarte_flex'
 }
 
 type EditorTab = 'colors' | 'fields' | 'images'

@@ -80,7 +80,7 @@ export async function createCampaignAction(data: any) {
             'MEMBER_CARD': 'mitgliederkarte',
             'POINTS_CARD': 'punktekarte',
             'COUPON': 'gutschein',
-            'CUSTOM': 'individuell'
+            'CUSTOM': 'stempelkarte_flex'
         }
         const templateId = map[data.concept] || 'stempelkarte'
         designConfig = createDraftFromTemplate(templateId)

@@ -157,53 +157,65 @@ export function PremiumActivityChart({
             {/* Chart Area - full height, legend moved to page header */}
             <div className="relative h-[120px]">
                 {/* Hover Tooltip */}
-                {hoveredData && hoveredIndex !== null && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 5, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        className="absolute z-30 pointer-events-none"
-                        style={{
-                            left: `${(hoveredIndex / Math.max(data.length - 1, 1)) * 100}%`,
-                            top: '0',
-                            transform: 'translateX(-50%)'
-                        }}
-                    >
-                        <div className="bg-zinc-900 dark:bg-black border border-white/20 rounded-xl px-3 py-2 shadow-2xl min-w-[120px]">
-                            <div className="text-[10px] font-bold text-zinc-400 mb-1.5">
-                                {new Date(hoveredData.date).toLocaleDateString('de-DE', {
-                                    weekday: 'short',
-                                    day: '2-digit',
-                                    month: '2-digit'
-                                })}
+                {hoveredData && hoveredIndex !== null && (() => {
+                    const leftPercent = (hoveredIndex / Math.max(data.length - 1, 1)) * 100
+                    // Determine alignment based on position
+                    const isLeftEdge = leftPercent < 20
+                    const isRightEdge = leftPercent > 80
+                    const transform = isLeftEdge ? 'translateX(0)' : isRightEdge ? 'translateX(-100%)' : 'translateX(-50%)'
+                    const arrowLeft = isLeftEdge ? '15%' : isRightEdge ? '85%' : '50%'
+
+                    return (
+                        <motion.div
+                            initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            className="absolute z-30 pointer-events-none"
+                            style={{
+                                left: `${leftPercent}%`,
+                                top: '0',
+                                transform
+                            }}
+                        >
+                            <div className="bg-zinc-900 dark:bg-black border border-white/20 rounded-xl px-3 py-2 shadow-2xl min-w-[120px]">
+                                <div className="text-[10px] font-bold text-zinc-400 mb-1.5">
+                                    {new Date(hoveredData.date).toLocaleDateString('de-DE', {
+                                        weekday: 'short',
+                                        day: '2-digit',
+                                        month: '2-digit'
+                                    })}
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span className="flex items-center gap-1.5 text-[10px] text-emerald-400">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                            Stempel
+                                        </span>
+                                        <span className="text-xs font-bold text-white">{hoveredData.stamps}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span className="flex items-center gap-1.5 text-[10px] text-purple-400">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                                            Einlösungen
+                                        </span>
+                                        <span className="text-xs font-bold text-white">{hoveredData.redemptions}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span className="flex items-center gap-1.5 text-[10px] text-blue-400">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                            Neue Kunden
+                                        </span>
+                                        <span className="text-xs font-bold text-white">{hoveredData.newPasses || 0}</span>
+                                    </div>
+                                </div>
+                                {/* Arrow */}
+                                <div
+                                    className="absolute -bottom-1 w-2 h-2 bg-zinc-900 dark:bg-black border-r border-b border-white/20 rotate-45"
+                                    style={{ left: arrowLeft, transform: 'translateX(-50%)' }}
+                                />
                             </div>
-                            <div className="space-y-1">
-                                <div className="flex items-center justify-between gap-3">
-                                    <span className="flex items-center gap-1.5 text-[10px] text-emerald-400">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                        Stempel
-                                    </span>
-                                    <span className="text-xs font-bold text-white">{hoveredData.stamps}</span>
-                                </div>
-                                <div className="flex items-center justify-between gap-3">
-                                    <span className="flex items-center gap-1.5 text-[10px] text-purple-400">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                                        Einlösungen
-                                    </span>
-                                    <span className="text-xs font-bold text-white">{hoveredData.redemptions}</span>
-                                </div>
-                                <div className="flex items-center justify-between gap-3">
-                                    <span className="flex items-center gap-1.5 text-[10px] text-blue-400">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                        Neue Kunden
-                                    </span>
-                                    <span className="text-xs font-bold text-white">{hoveredData.newPasses || 0}</span>
-                                </div>
-                            </div>
-                            {/* Arrow */}
-                            <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 w-2 h-2 bg-zinc-900 dark:bg-black border-r border-b border-white/20 rotate-45" />
-                        </div>
-                    </motion.div>
-                )}
+                        </motion.div>
+                    )
+                })()}
 
                 {/* SVG Chart */}
                 <svg

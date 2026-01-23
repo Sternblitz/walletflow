@@ -175,8 +175,8 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
                   </div>
                 )}
 
-                {/* STORECARD Bottom Fields */}
-                {def.style !== 'eventTicket' && bottomFields.length > 0 && (
+                {/* STORECARD/COUPON Bottom Fields (not eventTicket, not generic) */}
+                {def.style !== 'eventTicket' && def.style !== 'generic' && bottomFields.length > 0 && (
                   <div className="bottom-fields">
                     {bottomFields.map(f => (
                       <div className="field bottom-field" key={f.key}>
@@ -187,20 +187,47 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
                   </div>
                 )}
 
-                {/* Thumbnail Area (generic style WITHOUT strip/background) */}
+                {/* GENERIC STYLE - Two Row Layout with Optional Thumbnail */}
                 {def.style === 'generic' && (
-                  <div className="content-with-thumbnail">
-                    <div className="primary-no-strip">
-                      {fields.primaryFields.map(f => (
-                        <div className="field primary-field" key={f.key}>
-                          <span className="primary-value">{f.value}</span>
-                          {f.label && <span className="primary-label" style={{ color: colors.labelColor }}>{f.label}</span>}
+                  <div className="generic-content">
+                    {/* Primary + Thumbnail Row */}
+                    <div className="content-with-thumbnail">
+                      <div className="primary-no-strip">
+                        {fields.primaryFields.map(f => (
+                          <div className="field primary-field" key={f.key}>
+                            <span className="primary-value">{f.value}</span>
+                            {f.label && <span className="primary-label" style={{ color: colors.labelColor }}>{f.label}</span>}
+                          </div>
+                        ))}
+                      </div>
+                      {draft.images.thumbnail && (
+                        <div className="thumbnail-area">
+                          <img src={draft.images.thumbnail.url} alt="Thumbnail" />
                         </div>
-                      ))}
+                      )}
                     </div>
-                    {draft.images.thumbnail && (
-                      <div className="thumbnail-area">
-                        <img src={draft.images.thumbnail.url} alt="Thumbnail" />
+
+                    {/* Secondary Fields Row */}
+                    {fields.secondaryFields.length > 0 && (
+                      <div className="generic-fields-row">
+                        {fields.secondaryFields.map(f => (
+                          <div className="field generic-field" key={f.key}>
+                            <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>
+                            <span className="field-value">{f.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Auxiliary Fields Row (Separate!) */}
+                    {fields.auxiliaryFields.length > 0 && (
+                      <div className="generic-fields-row auxiliary-row">
+                        {fields.auxiliaryFields.map(f => (
+                          <div className="field generic-field" key={f.key}>
+                            <span className="field-label" style={{ color: colors.labelColor }}>{f.label}</span>
+                            <span className="field-value">{f.value}</span>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -547,6 +574,42 @@ export function PassPreview({ draft, scale = 1 }: PassPreviewProps) {
         .eventticket-aux-fields .field-value {
           font-size: 1.1rem;
           letter-spacing: 0.1em;
+        }
+
+        /* GENERIC STYLE - Two Row Layout */
+        .generic-content {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          padding: 16px;
+        }
+
+        .generic-fields-row {
+          display: flex;
+          gap: 24px;
+          padding: 10px 0;
+          border-top: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .generic-fields-row.auxiliary-row {
+          border-top: 1px dashed rgba(255,255,255,0.06);
+        }
+
+        .generic-field {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .generic-field .field-label {
+          font-size: 0.6rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .generic-field .field-value {
+          font-size: 0.85rem;
+          font-weight: 500;
         }
         
         /* Barcode Area */

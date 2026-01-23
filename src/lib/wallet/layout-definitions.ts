@@ -284,28 +284,43 @@ export const PASS_TEMPLATES: PassTemplate[] = [
     },
 
     // ============================================
-    // 5. INDIVIDUELL (Custom)
+    // 5. STEMPELKARTE FLEX (Generic Style - Two Row Layout)
     // ============================================
     {
-        id: 'individuell',
-        name: 'Individuell',
-        description: 'Vollständig anpassbar - für alle Anwendungsfälle',
+        id: 'stempelkarte_flex',
+        name: 'Stempelkarte Flex',
+        description: 'Stempelkarte mit 2-Zeilen Layout (Thumbnail statt Strip)',
         style: 'generic',
         defaultDraft: {
             colors: {
-                backgroundColor: '#18181B',
+                backgroundColor: '#0F0F0F',
                 foregroundColor: '#FFFFFF',
-                labelColor: '#A1A1AA'
+                labelColor: '#22C55E'
             },
             fields: {
                 headerFields: [],
-                primaryFields: [{ key: 'title', label: 'TITEL', value: 'Deine Karte' }],
-                secondaryFields: [],
-                auxiliaryFields: [],
-                backFields: []
+                // Primary: Stamp counter like Stempelkarte 1.0
+                primaryFields: [{ key: 'stamps', label: 'DEINE STEMPEL', value: '0 von 10' }],
+                // Secondary: Reward + Visual Progress (Row 1)
+                secondaryFields: [
+                    { key: 'reward', label: 'PRÄMIE', value: 'Gratis Kaffee' },
+                    { key: 'progress_visual', label: 'FORTSCHRITT', value: '⚪ ⚪ ⚪ ⚪ ⚪ ⚪ ⚪ ⚪ ⚪ ⚪' }
+                ],
+                // Auxiliary: Powered by + future gift field (Row 2)
+                auxiliaryFields: [{ key: 'powered', label: 'POWERED BY', value: 'QARD' }],
+                backFields: [
+                    { key: 'howto', label: 'SO FUNKTIONIERT\'S', value: 'Bei jedem Besuch den QR-Code scannen lassen. Nach 10 Stempeln erhältst du deinen Gratis Kaffee!' }
+                ]
             },
             barcode: { format: 'PKBarcodeFormatQR', message: '', messageEncoding: 'iso-8859-1' },
-            content: { description: 'Individuelle Karte', organizationName: '' }
+            content: { description: 'Digitale Stempelkarte Flex', organizationName: '' },
+            // Stamp config for flex template
+            stampConfig: {
+                icon: '🟢',
+                inactiveIcon: '⚪',
+                total: 10,
+                current: 1
+            }
         }
     }
 ]
@@ -379,8 +394,10 @@ export function createDraftFromTemplate(templateId: string): WalletPassDraft | n
         }
     }
 
-    // Add default stampConfig for stamp-capable styles
-    if (template.style === 'storeCard' || template.style === 'eventTicket') {
+    // Add default stampConfig for stamp-capable styles (or use template's stampConfig if defined)
+    if (template.defaultDraft.stampConfig) {
+        draft.stampConfig = template.defaultDraft.stampConfig
+    } else if (template.style === 'storeCard' || template.style === 'eventTicket') {
         draft.stampConfig = {
             icon: '🟢',
             inactiveIcon: '⚪',

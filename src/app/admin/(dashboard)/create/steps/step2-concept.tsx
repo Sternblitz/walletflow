@@ -55,9 +55,9 @@ const CARD_TYPES = [
     },
     {
         id: 'CUSTOM',
-        name: 'Individuell',
-        subtitle: '"Deine eigene Karte"',
-        description: 'Komplett anpassbar',
+        name: 'Stempelkarte Flex',
+        subtitle: '\"2-Zeilen Layout\"',
+        description: 'Mit Thumbnail & Geschenk-Feld',
         icon: Sparkles,
         color: '#8B5CF6',
         bgClass: 'bg-purple-500'
@@ -146,7 +146,7 @@ export function Step2Concept({ data, update }: Step2ConceptProps) {
                         {selected === 'MEMBER_CARD' && '✅ Ideal für Clubs, Fitnessstudios, VIP-Programme'}
                         {selected === 'POINTS_CARD' && '✅ Optimal für Einzelhandel mit hoher Kauffrequenz'}
                         {selected === 'COUPON' && '✅ Für zeitlich begrenzte Aktionen und Rabatte'}
-                        {selected === 'CUSTOM' && '✅ Volle Kontrolle über alle Felder und das Design'}
+                        {selected === 'CUSTOM' && '✅ 2-Zeilen Layout mit Thumbnail - perfekt für Geschenk-Anzeige'}
                     </p>
                 </div>
             )}
