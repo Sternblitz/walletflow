@@ -104,6 +104,7 @@ export async function GET(
             birthday_upcoming: birthdayUpcoming,
             stamps: pass.current_state?.stamps || 0,
             redemptions: pass.current_state?.redemptions || 0,
+            last_scan_at: pass.last_scanned_at,
             opt_in: pass.consent_marketing ?? null,
         }
     })
