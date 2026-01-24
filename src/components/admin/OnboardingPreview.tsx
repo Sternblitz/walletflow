@@ -276,7 +276,7 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                         src={logoUrl}
                                         alt={clientName}
                                         style={{ height: `${48 * ((logoSize || 100) / 100)}px` }}
-                                        className="max-w-[120px] object-contain mx-auto mb-3"
+                                        className="max-w-[80%] object-contain mx-auto mb-3"
                                     />
                                 ) : (
                                     <div

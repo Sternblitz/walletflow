@@ -409,7 +409,7 @@ export function OnboardingForm({
                                 src={logoUrl}
                                 alt={clientName}
                                 style={{ height: `${80 * ((logoSize || 100) / 100)}px` }}
-                                className="max-w-[180px] object-contain mx-auto mb-6"
+                                className="max-w-[80%] object-contain mx-auto mb-6"
                             />
                         ) : (
                             <div
