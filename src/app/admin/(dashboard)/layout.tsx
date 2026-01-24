@@ -19,7 +19,7 @@ export default async function AdminLayout({
     if (error || !user) {
         // Not authenticated - redirect to login
         // Works correctly on admin.getqard.com/login
-        redirect('/login')
+        redirect('/admin/login')
     }
 
     return (

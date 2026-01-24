@@ -27,5 +27,5 @@ export async function login(formData: FormData) {
     }
 
     // Successfully authenticated - redirect to dashboard (root of admin subdomain)
-    redirect('/')
+    redirect('/admin')
 }

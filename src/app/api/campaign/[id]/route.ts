@@ -40,6 +40,7 @@ export async function GET(
             current_state,
             created_at,
             last_updated_at,
+            last_scanned_at,
             wallet_type,
             is_installed_on_ios,
             is_installed_on_android,
@@ -56,10 +57,61 @@ export async function GET(
         .order('deleted_at', { ascending: true, nullsFirst: true })
         .order('created_at', { ascending: false })
 
+    const now = new Date()
+
+    const enrichedPasses = (passes || []).map(pass => {
+        // Calculate inactivity days
+        const lastScan = pass.last_scanned_at ? new Date(pass.last_scanned_at) : null
+        const daysSinceLastScan = lastScan
+            ? Math.floor((now.getTime() - lastScan.getTime()) / (1000 * 60 * 60 * 24))
+            : 999
+
+        // Calculate status based on inactivity & deletion
+        let status: 'active' | 'absent' | 'risk' | 'inactive' | 'deleted' = 'active'
+
+        if (pass.deleted_at) status = 'deleted'
+        else if (daysSinceLastScan >= 60) status = 'inactive'
+        else if (daysSinceLastScan >= 30) status = 'risk'
+        else if (daysSinceLastScan >= 14) status = 'absent'
+
+        // Check if birthday is upcoming (next 7 days)
+        let birthdayUpcoming = false
+        if (pass.customer_birthday && !pass.deleted_at) {
+            try {
+                const birthDate = new Date(pass.customer_birthday)
+                const thisYearBirthday = new Date(now.getFullYear(), birthDate.getMonth(), birthDate.getDate())
+                const diff = (thisYearBirthday.getTime() - now.getTime()) / (1000 * 3600 * 24)
+                birthdayUpcoming = diff >= 0 && diff <= 7
+            } catch { }
+        }
+
+        // Check if new customer (< 24h)
+        const isNew = pass.created_at &&
+            (now.getTime() - new Date(pass.created_at).getTime()) < 1000 * 60 * 60 * 24
+
+        // Customer number from state or serial
+        const customerNumber = pass.current_state?.customer_number ||
+            pass.serial_number?.slice(-6).toUpperCase() ||
+            pass.id.slice(-6).toUpperCase()
+
+        return {
+            ...pass,
+            customer_number: customerNumber,
+            display_name: pass.customer_name || `Kunde #${customerNumber}`,
+            status,
+            days_inactive: daysSinceLastScan,
+            is_new: isNew,
+            birthday_upcoming: birthdayUpcoming,
+            stamps: pass.current_state?.stamps || 0,
+            redemptions: pass.current_state?.redemptions || 0,
+            opt_in: pass.consent_marketing ?? null,
+        }
+    })
+
     return NextResponse.json({
         campaign: {
             ...campaign,
-            passes: passes || []
+            passes: enrichedPasses
         }
     })
 }

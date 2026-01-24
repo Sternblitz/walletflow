@@ -40,6 +40,9 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { getReviewStats, ReviewStats } from "@/lib/reviews"
 import { ReviewWidget } from "@/components/analytics/ReviewWidget"
+import { AdminCustomerList } from "@/components/admin/AdminCustomerList"
+import { CustomerDetailModal } from "@/components/app/CustomerDetailModal"
+import { AnimatePresence } from "framer-motion"
 
 
 export interface PosCredential {
@@ -143,6 +146,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
     const [sendResult, setSendResult] = useState<{ sent: number; total: number } | null>(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [deleting, setDeleting] = useState(false)
+    const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
 
     // POS Credentials State
     const [posCredentials, setPosCredentials] = useState<PosCredential[]>([])
@@ -606,8 +610,8 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                                             key={String(opt.value)}
                                             onClick={() => setRedeemExpiresHours(opt.value)}
                                             className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${redeemExpiresHours === opt.value
-                                                    ? 'bg-pink-500 text-white'
-                                                    : 'bg-white/5 text-zinc-400 hover:bg-white/10'
+                                                ? 'bg-pink-500 text-white'
+                                                : 'bg-white/5 text-zinc-400 hover:bg-white/10'
                                                 }`}
                                         >
                                             {opt.label}
@@ -1047,110 +1051,25 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                     </Button>
                 </div>
 
-                {campaign.passes?.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
-                        <p className="text-zinc-400">Noch keine Kunden. Teile deinen Link!</p>
-                        <p className="text-sm text-violet-400 mt-2">
-                            start.getqard.com/{campaign.client?.slug}
-                        </p>
-                    </div>
-                ) : (
-                    <div className="rounded-xl border border-white/10 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-white/5">
-                                    <tr className="text-left text-xs text-zinc-400">
-                                        <th className="px-4 py-3 font-medium">Kunde</th>
-                                        <th className="px-4 py-3 font-medium">Kontakt</th>
-                                        <th className="px-4 py-3 font-medium">Status</th>
-                                        <th className="px-4 py-3 font-medium">Letzte Aktivität</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {campaign.passes?.map((pass) => (
-                                        <tr key={pass.id} className={`hover:bg-white/5 transition-colors ${pass.deleted_at ? 'bg-red-500/5 opacity-60' : ''}`}>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-2">
-                                                    {/* Platform Icon */}
-                                                    {(pass.wallet_type === 'google' || (pass.is_installed_on_android && !pass.is_installed_on_ios)) ? (
-                                                        <span title="Google Wallet" className="text-lg">🤖</span>
-                                                    ) : (
-                                                        <span title="Apple Wallet" className="text-lg">🍎</span>
-                                                    )}
-                                                    <div>
-                                                        <span className={`font-medium block ${pass.deleted_at ? 'text-zinc-400 line-through' : 'text-white'}`}>
-                                                            {pass.customer_name || `Kunde #${pass.current_state?.customer_number || pass.serial_number.slice(0, 6)}`}
-                                                        </span>
-                                                        <span className="text-xs text-zinc-500">
-                                                            #{pass.current_state?.customer_number || pass.serial_number.slice(0, 8)}
-                                                        </span>
-                                                        <div className="flex gap-1 mt-1">
-                                                            {pass.consent_marketing === true && (
-                                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1 w-fit">
-                                                                    <Check size={10} /> Opt-in
-                                                                </span>
-                                                            )}
-                                                            {pass.consent_marketing === false && (
-                                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1 w-fit">
-                                                                    <X size={10} /> Kein Opt-in
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="space-y-1 text-xs text-zinc-400">
-                                                    {pass.customer_email && (
-                                                        <div className="flex items-center gap-1.5">
-                                                            📧 {pass.customer_email}
-                                                        </div>
-                                                    )}
-                                                    {pass.customer_phone && (
-                                                        <div className="flex items-center gap-1.5">
-                                                            📱 {pass.customer_phone}
-                                                        </div>
-                                                    )}
-                                                    {pass.customer_birthday && (
-                                                        <div className="flex items-center gap-1.5">
-                                                            🎂 {(() => {
-                                                                try {
-                                                                    const d = new Date(pass.customer_birthday)
-                                                                    return `${d.getDate()}. ${d.toLocaleString('de-DE', { month: 'long' })}`
-                                                                } catch { return '' }
-                                                            })()}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                {campaign.concept.includes('STAMP') ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <Stamp className="w-4 h-4 text-violet-400" />
-                                                        <span className="text-sm">
-                                                            {pass.current_state?.stamps || 0} / {pass.current_state?.max_stamps || 10}
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-sm text-zinc-400">
-                                                        {pass.current_state?.points || 0} Punkte
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-2 text-sm text-zinc-400">
-                                                    <Clock className="w-3.5 h-3.5" />
-                                                    {new Date(pass.last_updated_at).toLocaleDateString('de-DE')}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
+                <div className="bg-zinc-900/30 border border-white/5 rounded-xl p-4">
+                    <AdminCustomerList
+                        customers={campaign.passes || []}
+                        onSelectCustomer={setSelectedCustomer}
+                        loading={loading}
+                    />
+                </div>
             </div>
+
+            {/* Customer Detail Modal */}
+            <AnimatePresence>
+                {selectedCustomer && (
+                    <CustomerDetailModal
+                        customer={selectedCustomer}
+                        slug={campaign.client?.slug || ''}
+                        onClose={() => setSelectedCustomer(null)}
+                    />
+                )}
+            </AnimatePresence>
         </div >
     )
 }
