@@ -60,6 +60,7 @@ interface OnboardingDesignConfig {
     showTitle?: boolean  // Whether to show the page title (default: false)
     logoUrl?: string | null
     logoSource?: 'wallet' | 'custom' | 'none'
+    logoSize?: number // Percentage of base size (default 100)
     backgroundStyle?: BackgroundStyle
     bgColor?: string
     fgColor?: string
@@ -213,6 +214,7 @@ export function OnboardingDesignEditor({
     const previewConfig = {
         clientName,
         logoUrl: displayLogo,
+        logoSize: config.logoSize,
         ...defaultColors,
         backgroundStyle: currentStyle,
         glowBorderColor: glowColor,
@@ -734,10 +736,29 @@ export function OnboardingDesignEditor({
                                 </div>
 
                                 {displayLogo && (
-                                    <div className="flex items-center gap-3 p-2 rounded-lg bg-white/[0.02]">
-                                        <img src={displayLogo} alt="Logo" className="h-10 w-10 object-contain rounded" />
-                                        <span className="text-xs text-white/60">Aktuelles Logo</span>
-                                    </div>
+                                    <>
+                                        <div className="flex items-center gap-3 p-2 rounded-lg bg-white/[0.02]">
+                                            <img src={displayLogo} alt="Logo" className="h-10 w-10 object-contain rounded" />
+                                            <span className="text-xs text-white/60">Aktuelles Logo</span>
+                                        </div>
+
+                                        {/* Size Slider */}
+                                        <div className="space-y-1.5 pt-1">
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-[10px] text-white/50">Größe</Label>
+                                                <span className="text-[10px] text-white/40">{config.logoSize || 100}%</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min={20}
+                                                max={200}
+                                                step={10}
+                                                value={config.logoSize || 100}
+                                                onChange={(e) => onChange({ ...config, logoSize: parseInt(e.target.value) })}
+                                                className="w-full accent-violet-500 h-1.5 bg-white/10 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-violet-500"
+                                            />
+                                        </div>
+                                    </>
                                 )}
 
                                 {logoSource === 'custom' && (

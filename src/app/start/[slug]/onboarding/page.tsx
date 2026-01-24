@@ -63,6 +63,7 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
     // Extract logo - onboardingDesign logo > Campaign logo > Client logo
     const campaignLogo = designAssets.images?.logo?.url
     const logoUrl = onboardingDesign.logoUrl || campaignLogo || client.logo_url
+    const logoSize = onboardingDesign.logoSize // Get logo size
 
     // Custom title/description from onboardingDesign
     const customTitle = onboardingDesign.title

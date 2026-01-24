@@ -1,6 +1,6 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Users, Zap, ChevronDown, Check, Cake, Sparkles, X } from 'lucide-react'
+import { Users, Zap, ChevronDown, Check, Cake, Sparkles, X, Search } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -26,6 +26,8 @@ const FILTERS: { key: FilterType, label: string, dotColor: string, description?:
 
 export function CustomerList({ customers, onSelectCustomer, loading }: CustomerListProps) {
     const [filter, setFilter] = useState<FilterType>('all')
+    const [searchQuery, setSearchQuery] = useState('')
+    const [activeSearch, setActiveSearch] = useState('')
     const [isFilterOpen, setIsFilterOpen] = useState(false)
     const filterRef = useRef<HTMLDivElement>(null)
 
@@ -58,6 +60,7 @@ export function CustomerList({ customers, onSelectCustomer, loading }: CustomerL
     const filteredCustomers = useMemo(() => {
         let result = customers.filter(c => !c.deleted_at)
 
+
         if (filter === 'active') result = result.filter(c => c.status === 'active')
         else if (filter === 'absent') result = result.filter(c => c.status === 'absent')
         else if (filter === 'risk') result = result.filter(c => c.status === 'risk')
@@ -65,11 +68,25 @@ export function CustomerList({ customers, onSelectCustomer, loading }: CustomerL
         else if (filter === 'new') result = result.filter(c => c.is_new)
         else if (filter === 'birthday') result = result.filter(c => c.birthday_upcoming)
 
+        if (activeSearch) {
+            const query = activeSearch.toLowerCase()
+            result = result.filter(c => {
+                // Only search in what is actually displayed or the customer number
+                // Strict WYSIWYG (What You See Is What You Get) search
+                const displayedName = c.display_name || c.customer_name || `Kunde #${c.customer_number || '---'}`
+
+                return (
+                    displayedName.toLowerCase().includes(query) ||
+                    (c.customer_number && c.customer_number.toString().includes(query))
+                )
+            })
+        }
+
         // Sort by most recent scan
         result.sort((a, b) => new Date(b.last_scan_at || b.created_at || 0).getTime() - new Date(a.last_scan_at || a.created_at || 0).getTime())
 
         return result
-    }, [customers, filter])
+    }, [customers, filter, activeSearch])
 
     // Get status dot color for a customer
     const getStatusDot = (c: any): string => {
@@ -90,11 +107,46 @@ export function CustomerList({ customers, onSelectCustomer, loading }: CustomerL
 
     const currentFilter = FILTERS.find(f => f.key === filter)!
 
+    // Handle manual search
+    const handleSearch = () => {
+        setActiveSearch(searchQuery)
+        if (searchQuery) setFilter('all')
+    }
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleSearch()
+        }
+    }
+
     return (
         <div className="space-y-4">
-            {/* Compact Filter Dropdown */}
-            <div className="flex items-center justify-between gap-3" ref={filterRef}>
-                <div className="relative">
+            {/* Search and Filters */}
+            <div className="flex items-center gap-3">
+                <div className="relative flex-1 flex items-center gap-2">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value)
+                                setActiveSearch(e.target.value) // Instant search
+                                if (e.target.value) setFilter('all')
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    // Submit on enter (optional, can close keyboard)
+                                    (e.target as HTMLInputElement).blur()
+                                }
+                            }}
+                            placeholder="Nach Name oder Nummer suchen..."
+                            className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-white/10 transition-all placeholder:text-zinc-400"
+                        />
+                    </div>
+                </div>
+
+                <div className="relative" ref={filterRef}>
                     <button
                         onClick={() => setIsFilterOpen(!isFilterOpen)}
                         className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl text-sm font-medium text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
@@ -155,7 +207,11 @@ export function CustomerList({ customers, onSelectCustomer, loading }: CustomerL
                     </AnimatePresence>
                 </div>
 
-                {/* Result Count */}
+            </div>
+
+
+            {/* Result Count (moved out of flex container) */}
+            <div className="flex justify-between items-center px-1">
                 <span className="text-xs text-zinc-400">
                     <span className="font-bold text-zinc-600 dark:text-zinc-300">{filteredCustomers.length}</span> Ergebnisse
                 </span>

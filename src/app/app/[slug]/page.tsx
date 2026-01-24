@@ -1351,7 +1351,7 @@ export default function POSPage() {
                                             <div className="flex items-center justify-between mb-3">
                                                 <div className="flex items-center gap-2">
                                                     <Gift className="w-4 h-4 text-pink-500" />
-                                                    <span className="text-sm font-bold text-zinc-700 dark:text-white">Redeem Flow aktiv</span>
+                                                    <span className="text-sm font-bold text-zinc-700 dark:text-white">Geschenk anfügen</span>
                                                 </div>
                                                 <button
                                                     type="button"
@@ -1362,12 +1362,12 @@ export default function POSPage() {
                                                 </button>
                                             </div>
                                             <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
-                                                Wenn aktiv, erscheint beim Scannen ein Popup zum Einlösen
+                                                Fügt dieser Nachricht ein einlösbares Geschenk bei (z.B. Gratis Kaffee).
                                             </p>
 
                                             {redeemFlowEnabled && (
                                                 <div className="space-y-2 pt-3 border-t border-pink-200 dark:border-pink-500/20">
-                                                    <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Wie lange einlösbar?</div>
+                                                    <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Gültigkeitsdauer</div>
                                                     <div className="grid grid-cols-3 gap-2">
                                                         {[
                                                             { value: 24, label: '24h' },

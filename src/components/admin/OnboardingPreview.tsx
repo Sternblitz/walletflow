@@ -48,6 +48,7 @@ interface OnboardingPreviewProps {
     config: {
         clientName: string
         logoUrl?: string | null
+        logoSize?: number
         backgroundStyle?: BackgroundStyle
         bgColor: string
         fgColor: string
@@ -102,6 +103,7 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
     const {
         clientName,
         logoUrl,
+        logoSize,
         backgroundStyle = 'solid',
         bgColor = '#0A0A0A',
         fgColor = '#FFFFFF',
@@ -273,7 +275,8 @@ export function OnboardingPreview({ config }: OnboardingPreviewProps) {
                                     <img
                                         src={logoUrl}
                                         alt={clientName}
-                                        className="h-12 max-w-[120px] object-contain mx-auto mb-3"
+                                        style={{ height: `${48 * ((logoSize || 100) / 100)}px` }}
+                                        className="max-w-[120px] object-contain mx-auto mb-3"
                                     />
                                 ) : (
                                     <div
