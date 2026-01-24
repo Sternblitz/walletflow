@@ -1351,7 +1351,7 @@ export default function POSPage() {
                                             <div className="flex items-center justify-between mb-3">
                                                 <div className="flex items-center gap-2">
                                                     <Gift className="w-4 h-4 text-pink-500" />
-                                                    <span className="text-sm font-bold text-zinc-700 dark:text-white">Geschenk anfügen</span>
+                                                    <span className="text-sm font-bold text-zinc-700 dark:text-white">Diese Nachricht erhält ein Geschenk</span>
                                                 </div>
                                                 <button
                                                     type="button"
@@ -1362,7 +1362,7 @@ export default function POSPage() {
                                                 </button>
                                             </div>
                                             <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
-                                                Fügt dieser Nachricht ein einlösbares Geschenk bei (z.B. Gratis Kaffee).
+                                                Wenn aktiv, erscheint beim Scannen des Kundenpasses ein Popup zum Einlösen.
                                             </p>
 
                                             {redeemFlowEnabled && (

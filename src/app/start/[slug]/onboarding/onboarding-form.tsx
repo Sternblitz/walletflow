@@ -74,6 +74,7 @@ interface OnboardingFormProps {
     platform: string
     clientName: string
     logoUrl?: string | null
+    logoSize?: number
     bgColor: string
     fgColor: string
     accentColor: string
@@ -100,6 +101,7 @@ export function OnboardingForm({
     platform,
     clientName,
     logoUrl,
+    logoSize,
     bgColor,
     fgColor,
     accentColor,
@@ -406,7 +408,8 @@ export function OnboardingForm({
                             <img
                                 src={logoUrl}
                                 alt={clientName}
-                                className="h-20 max-w-[180px] object-contain mx-auto mb-6"
+                                style={{ height: `${80 * ((logoSize || 100) / 100)}px` }}
+                                className="max-w-[180px] object-contain mx-auto mb-6"
                             />
                         ) : (
                             <div

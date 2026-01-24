@@ -77,6 +77,7 @@ export default async function OnboardingPage({ params, searchParams }: PageProps
             platform={platform}
             clientName={client.name}
             logoUrl={logoUrl}
+            logoSize={logoSize}
             bgColor={bgColor}
             fgColor={fgColor}
             accentColor={accentColor}
