@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 interface AdminCustomerListProps {
     customers: any[]
     onSelectCustomer: (customer: any) => void
+    onDeleteCustomer?: (customer: any) => void
     loading: boolean
 }
 
@@ -25,7 +26,7 @@ const FILTERS: { key: FilterType, label: string, dotColor: string, description?:
     { key: 'deleted', label: 'Gelöscht', dotColor: 'bg-zinc-600', description: 'Archiviert' },
 ]
 
-export function AdminCustomerList({ customers, onSelectCustomer, loading }: AdminCustomerListProps) {
+export function AdminCustomerList({ customers, onSelectCustomer, onDeleteCustomer, loading }: AdminCustomerListProps) {
     const [filter, setFilter] = useState<FilterType>('all')
     const [searchQuery, setSearchQuery] = useState('')
     const [activeSearch, setActiveSearch] = useState('')
@@ -270,7 +271,7 @@ export function AdminCustomerList({ customers, onSelectCustomer, loading }: Admi
                         <div
                             key={c.id}
                             onClick={() => onSelectCustomer(c)}
-                            className={`group flex items-center gap-3 bg-zinc-900/40 border border-white/5 rounded-xl px-3 py-2.5 hover:bg-zinc-800/60 transition-all cursor-pointer active:scale-[0.99] ${c.deleted_at ? 'opacity-60 grayscale-[0.5]' : ''}`}
+                            className={`group flex items-center gap-3 bg-zinc-900/40 border border-white/5 rounded-xl px-3 py-2.5 hover:bg-zinc-800/60 transition-all cursor-pointer active:scale-[0.99] select-none ${c.deleted_at ? 'opacity-60 grayscale-[0.5]' : ''}`}
                         >
                             {/* Avatar */}
                             <div className="relative shrink-0">
@@ -326,6 +327,20 @@ export function AdminCustomerList({ customers, onSelectCustomer, loading }: Admi
                                 <Zap size={12} className="fill-current" />
                                 {c.stamps || c.current_state?.stamps || 0}
                             </div>
+
+                            {/* Delete Button */}
+                            {onDeleteCustomer && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        onDeleteCustomer(c)
+                                    }}
+                                    className="p-2 -mr-1 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Kunden löschen"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            )}
                         </div>
                     ))
                 )}

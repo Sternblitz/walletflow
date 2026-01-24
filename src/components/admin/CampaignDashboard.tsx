@@ -382,6 +382,34 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
         }
     }
 
+    const handleDeleteCustomer = async (customer: any) => {
+        if (!confirm(`⚠️ ACHTUNG: Soll der Kunde "${customer.display_name || 'Unbekannt'}" WIRKLICH endgültig gelöscht werden?\n\nAlle Daten (Punkte, Historie, Logs) werden unwiderruflich entfernt.\nDer Kunde erhält keine Updates mehr.`)) {
+            return
+        }
+
+        try {
+            const res = await fetch(`/api/admin/customers/${customer.id}`, {
+                method: 'DELETE'
+            })
+
+            if (res.ok) {
+                // Refresh list locally or re-fetch
+                if (campaign) {
+                    setCampaign(prev => prev ? ({
+                        ...prev,
+                        passes: prev.passes.filter(p => p.id !== customer.id)
+                    }) : null)
+                }
+                alert('Kunde wurde endgültig gelöscht.')
+            } else {
+                alert('Fehler beim Löschen des Kunden.')
+            }
+        } catch (e) {
+            console.error('Failed to delete customer:', e)
+            alert('Fehler beim Löschen.')
+        }
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -1055,6 +1083,7 @@ export function CampaignDashboard({ campaignId, showBackButton = true }: Campaig
                     <AdminCustomerList
                         customers={campaign.passes || []}
                         onSelectCustomer={setSelectedCustomer}
+                        onDeleteCustomer={handleDeleteCustomer}
                         loading={loading}
                     />
                 </div>
